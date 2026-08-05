@@ -25,6 +25,16 @@ demoApi.get("/health", (c) =>
   c.json({ ok: true, service: "meshflare", demo: true }),
 );
 
+demoApi.get("/auth/status", (c) =>
+  c.json({ required: false, authenticated: true }),
+);
+
+demoApi.post("/auth/login", (c) =>
+  c.json({ required: false, authenticated: true }),
+);
+
+demoApi.post("/auth/logout", (c) => c.json({ ok: true }));
+
 demoApi.get("/settings", (c) => c.json(buildDemoSettings()));
 
 demoApi.get("/mesh", (c) => c.json({ entries: buildDemoEntries(), demo: true }));

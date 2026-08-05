@@ -25,20 +25,14 @@ export class CloudflareClient {
     }
     this.accountId = accountId;
 
-    if (env.CLOUDFLARE_API_KEY?.trim() && env.CLOUDFLARE_EMAIL?.trim()) {
-      this.headers = {
-        "X-Auth-Email": env.CLOUDFLARE_EMAIL.trim(),
-        "X-Auth-Key": env.CLOUDFLARE_API_KEY.trim(),
-        "Content-Type": "application/json",
-      };
-    } else if (env.CLOUDFLARE_API_TOKEN?.trim()) {
+    if (env.CLOUDFLARE_API_TOKEN?.trim()) {
       this.headers = {
         Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN.trim()}`,
         "Content-Type": "application/json",
       };
     } else {
       throw new CloudflareApiError(
-        "Set CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL, or CLOUDFLARE_API_TOKEN",
+        "CLOUDFLARE_API_TOKEN is required",
         500,
       );
     }

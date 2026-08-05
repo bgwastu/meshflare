@@ -15,5 +15,5 @@
       "@/*": ["./client/src/*"]
     }
   },
-  "include": ["server", "worker", "client", "vite.config.ts"]
+  "include": ["server", "worker", "client", "worker-configuration.d.ts", "vite.config.ts", "drizzle.config.ts"]
 }

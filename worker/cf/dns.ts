@@ -8,6 +8,7 @@ import {
   slugifyName,
 } from "./names";
 import type { DeviceRegistration, Env, MeshEntry, MeshNode, Settings } from "../types";
+import { readAppData, updateAppData } from "../db/settings";
 
 const DNS_MISSING_GRACE_MS = 5 * 60_000;
 
@@ -338,7 +339,8 @@ export async function syncMeshDns(
   let skipped = 0;
   const now = Date.now();
   const purgeHosts = new Set(options?.purgeHosts ?? []);
-  const missingSince = { ...(env.DB.data.dnsMissingSince ?? {}) };
+  const appData = await readAppData(env.DB);
+  const missingSince = { ...(appData.dnsMissingSince ?? {}) };
   const nextMissingSince: Record<string, string> = {};
 
   for (const [host, ipv4] of desired) {
@@ -369,9 +371,7 @@ export async function syncMeshDns(
     deleted += 1;
   }
 
-  await env.DB.update((data) => {
-    data.dnsMissingSince = nextMissingSince;
-  });
+  await updateAppData(env.DB, { dnsMissingSince: nextMissingSince });
 
   return {
     created,

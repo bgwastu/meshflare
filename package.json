@@ -4,28 +4,35 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run --hot server/index.ts",
+    "dev": "bun run --hot server/selfhost.ts",
     "dev:client": "vite",
-    "dev:demo": "DEMO_MODE=true bun run --hot server/index.ts",
+    "dev:demo": "DEMO_MODE=true bun run --hot server/selfhost.ts",
     "build": "vite build",
-    "start": "bun run server/index.ts",
-    "start:demo": "DEMO_MODE=true bun run server/index.ts",
+    "deploy": "bun run build && node scripts/deploy-worker.mjs",
+    "start": "bun run server/selfhost.ts",
+    "start:demo": "DEMO_MODE=true bun run server/selfhost.ts",
     "typecheck": "tsc --noEmit",
-    "deploy:demo": "bun run build && bunx wrangler deploy -c wrangler.demo.jsonc"
+    "deploy:demo": "bun run build && bunx wrangler deploy -c wrangler.demo.jsonc",
+    "db:migrate": "bun run server/migrate.ts"
   },
   "dependencies": {
     "hono": "^4.12.31",
-    "lowdb": "^7.0.1",
+    "hono-sessions": "^0.8.1",
+    "drizzle-orm": "^0.44.7",
     "lucide-react": "^1.26.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router": "7"
+    "react-router": "7",
+    "zod": "^4.0.17",
+    "@hono/zod-validator": "^0.7.2"
   },
   "devDependencies": {
     "@types/bun": "^1.3.9",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "croner": "^9.0.0",
+    "drizzle-kit": "^0.31.4",
     "typescript": "^5.9.3",
     "vite": "^8.1.5",
     "wrangler": "4"

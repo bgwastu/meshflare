@@ -119,7 +119,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       /* ignore */
     }
-    throw new Error(message);
+    const error = new Error(message) as Error & { status?: number };
+    error.status = res.status;
+    throw error;
   }
 
   if (res.status === 204) return undefined as T;
@@ -129,6 +131,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  authStatus: () => request<{ required: boolean; authenticated: boolean }>("/api/auth/status"),
+  login: (password: string) =>
+    request<{ required: boolean; authenticated: boolean }>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
+  logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   settings: () => request<Settings>("/api/settings"),
   patchSettings: (body: SettingsPatch) =>
     request<Settings>("/api/settings", { method: "PATCH", body: JSON.stringify(body) }),
@@ -224,63 +233,4 @@ export const api = {
   getTunnelConnections: (id: string) =>
     request<TunnelConnection[]>(`/api/tunnels/${id}/connections`),
 
-  generateWireGuard: async (id: string, filename: string) => {
-    const start = await fetch(`/api/mesh/nodes/${id}/wireguard`, { method: "POST" });
-    if (!start.ok && start.status !== 202) {
-      let message = `HTTP ${start.status}`;
-      try {
-        const body = (await start.json()) as { error?: string };
-        message = body.error || message;
-      } catch {
-        message = await start.text();
-      }
-      throw new Error(message);
-    }
-    const started = (await start.json()) as { jobId: string; filename?: string };
-    const jobId = started.jobId;
-    const downloadName =
-      started.filename ||
-      (filename.endsWith(".conf") ? filename : `${filename}.conf`);
-
-    const deadline = Date.now() + 150_000;
-    while (Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 1500));
-      let res: Response;
-      try {
-        res = await fetch(`/api/mesh/wireguard/jobs/${jobId}`);
-      } catch {
-        // warp-svc can briefly reset sockets while generating; keep polling.
-        continue;
-      }
-      if (res.status === 404) {
-        throw new Error("WireGuard job expired before it finished");
-      }
-      let body: {
-        status?: string;
-        conf?: string;
-        error?: string;
-        filename?: string;
-      };
-      try {
-        body = (await res.json()) as typeof body;
-      } catch {
-        continue;
-      }
-      if (body.status === "pending") continue;
-      if (body.status === "error" || !res.ok) {
-        throw new Error(body.error || `HTTP ${res.status}`);
-      }
-      if (body.status === "done" && body.conf) {
-        const blob = new Blob([body.conf], { type: "text/plain; charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = body.filename || downloadName;
-        a.click();
-        URL.revokeObjectURL(url);
-        return { generated: true as const };
-      }
-    }
-    throw new Error("WireGuard generate timed out — try again");
-  },
 };

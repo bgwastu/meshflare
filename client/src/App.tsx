@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useTransition, type TransitionEvent } from "react";
+import { useEffect, useMemo, useState, useTransition, type FormEvent, type TransitionEvent } from "react";
 import {
   Globe,
   Loader2,
@@ -42,7 +42,6 @@ type Busy =
   | "settings"
   | "dns-filter"
   | "rename"
-  | "wg"
   | "regenerate"
   | "delete"
   | "domain"
@@ -197,6 +196,10 @@ export function App() {
   const [, startTransition] = useTransition();
   const [busy, setBusy] = useState<Busy>(null);
   const [ready, setReady] = useState(false);
+  const [authRequired, setAuthRequired] = useState(false);
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authBusy, setAuthBusy] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [installCmd, setInstallCmd] = useState<string | null>(null);
@@ -258,6 +261,13 @@ export function App() {
   }
 
   async function refresh() {
+    const auth = await api.authStatus();
+    if (auth.required && !auth.authenticated) {
+      setAuthRequired(true);
+      setReady(true);
+      return [];
+    }
+    setAuthRequired(false);
     const [mesh, s] = await Promise.all([api.listMesh(), api.settings()]);
     setEntries(mesh.entries);
     setSettings(s);
@@ -267,6 +277,21 @@ export function App() {
     setDnsSourceNetworkDraft(s.dnsLocation?.sourceNetworks[0] ?? "");
     setReady(true);
     return mesh.entries;
+  }
+
+  async function login(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAuthBusy(true);
+    setAuthError(null);
+    try {
+      await api.login(password);
+      setPassword("");
+      await refresh();
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setAuthBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -507,6 +532,38 @@ export function App() {
     : ready
       ? "Cloudflare account"
       : "Loading…";
+
+  if (authRequired) {
+    return (
+      <main className="app login-screen">
+        <section className="settings-block login-card">
+          <div className="brand login-brand">
+            <img src="/icon-192.png" alt="" className="brand-mark" width={40} height={40} />
+            <h1>mesh<span>flare</span></h1>
+          </div>
+          <h2>Dashboard login</h2>
+          <p className="hint">Enter the password configured for this meshflare instance.</p>
+          <form onSubmit={(event) => void login(event)}>
+            <div className="field">
+              <label htmlFor="meshflare-password">Password</label>
+              <input
+                id="meshflare-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                autoFocus
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </div>
+            {authError ? <p className="error-text">{authError}</p> : null}
+            <button className="btn btn-primary" type="submit" disabled={authBusy || !password}>
+              {authBusy ? <Spinner label="Signing in…" /> : "Sign in"}
+            </button>
+          </form>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <div className="app">
@@ -939,7 +996,7 @@ export function App() {
               <div className="settings-block dns-endpoints-block">
                 <h3>Zero Trust DNS endpoints</h3>
                 <p className="hint">
-                  Control which Gateway resolver endpoints are available to generated WireGuard configs.
+                   Control which Gateway resolver endpoints are available to WARP connectors.
                 </p>
                 {!dnsLocation ? (
                   <p className="hint dns-endpoint-warning">No default Gateway DNS location found.</p>
@@ -1575,30 +1632,6 @@ export function App() {
                     (installCmd ?? "—")
                     )}
                   </pre>
-              </div>
-            )}
-
-            {drawerEntry.kind === "node" && isNodeInitial(drawerEntry.status) && (
-              <div style={{ marginTop: "1.25rem" }}>
-                <button
-                  className="btn"
-                  disabled={locked}
-                  onClick={() =>
-                    void run("wg", async () => {
-                      await api.generateWireGuard(drawerEntry.id, drawerEntry.name);
-                      push(`Generated WireGuard conf for "${drawerEntry.name}".`, "success");
-                    })
-                  }
-                >
-                  {busy === "wg" ? (
-                    <Spinner label="Generating… (~30s)" />
-                  ) : (
-                    "Generate WireGuard .conf"
-                  )}
-                </button>
-                <p className="hint" style={{ marginTop: "0.4rem" }}>
-                  Reuses this node&apos;s registration to build a stable config — usually ~20–40 seconds.
-                </p>
               </div>
             )}
 

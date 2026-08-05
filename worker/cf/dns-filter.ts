@@ -1,5 +1,8 @@
 import { CloudflareApiError, type CloudflareClient } from "./client";
-import type { Env, Settings } from "../types";
+import type { Env, Settings, SettingsPatch } from "../types";
+import { asc, eq } from "drizzle-orm";
+import { dnsFilterDomains } from "../db/schema";
+import { patchSettings as patchStoredSettings, readAppData, updateAppData } from "../db/settings";
 
 const DEFAULT_FILTER_URL = "https://small.oisd.nl/";
 const LIST_CHUNK = 1000;
@@ -61,11 +64,12 @@ export function normalizeFilterUrl(raw: string, fallback = DEFAULT_FILTER_URL): 
 }
 
 export async function getMeshSuffix(env: Env): Promise<string> {
-  return normalizeMeshSuffix(env.DB.data.meshSuffix || env.MESH_DNS_SUFFIX || "mesh");
+  const data = await readAppData(env.DB);
+  return normalizeMeshSuffix(data.meshSuffix || env.MESH_DNS_SUFFIX || "mesh");
 }
 
 export async function getSettings(env: Env): Promise<Settings> {
-  const d = env.DB.data;
+  const d = await readAppData(env.DB);
   const offlineDays = Number(d.offlineDays);
   return {
     offlineDays: Number.isFinite(offlineDays) && offlineDays > 0 ? offlineDays : 7,
@@ -79,61 +83,65 @@ export async function getSettings(env: Env): Promise<Settings> {
   };
 }
 
-export type SettingsPatch = Partial<{
-  offlineDays: number;
-  dnsFilterEnabled: boolean;
-  dnsFilterUrl: string;
-  meshSuffix: string;
-}>;
-
 export async function updateSettings(env: Env, patch: SettingsPatch): Promise<Settings> {
   const current = await getSettings(env);
-  let filterUrlChanged = false;
+  const nextUrl = patch.dnsFilterUrl === undefined
+    ? current.dnsFilterUrl
+    : normalizeFilterUrl(patch.dnsFilterUrl);
+  const filterUrlChanged = nextUrl !== current.dnsFilterUrl;
+  const filterStatus = patch.dnsFilterEnabled !== undefined
+    ? patch.dnsFilterEnabled ? "pending_enable" : "pending_disable"
+    : filterUrlChanged && (current.dnsFilterEnabled ||
+      ["pending_enable", "syncing", "pending_refresh", "enabled"].includes(current.dnsFilterStatus))
+      ? "pending_refresh"
+      : current.dnsFilterStatus;
 
-  await env.DB.update((data) => {
-    if (patch.offlineDays !== undefined) {
-      data.offlineDays = Math.max(1, Math.min(365, Math.floor(patch.offlineDays)));
-    }
-    if (patch.meshSuffix !== undefined) {
-      data.meshSuffix = normalizeMeshSuffix(patch.meshSuffix);
-    }
-    if (patch.dnsFilterUrl !== undefined) {
-      const next = normalizeFilterUrl(patch.dnsFilterUrl);
-      if (next !== current.dnsFilterUrl) {
-        filterUrlChanged = true;
-        data.dnsFilterUrl = next;
-      }
-    }
-    if (patch.dnsFilterEnabled !== undefined) {
-      data.dnsFilterEnabled = patch.dnsFilterEnabled;
-      data.dnsFilterStatus = patch.dnsFilterEnabled ? "pending_enable" : "pending_disable";
-    } else if (filterUrlChanged) {
-      const filterActive =
-        current.dnsFilterEnabled ||
-        ["pending_enable", "syncing", "pending_refresh", "enabled"].includes(
-          current.dnsFilterStatus,
-        );
-      if (filterActive) data.dnsFilterStatus = "pending_refresh";
-    }
+  await patchStoredSettings(env.DB, {
+    ...patch,
+    dnsFilterUrl: nextUrl,
+    meshSuffix: patch.meshSuffix === undefined ? current.meshSuffix : normalizeMeshSuffix(patch.meshSuffix),
   });
+  await updateAppData(env.DB, { dnsFilterStatus: filterStatus });
 
   if (filterUrlChanged) {
-    await env.DNS_FILTER_CACHE.delete("domains.json");
+    await clearFilterDomains(env);
   }
 
   return getSettings(env);
 }
 
 export async function markDnsSynced(env: Env): Promise<void> {
-  await env.DB.update((data) => {
-    data.lastDnsSyncAt = new Date().toISOString();
-  });
+  await updateAppData(env.DB, { lastDnsSyncAt: new Date().toISOString() });
 }
 
 export async function markCleanupRan(env: Env): Promise<void> {
-  await env.DB.update((data) => {
-    data.lastCleanupAt = new Date().toISOString();
-  });
+  await updateAppData(env.DB, { lastCleanupAt: new Date().toISOString() });
+}
+
+async function clearFilterDomains(env: Env): Promise<void> {
+  await env.DB.delete(dnsFilterDomains);
+}
+
+async function getFilterDomains(env: Env, sourceUrl: string): Promise<string[]> {
+  const rows = await env.DB
+    .select({ domain: dnsFilterDomains.domain })
+    .from(dnsFilterDomains)
+    .where(eq(dnsFilterDomains.sourceUrl, sourceUrl))
+    .orderBy(asc(dnsFilterDomains.position));
+  return rows.map((row) => row.domain);
+}
+
+async function saveFilterDomains(env: Env, sourceUrl: string, domains: string[]): Promise<void> {
+  await clearFilterDomains(env);
+  for (let i = 0; i < domains.length; i += 500) {
+    await env.DB.insert(dnsFilterDomains).values(
+      domains.slice(i, i + 500).map((domain, offset) => ({
+        sourceUrl,
+        position: i + offset,
+        domain,
+      })),
+    );
+  }
 }
 
 async function listGatewayLists(cf: CloudflareClient): Promise<GatewayList[]> {
@@ -270,32 +278,27 @@ export async function processDnsFilterTick(
       ? Date.parse(settings.dnsFilterLastSyncedAt)
       : 0;
     if (!last || Date.now() - last >= FILTER_REFRESH_MS) {
-      await env.DB.update((data) => {
-        data.dnsFilterStatus = "pending_refresh";
-      });
+      await updateAppData(env.DB, { dnsFilterStatus: "pending_refresh" });
       status = "pending_refresh";
     }
   }
 
   if (status === "pending_refresh") {
     await deleteFilterArtifacts(cf, env);
-    await env.DNS_FILTER_CACHE.delete("domains.json");
-    await env.DB.update((data) => {
-      data.dnsFilterCursor = 0;
-      data.dnsFilterStatus = "pending_enable";
-    });
+    await clearFilterDomains(env);
+    await updateAppData(env.DB, { dnsFilterCursor: 0, dnsFilterStatus: "pending_enable" });
     return "dns_filter_refresh_started";
   }
 
   if (status === "pending_disable" || (status === "idle" && !settings.dnsFilterEnabled)) {
     if (status === "pending_disable") {
       await deleteFilterArtifacts(cf, env);
-      await env.DNS_FILTER_CACHE.delete("domains.json");
-      await env.DB.update((data) => {
-        data.dnsFilterStatus = "idle";
-        data.dnsFilterEnabled = false;
-        data.dnsFilterCursor = 0;
-        data.dnsFilterLastSyncedAt = null;
+      await clearFilterDomains(env);
+      await updateAppData(env.DB, {
+        dnsFilterStatus: "idle",
+        dnsFilterEnabled: false,
+        dnsFilterCursor: 0,
+        dnsFilterLastSyncedAt: null,
       });
       return "dns_filter_disabled";
     }
@@ -303,16 +306,13 @@ export async function processDnsFilterTick(
   }
 
   if (status === "pending_enable" || status === "syncing") {
-    let domains: string[] = [];
-    const cached = await env.DNS_FILTER_CACHE.get("domains.json");
-    if (cached) {
-      domains = JSON.parse(await cached.text()) as string[];
-    } else {
+    let domains = await getFilterDomains(env, settings.dnsFilterUrl);
+    if (domains.length === 0) {
       domains = await downloadFilterDomains(settings.dnsFilterUrl);
-      await env.DNS_FILTER_CACHE.put("domains.json", JSON.stringify(domains));
+      await saveFilterDomains(env, settings.dnsFilterUrl, domains);
     }
 
-    const cursor = env.DB.data.dnsFilterCursor || 0;
+    const cursor = (await readAppData(env.DB)).dnsFilterCursor || 0;
     const existing = managedLists(await listGatewayLists(cf), env.DNS_FILTER_LIST_PREFIX);
     const existingChunkIndexes = new Set(
       existing.map((l) => {
@@ -341,18 +341,15 @@ export async function processDnsFilterTick(
       nextCursor = start + slice.length;
     }
 
-    await env.DB.update((data) => {
-      data.dnsFilterCursor = nextCursor;
-      data.dnsFilterStatus = "syncing";
-    });
+    await updateAppData(env.DB, { dnsFilterCursor: nextCursor, dnsFilterStatus: "syncing" });
 
     if (nextCursor >= domains.length) {
       const lists = managedLists(await listGatewayLists(cf), env.DNS_FILTER_LIST_PREFIX);
       await upsertBlockRule(cf, env, lists);
-      await env.DB.update((data) => {
-        data.dnsFilterStatus = "enabled";
-        data.dnsFilterEnabled = true;
-        data.dnsFilterLastSyncedAt = new Date().toISOString();
+      await updateAppData(env.DB, {
+        dnsFilterStatus: "enabled",
+        dnsFilterEnabled: true,
+        dnsFilterLastSyncedAt: new Date().toISOString(),
       });
       return `dns_filter_enabled chunks=${lists.length} created_this_tick=${created}`;
     }

@@ -1,6 +1,5 @@
-/** Shared app env for Bun server and local dev. */
-
-import type { Low } from "lowdb";
+import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
+import type { schema } from "./db/schema";
 
 export type AppData = {
   offlineDays: number;
@@ -15,26 +14,25 @@ export type AppData = {
   dnsMissingSince: Record<string, string>;
 };
 
-export type AppDb = Low<AppData>;
+export type SettingsPatch = Partial<{
+  offlineDays: number;
+  dnsFilterEnabled: boolean;
+  dnsFilterUrl: string;
+  meshSuffix: string;
+}>;
 
-export type ObjectCache = {
-  get(key: string): Promise<{ text(): Promise<string> } | null>;
-  put(key: string, value: string): Promise<void>;
-  delete(key: string): Promise<void>;
-};
+export type AppDatabase = BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>;
 
 export type Env = {
-  DB: AppDb;
-  DNS_FILTER_CACHE: ObjectCache;
+  DB: AppDatabase;
   CLOUDFLARE_ACCOUNT_ID: string;
   CLOUDFLARE_API_TOKEN?: string;
-  CLOUDFLARE_API_KEY?: string;
-  CLOUDFLARE_EMAIL?: string;
   MESH_DNS_SUFFIX: string;
   DEFAULT_OFFLINE_DAYS: string;
   DNS_FILTER_LIST_PREFIX: string;
   DNS_FILTER_RULE_NAME: string;
   MESH_RULE_PREFIX: string;
+  MESHFLARE_PASSWORD?: string;
   DATA_DIR: string;
   PORT: string;
   /** When true/1, serve fixture inventory and reject writes. */

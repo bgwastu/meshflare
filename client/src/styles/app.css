@@ -1393,3 +1393,28 @@ th.sorted {
     background-position: -100% 0;
   }
 }
+.login-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.login-card {
+  width: min(100%, 26rem);
+  padding: 1.5rem;
+}
+
+.login-brand {
+  margin-bottom: 1.5rem;
+}
+
+.login-brand h1 {
+  margin: 0;
+}
+
+.error-text {
+  color: var(--danger, #c2410c);
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
