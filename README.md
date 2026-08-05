@@ -1,90 +1,111 @@
 # meshflare
 
-Self-hostable [Cloudflare](https://www.cloudflare.com/) Mesh & Tunnel manager. One Docker image — UI, API, cron, and WireGuard extract.
+Cloudflare Mesh and Tunnel manager.
 
-**Demo (read-only):** [https://meshflare.wastu.workers.dev](https://meshflare.wastu.workers.dev)
+**Demo:** [meshflare-demo.wastu.workers.dev](https://meshflare-demo.wastu.workers.dev) · read-only
+
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/bgwastu/meshflare)
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/demo-mesh-dark.png">
-    <img alt="meshflare demo — mesh nodes" src="docs/screenshots/demo-mesh-light.png" width="800">
+    <img alt="meshflare Mesh nodes" src="docs/screenshots/demo-mesh-light.png" width="800">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/demo-tunnels-dark.png">
-    <img alt="meshflare demo — cloudflare tunnels" src="docs/screenshots/demo-tunnels-light.png" width="800">
+    <img alt="meshflare Cloudflare Tunnels" src="docs/screenshots/demo-tunnels-light.png" width="800">
   </picture>
 </p>
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/demo-settings-dark.png">
-    <img alt="meshflare demo — settings and WARP split tunnels" src="docs/screenshots/demo-settings-light.png" width="800">
+    <img alt="meshflare settings" src="docs/screenshots/demo-settings-light.png" width="800">
   </picture>
 </p>
 
 ## Features
 
-- Cloudflare Mesh (formerly WARP-to-WARP) management
-- Cloudflare Tunnel management (list, create, rename, delete; ingress rules CRUD)
-- Auto-assign all mesh nodes and devices with `.mesh` domain (configurable)
-- WireGuard `.conf` download for nodes
-- Private CIDR and hostname routes for Mesh nodes
-- Default WARP profile split-tunnel management (include/exclude, CIDRs, and hostnames)
-- DNS filtering from any domain-list URL (default [small.oisd.nl](https://small.oisd.nl/))
-- Auto-delete device on mesh network if offline longer than N days (default 7)
+- Mesh node and device management
+- Cloudflare Tunnel and ingress management
+- Automatic Mesh DNS names
+- CIDR and hostname routes
+- WARP split-tunnel management
+- DNS filtering
+- Offline-device cleanup
+- WARP connector setup commands
 
-## Image
+## Cloudflare
 
-`ghcr.io/bgwastu/meshflare`
+The Deploy button creates an independent Worker and D1 database in your Cloudflare account.
 
-## Config
+Required:
 
-| Name | Notes |
-|------|--------|
-| `CLOUDFLARE_ACCOUNT_ID` | required (unless `DEMO_MODE`) |
-| `CLOUDFLARE_API_KEY` + `CLOUDFLARE_EMAIL` | preferred (Global API Key — required for Tunnel writes) |
-| `CLOUDFLARE_API_TOKEN` | alternative — may need `Cloudflare Tunnel Write` permission |
-| `DATA_DIR` | default `/data` (lowdb + filter cache) |
-| `PORT` | default `3000` |
-| `DEMO_MODE` | `true` / `1` — fixture data, all writes return 403 |
+- Cloudflare account ID
+- Scoped Cloudflare account API token
 
-### Cloudflare API permissions
+Required token permissions:
 
-Use an account-scoped API token whenever possible. Meshflare needs these Cloudflare account permissions:
+- Zero Trust Read
+- Zero Trust Write
+- Secure DNS Locations Write
+- Cloudflare Tunnel permissions, if managing Tunnels
 
-| Permission | Used for |
-|------------|----------|
-| `Zero Trust Read` | Read Mesh nodes, WARP registrations, Gateway rules, device policies, and DNS locations |
-| `Zero Trust Write` | Create, rename, delete, and route Mesh nodes; manage Gateway DNS rules and device policies |
-| `Cloudflare Zero Trust Secure DNS Locations Write` | Enable IPv4/IPv6/DoH endpoints and update DNS location source networks from Settings |
+For automatic production deployments, connect the repository to the Worker with
+**Workers & Pages > Settings > Builds**:
 
-`Zero Trust Write` may already include the read capabilities in your token template. If Cloudflare presents separate read/write choices, grant both. The Secure DNS Locations permission is required even when the token can otherwise manage Zero Trust resources.
+```text
+Build:   bun install --frozen-lockfile && bun run build
+Deploy:  bun run deploy
+Branch:  main
+```
 
-The alternative `CLOUDFLARE_API_KEY` + `CLOUDFLARE_EMAIL` uses a Global API Key and has broad account access; use it only when an API token is not available. Never commit either credential or place it in a public image.
+Build variables:
 
-WireGuard configs use your account's DNS endpoints, so Gateway policies can apply, and Meshflare reuses registration keys and device IPs.
+```text
+CLOUDFLARE_ACCOUNT_ID
+MESHFLARE_D1_DATABASE_ID
+```
+
+Runtime secrets:
+
+```text
+CLOUDFLARE_API_TOKEN
+MESHFLARE_PASSWORD   # optional, 32+ characters
+```
+
+## Self-Hosted
+
+Self-hosted mode uses Bun and SQLite.
 
 ```bash
 cp .env.example .env
 bun install
-bun run build
-bun run dev        # API on :3000
-bun run dev:client # Vite UI (proxies /api)
+bun run db:migrate
+bun run dev
 ```
 
-Keep the `/data` volume when upgrading or replacing the container. Meshflare
-stores each node's WireGuard registration there so regenerating a config reuses
-the same key and device IP instead of enrolling a new device.
-
-## Docker
+Docker:
 
 ```bash
 docker run --rm -p 3000:3000 \
   -v meshflare-data:/data \
-  -e CLOUDFLARE_ACCOUNT_ID=… \
-  -e CLOUDFLARE_API_TOKEN=… \
+  -e CLOUDFLARE_ACCOUNT_ID=... \
+  -e CLOUDFLARE_API_TOKEN=... \
+  -e MESHFLARE_PASSWORD=... \
   ghcr.io/bgwastu/meshflare:latest
 ```
+
+## Configuration
+
+| Variable | Description |
+|---|---|
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare account API token |
+| `MESHFLARE_PASSWORD` | Optional dashboard password, minimum 32 characters |
+| `DATA_DIR` | SQLite directory; default `./data` or `/data` in Docker |
+| `PORT` | Self-hosted port; default `3000` |
+| `DEMO_MODE` | Enables read-only demo fixtures |
