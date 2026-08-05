@@ -109,3 +109,7 @@ docker run --rm -p 3000:3000 \
 | `DATA_DIR` | SQLite directory; default `./data` or `/data` in Docker |
 | `PORT` | Self-hosted port; default `3000` |
 | `DEMO_MODE` | Enables read-only demo fixtures |
+
+Mesh suffix, offline cleanup days, and DNS filter settings are managed from the
+Settings page and stored in the app database. They do not need environment
+variables.

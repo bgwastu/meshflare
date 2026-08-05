@@ -5,6 +5,8 @@ import { dnsFilterDomains } from "../db/schema";
 import { patchSettings as patchStoredSettings, readAppData, updateAppData } from "../db/settings";
 
 const DEFAULT_FILTER_URL = "https://small.oisd.nl/";
+const FILTER_LIST_PREFIX = "meshflare-dns-filter";
+const FILTER_RULE_NAME = "meshflare DNS filter";
 const LIST_CHUNK = 1000;
 const CHUNKS_PER_TICK = 3;
 const FILTER_REFRESH_MS = 6 * 60 * 60 * 1000;
@@ -65,7 +67,7 @@ export function normalizeFilterUrl(raw: string, fallback = DEFAULT_FILTER_URL): 
 
 export async function getMeshSuffix(env: Env): Promise<string> {
   const data = await readAppData(env.DB);
-  return normalizeMeshSuffix(data.meshSuffix || env.MESH_DNS_SUFFIX || "mesh");
+  return normalizeMeshSuffix(data.meshSuffix || "mesh");
 }
 
 export async function getSettings(env: Env): Promise<Settings> {
@@ -198,9 +200,9 @@ async function upsertBlockRule(
   if (!expression) return;
 
   const rules = await listGatewayRules(cf);
-  const existing = rules.find((r) => r.name === env.DNS_FILTER_RULE_NAME);
+  const existing = rules.find((r) => r.name === FILTER_RULE_NAME);
   const body = {
-    name: env.DNS_FILTER_RULE_NAME,
+    name: FILTER_RULE_NAME,
     description: "meshflare DNS filter block rule",
     enabled: true,
     action: "block",
@@ -224,7 +226,7 @@ async function sleep(ms: number): Promise<void> {
 }
 
 async function deleteFilterArtifacts(cf: CloudflareClient, env: Env): Promise<void> {
-  const ruleNames = new Set([env.DNS_FILTER_RULE_NAME, "meshflare OISD Small"]);
+  const ruleNames = new Set([FILTER_RULE_NAME, "meshflare OISD Small"]);
   const rules = await listGatewayRules(cf);
   for (const rule of rules) {
     if (ruleNames.has(rule.name)) {
@@ -236,7 +238,7 @@ async function deleteFilterArtifacts(cf: CloudflareClient, env: Env): Promise<vo
   await sleep(2000);
 
   const lists = await listGatewayLists(cf);
-  const prefixes = [env.DNS_FILTER_LIST_PREFIX, "meshflare-oisd"];
+  const prefixes = [FILTER_LIST_PREFIX, "meshflare-oisd"];
   for (const list of lists) {
     if (!prefixes.some((p) => list.name.startsWith(p))) continue;
     let lastError: unknown;
@@ -313,7 +315,7 @@ export async function processDnsFilterTick(
     }
 
     const cursor = (await readAppData(env.DB)).dnsFilterCursor || 0;
-    const existing = managedLists(await listGatewayLists(cf), env.DNS_FILTER_LIST_PREFIX);
+    const existing = managedLists(await listGatewayLists(cf), FILTER_LIST_PREFIX);
     const existingChunkIndexes = new Set(
       existing.map((l) => {
         const m = l.name.match(/chunk-(\d+)$/);
@@ -331,7 +333,7 @@ export async function processDnsFilterTick(
       const slice = domains.slice(start, start + LIST_CHUNK);
       if (!existingChunkIndexes.has(chunkIndex)) {
         await cf.request("POST", cf.accountPath("/gateway/lists"), {
-          name: `${env.DNS_FILTER_LIST_PREFIX}-chunk-${chunkIndex}`,
+          name: `${FILTER_LIST_PREFIX}-chunk-${chunkIndex}`,
           description: `meshflare DNS filter (${settings.dnsFilterUrl})`,
           type: "DOMAIN",
           items: slice.map((value) => ({ value })),
@@ -344,7 +346,7 @@ export async function processDnsFilterTick(
     await updateAppData(env.DB, { dnsFilterCursor: nextCursor, dnsFilterStatus: "syncing" });
 
     if (nextCursor >= domains.length) {
-      const lists = managedLists(await listGatewayLists(cf), env.DNS_FILTER_LIST_PREFIX);
+      const lists = managedLists(await listGatewayLists(cf), FILTER_LIST_PREFIX);
       await upsertBlockRule(cf, env, lists);
       await updateAppData(env.DB, {
         dnsFilterStatus: "enabled",

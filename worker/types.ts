@@ -27,11 +27,6 @@ export type Env = {
   DB: AppDatabase;
   CLOUDFLARE_ACCOUNT_ID: string;
   CLOUDFLARE_API_TOKEN?: string;
-  MESH_DNS_SUFFIX: string;
-  DEFAULT_OFFLINE_DAYS: string;
-  DNS_FILTER_LIST_PREFIX: string;
-  DNS_FILTER_RULE_NAME: string;
-  MESH_RULE_PREFIX: string;
   MESHFLARE_PASSWORD?: string;
   DATA_DIR: string;
   PORT: string;

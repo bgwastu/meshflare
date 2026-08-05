@@ -25,12 +25,7 @@
 		}
 	],
 	"vars": {
-		"CLOUDFLARE_ACCOUNT_ID": "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID",
-		"MESH_DNS_SUFFIX": "mesh",
-		"DEFAULT_OFFLINE_DAYS": "7",
-		"DNS_FILTER_LIST_PREFIX": "meshflare-dns-filter",
-		"DNS_FILTER_RULE_NAME": "meshflare DNS filter",
-		"MESH_RULE_PREFIX": "meshflare DNS"
+		"CLOUDFLARE_ACCOUNT_ID": "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
 	},
 	"triggers": {
 		"crons": [

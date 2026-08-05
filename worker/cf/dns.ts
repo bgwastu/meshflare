@@ -10,6 +10,8 @@ import {
 import type { DeviceRegistration, Env, MeshEntry, MeshNode, Settings } from "../types";
 import { readAppData, updateAppData } from "../db/settings";
 
+const MESH_RULE_PREFIX = "meshflare DNS";
+
 const DNS_MISSING_GRACE_MS = 5 * 60_000;
 
 type GatewayRule = {
@@ -157,7 +159,7 @@ export async function upsertMeshDnsRule(
   ipv4: string,
   existing?: GatewayRule,
 ): Promise<void> {
-  const name = `${env.MESH_RULE_PREFIX}: ${hostname}`;
+  const name = `${MESH_RULE_PREFIX}: ${hostname}`;
   const body = {
     name,
     description: `meshflare auto-sync: ${hostname} → ${ipv4}`,
@@ -251,12 +253,28 @@ export async function buildMeshInventory(
     };
   });
 
-  return [...nodeEntries, ...deviceEntries].sort((a, b) => {
+  const entries = [...nodeEntries, ...deviceEntries].sort((a, b) => {
     const tb = Date.parse(b.createdAt) || 0;
     const ta = Date.parse(a.createdAt) || 0;
     if (tb !== ta) return tb - ta;
     return a.name.localeCompare(b.name);
   });
+
+  const usedHostnames = new Set<string>();
+  for (const entry of entries) {
+    if (!entry.ipv4) continue;
+    const base = meshHostname(entry.name, suffix);
+    let hostname = base;
+    let counter = 2;
+    while (usedHostnames.has(hostname)) {
+      hostname = `${base.replace(`.${suffix}`, "")}-${counter}.${suffix}`;
+      counter += 1;
+    }
+    usedHostnames.add(hostname);
+    entry.meshHostname = hostname;
+  }
+
+  return entries;
 }
 
 function newerRegistration(a: DeviceRegistration, b: DeviceRegistration): boolean {
@@ -311,7 +329,7 @@ export async function syncMeshDns(
 
   for (const entry of inventory) {
     if (!entry.ipv4) continue;
-    const host = meshHostname(entry.name, suffix);
+    const host = entry.meshHostname ?? meshHostname(entry.name, suffix);
     if (!desired.has(host)) desired.set(host, entry.ipv4);
   }
 
@@ -327,8 +345,8 @@ export async function syncMeshDns(
   for (const rule of rules) {
     if (rule.action !== "override") continue;
     if (!rule.filters?.includes("dns")) continue;
-    if (!rule.name?.startsWith(env.MESH_RULE_PREFIX)) continue;
-    const fqdn = managedHostKey(rule, env.MESH_RULE_PREFIX);
+    if (!rule.name?.startsWith(MESH_RULE_PREFIX)) continue;
+    const fqdn = managedHostKey(rule, MESH_RULE_PREFIX);
     if (!fqdn) continue;
     managed.set(fqdn, rule);
   }
@@ -411,7 +429,7 @@ export async function syncMeshDnsAfterRename(
     inventory.find((e) => e.name.trim().toLowerCase() === rename.renamed.from.trim().toLowerCase());
 
   if (match?.ipv4 && fromHost !== toHost) {
-    forceDesired.set(toHost, match.ipv4);
+    forceDesired.set(match.meshHostname ?? toHost, match.ipv4);
   }
 
   if (rename.displaced) {
@@ -425,7 +443,9 @@ export async function syncMeshDnsAfterRename(
         inventory.find(
           (e) => e.name.trim().toLowerCase() === rename.displaced!.from.trim().toLowerCase(),
         );
-      if (displacedMatch?.ipv4) forceDesired.set(dTo, displacedMatch.ipv4);
+      if (displacedMatch?.ipv4) {
+        forceDesired.set(displacedMatch.meshHostname ?? dTo, displacedMatch.ipv4);
+      }
     }
   }
 

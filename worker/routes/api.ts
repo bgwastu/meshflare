@@ -107,10 +107,15 @@ api.patch("/settings", zValidator("json", settingsSchema), async (c) => {
     body.dnsFilterEnabled !== undefined || body.dnsFilterUrl !== undefined;
   if (filterTouched) {
     const cf = createCfClient(c.env);
-    // Advance filter status immediately instead of waiting for the 60s cron.
-    void processDnsFilterTick(cf, c.env).catch((err) =>
+    const task = processDnsFilterTick(cf, c.env).catch((err) =>
       console.error("meshflare dns filter tick", err),
     );
+    try {
+      c.executionCtx.waitUntil(task);
+    } catch {
+      // Bun has no Workers execution context; keep local development fire-and-forget.
+      void task;
+    }
   }
 
   const cf = createCfClient(c.env);

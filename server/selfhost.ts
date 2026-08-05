@@ -32,11 +32,6 @@ const env = {
   DEMO_MODE: process.env.DEMO_MODE?.trim(),
   CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID?.trim() || "demo",
   CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
-  MESH_DNS_SUFFIX: process.env.MESH_DNS_SUFFIX?.trim() || "mesh",
-  DEFAULT_OFFLINE_DAYS: process.env.DEFAULT_OFFLINE_DAYS?.trim() || "7",
-  DNS_FILTER_LIST_PREFIX: process.env.DNS_FILTER_LIST_PREFIX?.trim() || "meshflare-dns-filter",
-  DNS_FILTER_RULE_NAME: process.env.DNS_FILTER_RULE_NAME?.trim() || "meshflare DNS filter",
-  MESH_RULE_PREFIX: process.env.MESH_RULE_PREFIX?.trim() || "meshflare DNS",
   MESHFLARE_PASSWORD: process.env.MESHFLARE_PASSWORD,
 } satisfies Env;
 
