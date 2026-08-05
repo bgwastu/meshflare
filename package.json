@@ -12,6 +12,7 @@
     "start": "bun run server/selfhost.ts",
     "start:demo": "DEMO_MODE=true bun run server/selfhost.ts",
     "typecheck": "tsc --noEmit",
+    "cf:typegen": "wrangler types",
     "deploy:demo": "bun run build && bunx wrangler deploy -c wrangler.demo.jsonc",
     "db:migrate": "bun run server/migrate.ts"
   },
