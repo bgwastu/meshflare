@@ -1,0 +1,40 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "meshflare",
+	"main": "worker/index.ts",
+	"compatibility_date": "2026-08-05",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"workers_dev": true,
+	"preview_urls": true,
+	"assets": {
+		"directory": "./dist",
+		"not_found_handling": "single-page-application",
+		"binding": "ASSETS",
+		"run_worker_first": [
+			"/api/*"
+		]
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "meshflare",
+			"database_id": "REPLACE_WITH_D1_DATABASE_ID",
+			"migrations_dir": "./drizzle"
+		}
+	],
+	"vars": {
+		"CLOUDFLARE_ACCOUNT_ID": "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID",
+		"MESH_DNS_SUFFIX": "mesh",
+		"DEFAULT_OFFLINE_DAYS": "7",
+		"DNS_FILTER_LIST_PREFIX": "meshflare-dns-filter",
+		"DNS_FILTER_RULE_NAME": "meshflare DNS filter",
+		"MESH_RULE_PREFIX": "meshflare DNS"
+	},
+	"triggers": {
+		"crons": [
+			"*/15 * * * *"
+		]
+	}
+}
