@@ -523,6 +523,12 @@ export function App() {
   }
 
   const filterMeta = dnsFilterStatusMeta(settings?.dnsFilterStatus ?? "idle", settings?.dnsFilterEnabled ?? false);
+  const filterOperationPending = [
+    "pending_enable",
+    "syncing",
+    "pending_refresh",
+    "pending_disable",
+  ].includes(settings?.dnsFilterStatus ?? "");
   const dnsLocation = settings?.dnsLocation;
   const settingsReady = ready && settings !== null;
   const accountLine = settings?.accountName
@@ -708,7 +714,7 @@ export function App() {
                 <button
                   type="button"
                   className="btn btn-icon"
-                  disabled={locked}
+                   disabled={locked}
                   title="Refresh"
                   aria-label="Refresh"
                   onClick={() =>
@@ -868,7 +874,7 @@ export function App() {
                       id="mesh-suffix"
                       type="text"
                       value={meshSuffixDraft}
-                      disabled={locked}
+                     disabled={locked}
                       onChange={(e) => setMeshSuffixDraft(e.target.value)}
                     />
                   </div>
@@ -902,7 +908,7 @@ export function App() {
                     min={1}
                     max={365}
                     value={offlineDays}
-                    disabled={locked}
+                     disabled={locked}
                     onChange={(e) => setOfflineDays(Number(e.target.value))}
                   />
                 </div>
@@ -945,7 +951,7 @@ export function App() {
                     id="filter-url"
                     type="url"
                     value={filterUrlDraft}
-                    disabled={locked}
+                     disabled={locked || filterOperationPending}
                     onChange={(e) => setFilterUrlDraft(e.target.value)}
                   />
                 </div>
@@ -973,7 +979,7 @@ export function App() {
                   </button>
                   <button
                     className="btn btn-primary"
-                    disabled={locked}
+                     disabled={locked || filterOperationPending}
                     onClick={() =>
                       void run("dns-filter", async () => {
                         const next = !settings.dnsFilterEnabled;
@@ -983,7 +989,7 @@ export function App() {
                     }
                   >
                     {busy === "dns-filter" ? (
-                      <Spinner label={settings.dnsFilterEnabled ? "Disabling…" : "Enabling…"} />
+                         <Spinner label={settings.dnsFilterStatus === "pending_disable" ? "Disabling…" : "Enabling…"} />
                     ) : settings.dnsFilterEnabled ? (
                       "Disable"
                     ) : (

@@ -48,6 +48,11 @@ type AppEnv = { Bindings: Env };
 
 export const api = new Hono<AppEnv>();
 
+api.use("*", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+});
+
 api.onError((err, c) => {
   if (err instanceof HTTPException) {
     return err.getResponse();

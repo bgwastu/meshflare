@@ -1,6 +1,5 @@
 import { CloudflareApiError, type CloudflareClient } from "./client";
 import type { Env, Settings, SettingsPatch } from "../types";
-import { asc, eq } from "drizzle-orm";
 import { dnsFilterDomains } from "../db/schema";
 import { patchSettings as patchStoredSettings, readAppData, updateAppData } from "../db/settings";
 
@@ -124,36 +123,6 @@ async function clearFilterDomains(env: Env): Promise<void> {
   await env.DB.delete(dnsFilterDomains);
 }
 
-async function getFilterDomains(env: Env, sourceUrl: string): Promise<string[]> {
-  const rows = await env.DB
-    .select({ domain: dnsFilterDomains.domain })
-    .from(dnsFilterDomains)
-    .where(eq(dnsFilterDomains.sourceUrl, sourceUrl))
-    .orderBy(asc(dnsFilterDomains.position));
-  return rows.map((row) => row.domain);
-}
-
-async function saveFilterDomains(env: Env, sourceUrl: string, domains: string[]): Promise<void> {
-  await clearFilterDomains(env);
-  const batches = [];
-  for (let i = 0; i < domains.length; i += 500) {
-    batches.push(
-      env.DB.insert(dnsFilterDomains).values(
-        domains.slice(i, i + 500).map((domain, offset) => ({
-          sourceUrl,
-          position: i + offset,
-          domain,
-        })),
-      ),
-    );
-    if (batches.length === 8) {
-      await Promise.all(batches);
-      batches.length = 0;
-    }
-  }
-  await Promise.all(batches);
-}
-
 async function listGatewayLists(cf: CloudflareClient): Promise<GatewayList[]> {
   const all: GatewayList[] = [];
   let page = 1;
@@ -247,28 +216,26 @@ async function deleteFilterArtifacts(cf: CloudflareClient, env: Env): Promise<vo
 
   const lists = await listGatewayLists(cf);
   const prefixes = [FILTER_LIST_PREFIX, "meshflare-oisd"];
-  for (const list of lists) {
-    if (!prefixes.some((p) => list.name.startsWith(p))) continue;
-    let lastError: unknown;
+  const managed = lists.filter((list) => prefixes.some((p) => list.name.startsWith(p)));
+  const deleteList = async (list: GatewayList): Promise<void> => {
     for (let attempt = 0; attempt < 6; attempt++) {
       try {
         await cf.request("DELETE", cf.accountPath(`/gateway/lists/${list.id}`));
-        lastError = undefined;
-        break;
+        return;
       } catch (e) {
-        lastError = e;
-        if (e instanceof CloudflareApiError && e.status === 404) {
-          lastError = undefined;
-          break;
-        }
+        if (e instanceof CloudflareApiError && e.status === 404) return;
         const busy =
           e instanceof CloudflareApiError &&
           /in use|gateway policies/i.test(e.message);
-        if (!busy || attempt === 5) break;
+        if (!busy || attempt === 5) throw e;
         await sleep(1000 * (attempt + 1));
       }
     }
-    if (lastError) throw lastError;
+  };
+
+  // Delete in bounded parallel batches so large filters finish before waitUntil expires.
+  for (let i = 0; i < managed.length; i += 8) {
+    await Promise.all(managed.slice(i, i + 8).map(deleteList));
   }
 }
 
@@ -276,12 +243,17 @@ async function deleteFilterArtifacts(cf: CloudflareClient, env: Env): Promise<vo
  * Progressive DNS-filter enable/disable/refresh from any domain-list URL.
  * URL changes while active force a full teardown + rebuild (no leftover lists).
  */
-export async function processDnsFilterTick(
+async function processDnsFilterTickInternal(
   cf: CloudflareClient,
   env: Env,
 ): Promise<string> {
   const settings = await getSettings(env);
   let status = settings.dnsFilterStatus;
+
+  if (status === "error") {
+    status = settings.dnsFilterEnabled ? "pending_enable" : "pending_disable";
+    await updateAppData(env.DB, { dnsFilterStatus: status });
+  }
 
   if (status === "enabled" && settings.dnsFilterEnabled) {
     const last = settings.dnsFilterLastSyncedAt
@@ -316,11 +288,9 @@ export async function processDnsFilterTick(
   }
 
   if (status === "pending_enable" || status === "syncing") {
-    let domains = await getFilterDomains(env, settings.dnsFilterUrl);
-    if (domains.length === 0) {
-      domains = await downloadFilterDomains(settings.dnsFilterUrl);
-      await saveFilterDomains(env, settings.dnsFilterUrl, domains);
-    }
+    // Re-fetch the source per tick so D1 does not need to store tens of
+    // thousands of domains just to resume Gateway list creation.
+    const domains = await downloadFilterDomains(settings.dnsFilterUrl);
 
     const cursor = (await readAppData(env.DB)).dnsFilterCursor || 0;
     const existing = managedLists(await listGatewayLists(cf), FILTER_LIST_PREFIX);
@@ -368,4 +338,16 @@ export async function processDnsFilterTick(
   }
 
   return `dns_filter_${status}`;
+}
+
+export async function processDnsFilterTick(
+  cf: CloudflareClient,
+  env: Env,
+): Promise<string> {
+  try {
+    return await processDnsFilterTickInternal(cf, env);
+  } catch (error) {
+    await updateAppData(env.DB, { dnsFilterStatus: "error" }).catch(() => undefined);
+    throw error;
+  }
 }
