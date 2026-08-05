@@ -152,7 +152,7 @@ export function buildDemoSettings(now = Date.now()): Settings & { demo: true } {
     offlineDays: 7,
     dnsFilterEnabled: true,
     dnsFilterStatus: "enabled",
-    dnsFilterUrl: "https://small.oisd.nl/",
+    dnsFilterUrl: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt",
     dnsFilterLastSyncedAt: hoursAgo(3, now),
     meshSuffix: "mesh",
     lastDnsSyncAt: hoursAgo(0.5, now),

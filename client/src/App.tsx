@@ -191,7 +191,7 @@ export function App() {
   const [renameValue, setRenameValue] = useState("");
   const [offlineDays, setOfflineDays] = useState(7);
   const [meshSuffixDraft, setMeshSuffixDraft] = useState("mesh");
-  const [filterUrlDraft, setFilterUrlDraft] = useState("https://small.oisd.nl/");
+  const [filterUrlDraft, setFilterUrlDraft] = useState("https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt");
   const [dnsSourceNetworkDraft, setDnsSourceNetworkDraft] = useState("");
   const [, startTransition] = useTransition();
   const [busy, setBusy] = useState<Busy>(null);

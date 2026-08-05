@@ -4,7 +4,7 @@ import { asc, eq } from "drizzle-orm";
 import { dnsFilterDomains } from "../db/schema";
 import { patchSettings as patchStoredSettings, readAppData, updateAppData } from "../db/settings";
 
-const DEFAULT_FILTER_URL = "https://small.oisd.nl/";
+const DEFAULT_FILTER_URL = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt";
 const FILTER_LIST_PREFIX = "meshflare-dns-filter";
 const FILTER_RULE_NAME = "meshflare DNS filter";
 const LIST_CHUNK = 1000;
@@ -135,15 +135,23 @@ async function getFilterDomains(env: Env, sourceUrl: string): Promise<string[]> 
 
 async function saveFilterDomains(env: Env, sourceUrl: string, domains: string[]): Promise<void> {
   await clearFilterDomains(env);
+  const batches = [];
   for (let i = 0; i < domains.length; i += 500) {
-    await env.DB.insert(dnsFilterDomains).values(
-      domains.slice(i, i + 500).map((domain, offset) => ({
-        sourceUrl,
-        position: i + offset,
-        domain,
-      })),
+    batches.push(
+      env.DB.insert(dnsFilterDomains).values(
+        domains.slice(i, i + 500).map((domain, offset) => ({
+          sourceUrl,
+          position: i + offset,
+          domain,
+        })),
+      ),
     );
+    if (batches.length === 8) {
+      await Promise.all(batches);
+      batches.length = 0;
+    }
   }
+  await Promise.all(batches);
 }
 
 async function listGatewayLists(cf: CloudflareClient): Promise<GatewayList[]> {

@@ -6,7 +6,7 @@ export const DEFAULT_APP_DATA: AppData = {
   offlineDays: 7,
   dnsFilterEnabled: false,
   dnsFilterStatus: "idle",
-  dnsFilterUrl: "https://small.oisd.nl/",
+  dnsFilterUrl: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt",
   dnsFilterLastSyncedAt: null,
   dnsFilterCursor: 0,
   meshSuffix: "mesh",
