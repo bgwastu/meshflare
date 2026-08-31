@@ -20,7 +20,13 @@ function runtimeEnv(env: CloudflareEnv): Env {
 export default {
   async fetch(request: Request, env: CloudflareEnv, ctx: ExecutionContext): Promise<Response> {
     // The read-only demo (wrangler.demo.jsonc) has no D1 binding.
-    if (isDemoMode(env)) return demoApp.fetch(request, env, ctx);
+    if (isDemoMode(env)) {
+      const response = await demoApp.fetch(request, env, ctx);
+      if (response.status !== 404 || new URL(request.url).pathname.startsWith("/api/")) {
+        return response;
+      }
+      return env.ASSETS.fetch(request);
+    }
 
     const response = await app.fetch(request, runtimeEnv(env), ctx);
     if (response.status !== 404 || new URL(request.url).pathname.startsWith("/api/")) {

@@ -571,6 +571,13 @@ a {
   margin: 0 0 0.6rem;
   font-size: 0.95rem;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.count-spin {
+  color: var(--muted);
 }
 
 .panel-head {
@@ -1135,6 +1142,10 @@ th.sorted {
 }
 
 .drawer .meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   color: var(--muted);
   margin-bottom: 1.1rem;
   font-size: 0.82rem;

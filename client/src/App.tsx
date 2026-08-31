@@ -574,7 +574,11 @@ export function App() {  const location = useLocation();
             <div className="panel-head">
               <h2>
                 Mesh{" "}
-                <span className="hint">({ready ? visibleEntries.length : "…"})</span>
+                {ready ? (
+                  <span className="hint">({visibleEntries.length})</span>
+                ) : (
+                  <Loader2 size={13} strokeWidth={2.5} className="spin count-spin" aria-hidden />
+                )}
               </h2>
               <div className="filters">
                 <FacetChip

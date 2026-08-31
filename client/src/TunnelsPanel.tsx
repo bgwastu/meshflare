@@ -206,7 +206,11 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
       <div className="panel-head">
         <h2>
           Tunnels{" "}
-          <span className="hint">({ready ? filteredTunnels.length : "…"})</span>
+          {ready ? (
+            <span className="hint">({filteredTunnels.length})</span>
+          ) : (
+            <Loader2 size={13} strokeWidth={2.5} className="spin count-spin" aria-hidden />
+          )}
         </h2>
         <div className="filters">
           <button
@@ -472,7 +476,7 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
             </div>
             <div className="meta">
               <span className="mono">{selected.id}</span>
-              <span className={`badge ${selected.config_src}`} style={{ marginLeft: "0.5rem" }}>
+              <span className={`badge ${selected.config_src}`}>
                 {selected.config_src === "cloudflare" ? "Managed remotely (Cloudflare)" : "Managed locally (YAML)"}
               </span>
             </div>
