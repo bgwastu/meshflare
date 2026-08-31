@@ -14,9 +14,9 @@ import {
   setTunnelConfig,
   getTunnelConnections,
 } from "../cf/cloudflare-tunnel";
-import type { CloudflareConnector } from "../types";
+import type { CloudflareConnector, CloudflareTunnelConnection, Env, TunnelConfig } from "../types";
 import { createCfClient, CloudflareApiError } from "../cf/client";
-import { buildMeshInventory, getDefaultGatewayDns, getDefaultGatewayDnsLocation, serializeGatewayDnsLocation, syncMeshDns, syncMeshDnsAfterDelete, syncMeshDnsAfterRename, updateDefaultGatewayDnsLocation } from "../cf/dns";
+import { buildMeshInventory, getDefaultGatewayDnsLocation, serializeGatewayDnsLocation, syncMeshDns, syncMeshDnsAfterDelete, syncMeshDnsAfterRename, updateDefaultGatewayDnsLocation } from "../cf/dns";
 import {
   createMeshNodeHostnameRoute,
   createMeshNodeRoute,
@@ -40,9 +40,15 @@ import {
   renameWithCollisionHandling,
 } from "../cf/rename";
 import { getDefaultSplitTunnels, setDefaultSplitTunnels } from "../cf/split-tunnels";
-import type { CloudflareTunnelConnection, Env } from "../types";
 import { decodeConnectorToken } from "../wg/token";
-import { nameSchema, routeSchema, settingsSchema, splitTunnelsSchema, tunnelConfigSchema, tunnelSchema } from "./schemas";
+import {
+  nameSchema,
+  routeSchema,
+  settingsSchema,
+  splitTunnelsSchema,
+  tunnelConfigSchema,
+  tunnelSchema,
+} from "./schemas";
 
 type AppEnv = { Bindings: Env };
 
@@ -284,7 +290,9 @@ api.get("/mesh/nodes/:id/token", async (c) => {
 api.post("/mesh/nodes/:id/regenerate", async (c) => {
   const cf = createCfClient(c.env);
   const node = await recreateMeshNode(cf, c.req.param("id"));
-  return c.json({ node }, 201);
+  const dns = await syncMeshDns(cf, c.env);
+  await markDnsSynced(c.env);
+  return c.json({ node, dns }, 201);
 });
 
 // ── Cloudflare Tunnel routes ──────────────────────────────────────────────
@@ -337,7 +345,7 @@ api.get("/tunnels/:id/config", async (c) => {
 api.put("/tunnels/:id/config", zValidator("json", tunnelConfigSchema), async (c) => {
   const body = c.req.valid("json");
   const cf = createCfClient(c.env);
-  const config = await setTunnelConfig(cf, c.req.param("id"), body as Parameters<typeof setTunnelConfig>[2]);
+  const config = await setTunnelConfig(cf, c.req.param("id"), body as TunnelConfig);
   return c.json(config);
 });
 

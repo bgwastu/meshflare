@@ -1,4 +1,4 @@
-import { mkdirSync, existsSync, readFileSync, renameSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { Database } from "bun:sqlite";
 import { serveStatic } from "hono/bun";
 import { drizzle } from "drizzle-orm/bun-sqlite";
@@ -10,20 +10,14 @@ import { runMaintenance } from "../worker/maintenance";
 import type { Env } from "../worker/types";
 import { schema } from "../worker/db/schema";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { readAppData, updateAppData } from "../worker/db/settings";
+import { migrateLegacyJson } from "../worker/legacy";
 
 const dataDir = process.env.DATA_DIR?.trim() || "./data";
 mkdirSync(dataDir, { recursive: true });
 const sqlite = new Database(`${dataDir}/meshflare.sqlite`);
 const db = drizzle(sqlite, { schema });
 migrate(db, { migrationsFolder: "./drizzle" });
-const legacyPath = `${dataDir}/db.json`;
-if (existsSync(legacyPath) && !existsSync(`${legacyPath}.migrated`)) {
-  const legacy = JSON.parse(readFileSync(legacyPath, "utf8")) as Partial<Awaited<ReturnType<typeof readAppData>>>;
-  const current = await readAppData(db);
-  await updateAppData(db, { ...current, ...legacy, dnsMissingSince: legacy.dnsMissingSince ?? current.dnsMissingSince });
-  renameSync(legacyPath, `${legacyPath}.migrated`);
-}
+await migrateLegacyJson(db, dataDir);
 
 const env = {
   DB: db,

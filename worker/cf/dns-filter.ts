@@ -1,6 +1,13 @@
 import { CloudflareApiError, type CloudflareClient } from "./client";
+import {
+  createGatewayDomainList,
+  deleteGatewayList,
+  deleteGatewayRule,
+  listGatewayLists,
+  listGatewayRules,
+  upsertGatewayRule,
+} from "./gateway";
 import type { Env, Settings, SettingsPatch } from "../types";
-import { dnsFilterDomains } from "../db/schema";
 import { patchSettings as patchStoredSettings, readAppData, updateAppData } from "../db/settings";
 
 const DEFAULT_FILTER_URL = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt";
@@ -11,11 +18,6 @@ const CHUNKS_PER_TICK = 3;
 const FILTER_REFRESH_MS = 6 * 60 * 60 * 1000;
 
 type GatewayList = {
-  id: string;
-  name: string;
-};
-
-type GatewayRule = {
   id: string;
   name: string;
 };
@@ -38,7 +40,7 @@ function normalizeDomain(line: string): string | null {
   return s;
 }
 
-export function normalizeMeshSuffix(raw: string, fallback = "mesh"): string {
+function normalizeMeshSuffix(raw: string, fallback = "mesh"): string {
   const s = raw
     .trim()
     .toLowerCase()
@@ -52,7 +54,7 @@ export function normalizeMeshSuffix(raw: string, fallback = "mesh"): string {
   return s;
 }
 
-export function normalizeFilterUrl(raw: string, fallback = DEFAULT_FILTER_URL): string {
+function normalizeFilterUrl(raw: string, fallback = DEFAULT_FILTER_URL): string {
   const trimmed = raw.trim();
   if (!trimmed) return fallback;
   try {
@@ -104,10 +106,6 @@ export async function updateSettings(env: Env, patch: SettingsPatch): Promise<Se
   });
   await updateAppData(env.DB, { dnsFilterStatus: filterStatus });
 
-  if (filterUrlChanged) {
-    await clearFilterDomains(env);
-  }
-
   return getSettings(env);
 }
 
@@ -117,32 +115,6 @@ export async function markDnsSynced(env: Env): Promise<void> {
 
 export async function markCleanupRan(env: Env): Promise<void> {
   await updateAppData(env.DB, { lastCleanupAt: new Date().toISOString() });
-}
-
-async function clearFilterDomains(env: Env): Promise<void> {
-  await env.DB.delete(dnsFilterDomains);
-}
-
-async function listGatewayLists(cf: CloudflareClient): Promise<GatewayList[]> {
-  const all: GatewayList[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await cf.request<GatewayList[]>(
-      "GET",
-      cf.accountPath(`/gateway/lists?per_page=100&page=${page}`),
-    );
-    const batch = res.result ?? [];
-    all.push(...batch);
-    if (batch.length < 100) break;
-    page += 1;
-    if (page > 50) break;
-  }
-  return all;
-}
-
-async function listGatewayRules(cf: CloudflareClient): Promise<GatewayRule[]> {
-  const res = await cf.request<GatewayRule[]>("GET", cf.accountPath("/gateway/rules"));
-  return res.result ?? [];
 }
 
 function managedLists(lists: GatewayList[], prefix: string): GatewayList[] {
@@ -166,11 +138,7 @@ async function downloadFilterDomains(url: string): Promise<string[]> {
   return domains;
 }
 
-async function upsertBlockRule(
-  cf: CloudflareClient,
-  env: Env,
-  lists: GatewayList[],
-): Promise<void> {
+async function upsertBlockRule(cf: CloudflareClient, lists: GatewayList[]): Promise<void> {
   const expression = lists
     .map((l) => `any(dns.domains[*] in $${l.id})`)
     .join(" or ");
@@ -178,36 +146,34 @@ async function upsertBlockRule(
 
   const rules = await listGatewayRules(cf);
   const existing = rules.find((r) => r.name === FILTER_RULE_NAME);
-  const body = {
-    name: FILTER_RULE_NAME,
-    description: "meshflare DNS filter block rule",
-    enabled: true,
-    action: "block",
-    filters: ["dns"],
-    traffic: expression,
-    rule_settings: {
-      block_page_enabled: false,
-      block_reason: "Blocked by meshflare DNS filter",
+  await upsertGatewayRule(
+    cf,
+    {
+      name: FILTER_RULE_NAME,
+      description: "meshflare DNS filter block rule",
+      enabled: true,
+      action: "block",
+      filters: ["dns"],
+      traffic: expression,
+      rule_settings: {
+        block_page_enabled: false,
+        block_reason: "Blocked by meshflare DNS filter",
+      },
     },
-  };
-
-  if (existing) {
-    await cf.request("PUT", cf.accountPath(`/gateway/rules/${existing.id}`), body);
-  } else {
-    await cf.request("POST", cf.accountPath("/gateway/rules"), body);
-  }
+    existing,
+  );
 }
 
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function deleteFilterArtifacts(cf: CloudflareClient, env: Env): Promise<void> {
+async function deleteFilterArtifacts(cf: CloudflareClient): Promise<void> {
   const ruleNames = new Set([FILTER_RULE_NAME, "meshflare OISD Small"]);
   const rules = await listGatewayRules(cf);
   for (const rule of rules) {
     if (ruleNames.has(rule.name)) {
-      await cf.request("DELETE", cf.accountPath(`/gateway/rules/${rule.id}`));
+      await deleteGatewayRule(cf, rule.id);
     }
   }
 
@@ -220,7 +186,7 @@ async function deleteFilterArtifacts(cf: CloudflareClient, env: Env): Promise<vo
   const deleteList = async (list: GatewayList): Promise<void> => {
     for (let attempt = 0; attempt < 6; attempt++) {
       try {
-        await cf.request("DELETE", cf.accountPath(`/gateway/lists/${list.id}`));
+        await deleteGatewayList(cf, list.id);
         return;
       } catch (e) {
         if (e instanceof CloudflareApiError && e.status === 404) return;
@@ -266,16 +232,14 @@ async function processDnsFilterTickInternal(
   }
 
   if (status === "pending_refresh") {
-    await deleteFilterArtifacts(cf, env);
-    await clearFilterDomains(env);
+    await deleteFilterArtifacts(cf);
     await updateAppData(env.DB, { dnsFilterCursor: 0, dnsFilterStatus: "pending_enable" });
     return "dns_filter_refresh_started";
   }
 
   if (status === "pending_disable" || (status === "idle" && !settings.dnsFilterEnabled)) {
     if (status === "pending_disable") {
-      await deleteFilterArtifacts(cf, env);
-      await clearFilterDomains(env);
+      await deleteFilterArtifacts(cf);
       await updateAppData(env.DB, {
         dnsFilterStatus: "idle",
         dnsFilterEnabled: false,
@@ -310,12 +274,12 @@ async function processDnsFilterTickInternal(
       const chunkIndex = Math.floor(start / LIST_CHUNK) + 1;
       const slice = domains.slice(start, start + LIST_CHUNK);
       if (!existingChunkIndexes.has(chunkIndex)) {
-        await cf.request("POST", cf.accountPath("/gateway/lists"), {
-          name: `${FILTER_LIST_PREFIX}-chunk-${chunkIndex}`,
-          description: `meshflare DNS filter (${settings.dnsFilterUrl})`,
-          type: "DOMAIN",
-          items: slice.map((value) => ({ value })),
-        });
+        await createGatewayDomainList(
+          cf,
+          `${FILTER_LIST_PREFIX}-chunk-${chunkIndex}`,
+          `meshflare DNS filter (${settings.dnsFilterUrl})`,
+          slice,
+        );
         created += 1;
       }
       nextCursor = start + slice.length;
@@ -325,7 +289,7 @@ async function processDnsFilterTickInternal(
 
     if (nextCursor >= domains.length) {
       const lists = managedLists(await listGatewayLists(cf), FILTER_LIST_PREFIX);
-      await upsertBlockRule(cf, env, lists);
+      await upsertBlockRule(cf, lists);
       await updateAppData(env.DB, {
         dnsFilterStatus: "enabled",
         dnsFilterEnabled: true,

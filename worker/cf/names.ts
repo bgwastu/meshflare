@@ -1,5 +1,5 @@
 /** Slugify a mesh name for DNS labels (name.mesh). */
-export function slugifyName(name: string): string {
+function slugifyName(name: string): string {
   const slug = name
     .trim()
     .toLowerCase()
@@ -35,7 +35,7 @@ export function daysSince(iso: string | null | undefined, now = Date.now()): num
 }
 
 /** Devices lack a live CF status string — treat recent last_seen as online. */
-export const DEVICE_ONLINE_WITHIN_MS = 15 * 60_000;
+const DEVICE_ONLINE_WITHIN_MS = 15 * 60_000;
 
 export function devicePresenceStatus(
   lastSeenAt: string | null | undefined,

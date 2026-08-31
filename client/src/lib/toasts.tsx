@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 export type ToastKind = "info" | "success" | "error";
 
@@ -35,10 +35,6 @@ export function ToastStack({
   toasts: ToastItem[];
   onDismiss: (id: number) => void;
 }) {
-  useEffect(() => {
-    /* keep hook available for future pause-on-hover */
-  }, []);
-
   if (toasts.length === 0) return null;
 
   return (

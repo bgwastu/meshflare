@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, primaryKey } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const settings = sqliteTable("settings", {
   id: integer("id").primaryKey(),
@@ -14,16 +14,4 @@ export const settings = sqliteTable("settings", {
   dnsMissingSinceJson: text("dns_missing_since_json").notNull().default("{}"),
 });
 
-export const dnsFilterDomains = sqliteTable(
-  "dns_filter_domains",
-  {
-    sourceUrl: text("source_url").notNull(),
-    position: integer("position").notNull(),
-    domain: text("domain").notNull(),
-  },
-  (table) => ({
-    pk: primaryKey({ columns: [table.sourceUrl, table.position] }),
-  }),
-);
-
-export const schema = { settings, dnsFilterDomains };
+export const schema = { settings };

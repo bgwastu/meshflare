@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { settings } from "./schema";
 import type { AppData, AppDatabase, SettingsPatch } from "../types";
 
-export const DEFAULT_APP_DATA: AppData = {
+const DEFAULT_APP_DATA: AppData = {
   offlineDays: 7,
   dnsFilterEnabled: false,
   dnsFilterStatus: "idle",
@@ -37,7 +37,7 @@ function rowToData(row: typeof settings.$inferSelect): AppData {
   };
 }
 
-export async function ensureSettings(db: AppDatabase): Promise<void> {
+async function ensureSettings(db: AppDatabase): Promise<void> {
   await db.insert(settings).values({
     id: 1,
     offlineDays: DEFAULT_APP_DATA.offlineDays,

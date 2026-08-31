@@ -7,7 +7,6 @@ import {
   buildDemoSettings,
   buildDemoTunnelConfig,
   buildDemoTunnels,
-  isDemoMode,
 } from "../demo/fixtures";
 
 type DemoEnv = { DEMO_MODE?: string | boolean };
@@ -107,5 +106,3 @@ demoApi.all("/*", (c) => {
   }
   throw new HTTPException(403, { message: DEMO_READ_ONLY });
 });
-
-export { isDemoMode };

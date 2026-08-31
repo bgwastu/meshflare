@@ -22,15 +22,12 @@ export type SplitTunnelConfig = {
 export async function getDefaultSplitTunnels(
   cf: CloudflareClient,
 ): Promise<SplitTunnelConfig> {
-  const [policy, include, exclude] = await Promise.all([
-    cf.request<DevicePolicy>("GET", cf.accountPath("/devices/policy")),
-    cf.request<SplitTunnelItem[]>("GET", cf.accountPath("/devices/policy/include")),
-    cf.request<SplitTunnelItem[]>("GET", cf.accountPath("/devices/policy/exclude")),
-  ]);
+  const res = await cf.request<DevicePolicy>("GET", cf.accountPath("/devices/policies/default"));
+  const policy = res.result ?? {};
   return {
-    mode: policy.result.include !== undefined ? "include" : "exclude",
-    include: include.result ?? [],
-    exclude: exclude.result ?? [],
+    mode: policy.include !== undefined ? "include" : "exclude",
+    include: policy.include ?? [],
+    exclude: policy.exclude ?? [],
   };
 }
 
@@ -41,7 +38,7 @@ export async function setDefaultSplitTunnels(
 ): Promise<SplitTunnelItem[]> {
   const res = await cf.request<SplitTunnelItem[]>(
     "PUT",
-    cf.accountPath(`/devices/policy/${mode}`),
+    cf.accountPath(`/devices/policies/default/${mode}`),
     items,
   );
   return res.result ?? [];

@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "meshflare-demo",
-  "main": "server/demo-worker.ts",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-07-24",
   "workers_dev": true,
   "preview_urls": true,

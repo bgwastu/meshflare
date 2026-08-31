@@ -1,13 +1,11 @@
 import { useState, useEffect, useMemo, useTransition } from "react";
 import {
-  ExternalLink,
   Globe,
   Loader2,
   Pencil,
   Plus,
   RefreshCw,
   Search,
-  SlidersHorizontal,
   Trash2,
   X,
 } from "lucide-react";
@@ -19,27 +17,10 @@ import {
 } from "./lib/api";
 import { copyText, tunnelStatusMeta } from "./lib/warp";
 import { ToastStack, useToasts } from "./lib/toasts";
+import { CopyValue, formatSeen, Spinner } from "./lib/ui";
 
 type Busy = null | "refresh" | "create" | "delete" | "config" | "token";
-
-function formatSeen(iso: string | null | undefined, empty = "—"): string {
-  if (!iso) return empty;
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return iso;
-  const days = (Date.now() - t) / 86_400_000;
-  if (days < 1 / 24) return "just now";
-  if (days < 1) return `${Math.max(1, Math.round(days * 24))}h ago`;
-  return `${Math.floor(days)}d ago`;
-}
-
-function Spinner({ label }: { label: string }) {
-  return (
-    <span className="btn-spin">
-      <Loader2 size={14} strokeWidth={2.5} className="spin" aria-hidden />
-      {label}
-    </span>
-  );
-}
+type StatusFilter = "all" | "healthy" | "degraded" | "down" | "inactive";
 
 function StatusDot({ status }: { status: string }) {
   const meta = tunnelStatusMeta(status);
@@ -52,31 +33,6 @@ function StatusDot({ status }: { status: string }) {
       tabIndex={0}
       aria-label={meta.label}
     />
-  );
-}
-
-function CopyValue({
-  value,
-  onCopied,
-}: {
-  value: string | null;
-  onCopied: (label: string) => void;
-}) {
-  if (!value) return <span className="mono muted">—</span>;
-  return (
-    <button
-      type="button"
-      className="copy-chip mono"
-      title="Click to copy"
-      onClick={(e) => {
-        e.stopPropagation();
-        void (async () => {
-          try { await copyText(value); onCopied(value); } catch { /* */ }
-        })();
-      }}
-    >
-      {value}
-    </button>
   );
 }
 
@@ -113,16 +69,19 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
   } | null>(null);
 
   const q = search.trim().toLowerCase();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const filteredTunnels = useMemo(() => {
-    if (!q) return tunnels;
+    const status = statusFilter === "all" ? null : statusFilter;
     return tunnels.filter(
       (t) =>
-        t.name.toLowerCase().includes(q) ||
-        t.id.toLowerCase().includes(q) ||
-        t.status.toLowerCase().includes(q) ||
-        t.config_src.toLowerCase().includes(q),
+        (status === null || t.status === status) &&
+        (!q ||
+          t.name.toLowerCase().includes(q) ||
+          t.id.toLowerCase().includes(q) ||
+          t.status.toLowerCase().includes(q) ||
+          t.config_src.toLowerCase().includes(q)),
     );
-  }, [tunnels, q]);
+  }, [tunnels, q, statusFilter]);
 
   const locked = parentLocked || busy !== null || creating || Boolean(demo);
 
@@ -286,6 +245,69 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
         </button>
       </div>
 
+      <div className="filter-group" role="group" aria-label="Filter by status">
+        <span className="filter-group-label">Status</span>
+        <div className="filter-buttons">
+          {(
+            [
+              ["all", "All"],
+              ["healthy", "Healthy"],
+              ["degraded", "Degraded"],
+              ["down", "Down"],
+              ["inactive", "Inactive"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={`btn ${statusFilter === value ? "btn-active" : ""}`}
+              aria-pressed={statusFilter === value}
+              disabled={!ready}
+              onClick={() => setStatusFilter(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {(statusFilter !== "all" || q) && ready && (
+        <div className="applied-filters">
+          {statusFilter !== "all" && (
+            <button
+              type="button"
+              className="filter-chip"
+              aria-label={`Remove filter Status: ${statusFilter}`}
+              onClick={() => setStatusFilter("all")}
+            >
+              Status: {statusFilter[0].toUpperCase() + statusFilter.slice(1)}
+              <X size={12} strokeWidth={2.5} aria-hidden />
+            </button>
+          )}
+          {q && (
+            <button
+              type="button"
+              className="filter-chip"
+              aria-label="Remove search"
+              onClick={() => setSearch("")}
+            >
+              Search: “{search.trim()}”
+              <X size={12} strokeWidth={2.5} aria-hidden />
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn filter-clear-all"
+            onClick={() => {
+              setStatusFilter("all");
+              setSearch("");
+            }}
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
       {!ready ? (
         <div className="table-wrap" aria-label="Loading tunnels">
           <table>
@@ -308,7 +330,34 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
           </table>
         </div>
       ) : filteredTunnels.length === 0 ? (
-        <div className="empty">{q ? "No tunnels match this filter." : "No tunnels yet."}</div>
+        <div className="empty">
+          <p className="empty-title">
+            {q || statusFilter !== "all"
+              ? "No tunnels match your filters."
+              : "No tunnels yet."}
+          </p>
+          {q || statusFilter !== "all" ? (
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setStatusFilter("all");
+                setSearch("");
+              }}
+            >
+              Clear all filters
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={Boolean(demo)}
+              onClick={() => setCreateOpen(true)}
+            >
+              Create tunnel
+            </button>
+          )}
+        </div>
       ) : (
         <div className="table-wrap">
           <table>

@@ -168,7 +168,7 @@ export type CloudflareConnector = {
   conns: CloudflareTunnelConnection[];
 };
 
-export type TunnelIngressRule = {
+type TunnelIngressRule = {
   hostname?: string;
   path?: string;
   service: string;

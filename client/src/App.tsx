@@ -22,6 +22,7 @@ import {
 } from "./lib/api";
 import { ToastStack, useToasts } from "./lib/toasts";
 import { TunnelsPanel } from "./TunnelsPanel";
+import { CopyValue, formatSeen, Spinner } from "./lib/ui";
 import {
   copyText,
   dnsFilterStatusMeta,
@@ -63,22 +64,12 @@ function parseKind(value: string | null): KindFilter {
 }
 
 function parseActivity(value: string | null): ActivityFilter {
-  if (value === "offline" || value === "all") return value;
-  return "online";
+  if (value === "offline" || value === "online") return value;
+  return "all";
 }
 
 function parseSort(value: string | null): SortKey {
   return value && SORT_KEYS.includes(value as SortKey) ? (value as SortKey) : "createdAt";
-}
-
-function formatSeen(iso: string | null | undefined, empty = "—"): string {
-  if (!iso) return empty;
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return iso;
-  const days = (Date.now() - t) / 86_400_000;
-  if (days < 1 / 24) return "just now";
-  if (days < 1) return `${Math.max(1, Math.round(days * 24))}h ago`;
-  return `${Math.floor(days)}d ago`;
 }
 
 function sortValue(entry: MeshEntry, key: SortKey): string | number {
@@ -127,47 +118,8 @@ function MachineKindStatus({ entry, size = 14 }: { entry: MeshEntry; size?: numb
   );
 }
 
-function Spinner({ label }: { label: string }) {
-  return (
-    <span className="btn-spin">
-      <Loader2 size={14} strokeWidth={2.5} className="spin" aria-hidden />
-      {label}
-    </span>
-  );
-}
-
 function SkeletonBlock({ className = "" }: { className?: string }) {
   return <div className={`skeleton ${className}`} aria-hidden />;
-}
-
-function CopyValue({
-  value,
-  onCopied,
-}: {
-  value: string | null;
-  onCopied: (label: string) => void;
-}) {
-  if (!value) return <span className="mono muted">—</span>;
-  return (
-    <button
-      type="button"
-      className="copy-chip mono"
-      title="Click to copy"
-      onClick={(e) => {
-        e.stopPropagation();
-        void (async () => {
-          try {
-            await copyText(value);
-            onCopied(value);
-          } catch {
-            /* toast handled by caller if needed */
-          }
-        })();
-      }}
-    >
-      {value}
-    </button>
-  );
 }
 
 export function App() {
@@ -177,7 +129,7 @@ export function App() {
 
   const kindFilter = parseKind(searchParams.get("kind"));
   const activityParam = searchParams.get("activity");
-  const activityFilter = kindFilter === "all" || activityParam ? parseActivity(activityParam) : "all";
+  const activityFilter = activityParam ? parseActivity(activityParam) : "all";
   const search = searchParams.get("q") ?? "";
   const sortKey = parseSort(searchParams.get("sort"));
   const sortDir = searchParams.get("dir") === "asc" ? "asc" : "desc";
@@ -531,13 +483,8 @@ export function App() {
   ].includes(settings?.dnsFilterStatus ?? "");
   const dnsLocation = settings?.dnsLocation;
   const settingsReady = ready && settings !== null;
-  const accountLine = settings?.accountName
-    ? settings.accountEmail
-      ? `${settings.accountName} · ${settings.accountEmail}`
-      : settings.accountName
-    : ready
-      ? "Cloudflare account"
-      : "Loading…";
+  const accountName = settings?.accountName || (ready ? "Cloudflare account" : "Loading…");
+  const accountEmail = settings?.accountEmail;
 
   if (authRequired) {
     return (
@@ -590,7 +537,10 @@ export function App() {
               mesh<span>flare</span>
             </h1>
           </Link>
-          <p className="account-line">{accountLine}</p>
+          <p className="account-line">
+            <span className="account-name">{accountName}</span>
+            {accountEmail && <span className="account-email mono">{accountEmail}</span>}
+          </p>
         </div>
         <nav className="tabs" aria-label="Primary">
           <NavLink
@@ -625,46 +575,77 @@ export function App() {
                 <span className="hint">({ready ? visibleEntries.length : "…"})</span>
               </h2>
               <div className="filters">
-                <div className="filters-desktop">
-                  {([
-                    ["all", "All"],
-                    ["online", "Online"],
-                    ["offline", "Offline"],
-                    ["node", "Nodes"],
-                    ["device", "Devices"],
-                  ] as const).map(([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      className={`btn ${
-                        (value === "node" || value === "device" ? kindFilter === value : kindFilter === "all" && activityFilter === value)
-                          ? "btn-active"
-                          : ""
-                      }`}
-                      disabled={!ready}
-                      onClick={() => {
-                        setFilterOpen(false);
-                        patchParams((next) => {
-                          if (value === "node" || value === "device") {
-                            next.set("kind", value);
-                            next.delete("activity");
-                          } else {
-                            next.delete("kind");
-                            if (value === "online") next.delete("activity");
-                            else next.set("activity", value);
-                          }
-                        });
-                      }}
-                    >
-                      {value === "node" ? (
-                        <span className="filter-label"><Server size={13} strokeWidth={2.25} aria-hidden />{label}</span>
-                      ) : value === "device" ? (
-                        <span className="filter-label"><Smartphone size={13} strokeWidth={2.25} aria-hidden />{label}</span>
-                      ) : label}
-                    </button>
-                  ))}
+                <div className="filter-group" role="group" aria-label="Filter by kind">
+                  <span className="filter-group-label">Kind</span>
+                  <div className="filter-buttons">
+                    {(
+                      [
+                        ["all", "All"],
+                        ["node", "Nodes"],
+                        ["device", "Devices"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`btn ${kindFilter === value ? "btn-active" : ""}`}
+                        aria-pressed={kindFilter === value}
+                        disabled={!ready}
+                        onClick={() => {
+                          setFilterOpen(false);
+                          patchParams((next) => {
+                            if (value === "all") next.delete("kind");
+                            else next.set("kind", value);
+                          });
+                        }}
+                      >
+                        {value === "node" ? (
+                          <span className="filter-label">
+                            <Server size={13} strokeWidth={2.25} aria-hidden />
+                            {label}
+                          </span>
+                        ) : value === "device" ? (
+                          <span className="filter-label">
+                            <Smartphone size={13} strokeWidth={2.25} aria-hidden />
+                            {label}
+                          </span>
+                        ) : (
+                          label
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="filters-mobile">
+                <div className="filter-group" role="group" aria-label="Filter by activity">
+                  <span className="filter-group-label">Activity</span>
+                  <div className="filter-buttons">
+                    {(
+                      [
+                        ["all", "All"],
+                        ["online", "Online"],
+                        ["offline", "Offline"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`btn ${activityFilter === value ? "btn-active" : ""}`}
+                        aria-pressed={activityFilter === value}
+                        disabled={!ready}
+                        onClick={() => {
+                          setFilterOpen(false);
+                          patchParams((next) => {
+                            if (value === "all") next.delete("activity");
+                            else next.set("activity", value);
+                          });
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="filter-group filter-group-mobile">
                   <button
                     type="button"
                     className="btn filter-toggle"
@@ -673,41 +654,68 @@ export function App() {
                   >
                     <SlidersHorizontal size={14} strokeWidth={2.25} aria-hidden />
                     Filter
+                    {(kindFilter !== "all" || activityFilter !== "all") && (
+                      <span className="filter-count">
+                        {(kindFilter !== "all" ? 1 : 0) + (activityFilter !== "all" ? 1 : 0)}
+                      </span>
+                    )}
                   </button>
                   {filterOpen && (
                     <div className="filter-menu">
-                      {([
-                        ["all", "All"],
-                        ["online", "Online"],
-                        ["offline", "Offline"],
-                        ["node", "Nodes"],
-                        ["device", "Devices"],
-                      ] as const).map(([value, label]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          className={`btn ${
-                            (value === "node" || value === "device" ? kindFilter === value : kindFilter === "all" && activityFilter === value)
-                              ? "btn-active"
-                              : ""
-                          }`}
-                          onClick={() => {
-                            setFilterOpen(false);
-                            patchParams((next) => {
-                              if (value === "node" || value === "device") {
-                                next.set("kind", value);
-                                next.delete("activity");
-                              } else {
-                                next.delete("kind");
-                                if (value === "online") next.delete("activity");
-                                else next.set("activity", value);
-                              }
-                            });
-                          }}
-                        >
-                          {label}
-                        </button>
-                      ))}
+                      <div className="filter-group" role="group" aria-label="Filter by kind">
+                        <span className="filter-group-label">Kind</span>
+                        <div className="filter-buttons">
+                          {(
+                            [
+                              ["all", "All"],
+                              ["node", "Nodes"],
+                              ["device", "Devices"],
+                            ] as const
+                          ).map(([value, label]) => (
+                            <button
+                              key={value}
+                              type="button"
+                              className={`btn ${kindFilter === value ? "btn-active" : ""}`}
+                              onClick={() => {
+                                setFilterOpen(false);
+                                patchParams((next) => {
+                                  if (value === "all") next.delete("kind");
+                                  else next.set("kind", value);
+                                });
+                              }}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="filter-group" role="group" aria-label="Filter by activity">
+                        <span className="filter-group-label">Activity</span>
+                        <div className="filter-buttons">
+                          {(
+                            [
+                              ["all", "All"],
+                              ["online", "Online"],
+                              ["offline", "Offline"],
+                            ] as const
+                          ).map(([value, label]) => (
+                            <button
+                              key={value}
+                              type="button"
+                              className={`btn ${activityFilter === value ? "btn-active" : ""}`}
+                              onClick={() => {
+                                setFilterOpen(false);
+                                patchParams((next) => {
+                                  if (value === "all") next.delete("activity");
+                                  else next.set("activity", value);
+                                });
+                              }}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -758,6 +766,69 @@ export function App() {
               </button>
             </div>
 
+            {(kindFilter !== "all" || activityFilter !== "all" || search.trim()) && ready && (
+              <div className="applied-filters">
+                {kindFilter !== "all" && (
+                  <button
+                    type="button"
+                    className="filter-chip"
+                    aria-label={`Remove filter Kind: ${kindFilter}`}
+                    onClick={() =>
+                      patchParams((next) => {
+                        next.delete("kind");
+                      })
+                    }
+                  >
+                    Kind: {kindFilter === "node" ? "Nodes" : "Devices"}
+                    <X size={12} strokeWidth={2.5} aria-hidden />
+                  </button>
+                )}
+                {activityFilter !== "all" && (
+                  <button
+                    type="button"
+                    className="filter-chip"
+                    aria-label={`Remove filter Activity: ${activityFilter}`}
+                    onClick={() =>
+                      patchParams((next) => {
+                        next.delete("activity");
+                      })
+                    }
+                  >
+                    Activity: {activityFilter === "online" ? "Online" : "Offline"}
+                    <X size={12} strokeWidth={2.5} aria-hidden />
+                  </button>
+                )}
+                {search.trim() && (
+                  <button
+                    type="button"
+                    className="filter-chip"
+                    aria-label="Remove search"
+                    onClick={() =>
+                      patchParams((next) => {
+                        next.delete("q");
+                      })
+                    }
+                  >
+                    Search: “{search.trim()}”
+                    <X size={12} strokeWidth={2.5} aria-hidden />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn filter-clear-all"
+                  onClick={() =>
+                    patchParams((next) => {
+                      next.delete("q");
+                      next.delete("kind");
+                      next.delete("activity");
+                    })
+                  }
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
+
             {!ready ? (
               <div className="table-wrap" aria-label="Loading mesh entries">
                 <table>
@@ -783,9 +854,32 @@ export function App() {
               </div>
             ) : visibleEntries.length === 0 ? (
               <div className="empty">
-                {search.trim() || activityFilter !== "online" || kindFilter !== "all"
-                  ? "No mesh entries match this filter."
-                  : "No mesh entries yet."}
+                <p className="empty-title">
+                  {search.trim()
+                    ? `No mesh entries match “${search.trim()}”.`
+                    : kindFilter !== "all" || activityFilter !== "all"
+                      ? "No mesh entries match your filters."
+                      : "No mesh entries yet."}
+                </p>
+                {search.trim() || kindFilter !== "all" || activityFilter !== "all" ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() =>
+                      patchParams((next) => {
+                        next.delete("q");
+                        next.delete("kind");
+                        next.delete("activity");
+                      })
+                    }
+                  >
+                    Clear all filters
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
+                    Create node
+                  </button>
+                )}
               </div>
             ) : (
               <div className="table-wrap">
@@ -1387,6 +1481,24 @@ export function App() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {selectedId && !drawerEntry && (
+        <div className="drawer-backdrop is-open" role="presentation">
+          <aside className="drawer" aria-busy="true" aria-label="Loading details">
+            <div className="drawer-head">
+              <SkeletonBlock className="skeleton-drawer-title" />
+              <SkeletonBlock className="skeleton-btn" />
+            </div>
+            <div className="skeleton-stack" style={{ marginTop: "1.75rem" }}>
+              <SkeletonBlock className="skeleton-label" />
+              <SkeletonBlock className="skeleton-input" />
+              <SkeletonBlock className="skeleton-btn" />
+              <SkeletonBlock className="skeleton-route-primary" />
+              <SkeletonBlock className="skeleton-input" />
+            </div>
+          </aside>
         </div>
       )}
 

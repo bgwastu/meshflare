@@ -29,7 +29,9 @@ export function createApp() {
       cookieOptions: {
         httpOnly: true,
         sameSite: "Lax",
-        secure: true,
+        // Workers deployments are always HTTPS; the self-hosted server
+        // typically runs plain HTTP (e.g. Docker on :3000).
+        secure: new URL(c.req.url).protocol === "https:",
         path: "/",
       },
     })(c, next);
