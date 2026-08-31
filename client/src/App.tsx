@@ -535,7 +535,13 @@ export function App() {  const location = useLocation();
             <span className="account-name">
               {ready ? accountName : <SkeletonBlock className="skeleton-account-name" />}
             </span>
-            {accountEmail && <span className="account-email mono">{accountEmail}</span>}
+            {ready ? (
+              accountEmail ? (
+                <span className="account-email mono">{accountEmail}</span>
+              ) : null
+            ) : (
+              <SkeletonBlock className="skeleton-account-email" />
+            )}
           </p>
         </div>
         <nav className="tabs" aria-label="Primary">

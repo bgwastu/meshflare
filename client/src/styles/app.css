@@ -153,6 +153,8 @@ a {
   margin: 0;
   font-size: 0.8rem;
   color: var(--text);
+  min-height: 2.1rem;
+  justify-content: center;
 }
 
 .account-name {
@@ -994,6 +996,13 @@ th.sorted {
   display: inline-block;
   height: 0.9rem;
   width: 7rem;
+  vertical-align: middle;
+}
+
+.skeleton-account-email {
+  display: inline-block;
+  height: 0.7rem;
+  width: 9.5rem;
   vertical-align: middle;
 }
 
