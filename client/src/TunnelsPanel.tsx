@@ -17,7 +17,8 @@ import {
 } from "./lib/api";
 import { copyText, tunnelStatusMeta } from "./lib/warp";
 import { ToastStack, useToasts } from "./lib/toasts";
-import { CopyValue, formatSeen, Spinner } from "./lib/ui";
+import { CopyValue, formatSeen, Spinner, SkeletonBlock } from "./lib/ui";
+import { FacetChip } from "./lib/FilterChips";
 
 type Busy = null | "refresh" | "create" | "delete" | "config" | "token";
 type StatusFilter = "all" | "healthy" | "degraded" | "down" | "inactive";
@@ -245,30 +246,19 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
         </button>
       </div>
 
-      <div className="filter-group" role="group" aria-label="Filter by status">
-        <span className="filter-group-label">Status</span>
-        <div className="filter-buttons">
-          {(
-            [
-              ["all", "All"],
-              ["healthy", "Healthy"],
-              ["degraded", "Degraded"],
-              ["down", "Down"],
-              ["inactive", "Inactive"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              className={`btn ${statusFilter === value ? "btn-active" : ""}`}
-              aria-pressed={statusFilter === value}
-              disabled={!ready}
-              onClick={() => setStatusFilter(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+      <div className="filters">
+        <FacetChip
+          label="Status"
+          value={statusFilter}
+          options={[
+            { value: "all", label: "All" },
+            { value: "healthy", label: "Healthy" },
+            { value: "degraded", label: "Degraded" },
+            { value: "down", label: "Down" },
+            { value: "inactive", label: "Inactive" },
+          ]}
+          onChange={(value) => setStatusFilter(value as StatusFilter)}
+        />
       </div>
 
       {(statusFilter !== "all" || q) && ready && (
@@ -524,7 +514,7 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
             <div className="field" style={{ marginBottom: "0.25rem" }}>
               <label>Token</label>
               {tokenLoading ? (
-                <span className="mono" style={{ fontSize: "0.8rem" }}>Loading…</span>
+                <SkeletonBlock className="skeleton-token" />
               ) : token ? (
                 <button
                   type="button"
@@ -550,7 +540,16 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
                 </div>
               </div>
               {connectionsLoading ? (
-                <p className="hint">Loading connections…</p>
+                <div className="route-list" aria-label="Loading connections">
+                  {Array.from({ length: 2 }, (_, index) => (
+                    <div className="route-row" key={index}>
+                      <div className="skeleton-stack">
+                        <SkeletonBlock className="skeleton-route-primary" />
+                        <SkeletonBlock className="skeleton-route-secondary" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : connections.length === 0 ? (
                 <p className="hint">No active connections.</p>
               ) : (
@@ -583,7 +582,16 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
                 </p>
               )}
               {configLoading ? (
-                <p className="hint">Loading config…</p>
+                <div className="route-list" aria-label="Loading ingress rules">
+                  {Array.from({ length: 2 }, (_, index) => (
+                    <div className="route-row" key={index}>
+                      <div className="skeleton-stack">
+                        <SkeletonBlock className="skeleton-route-primary" />
+                        <SkeletonBlock className="skeleton-route-secondary" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : ingressList.length === 0 || (ingressList.length === 1 && ingressList[0].service === "http_status:404") ? (
                 <p className="hint">No ingress rules configured.</p>
               ) : (

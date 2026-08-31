@@ -7,7 +7,6 @@ import {
   Search,
   Server,
   Settings as SettingsIcon,
-  SlidersHorizontal,
   Smartphone,
   Trash2,
   X,
@@ -22,7 +21,8 @@ import {
 } from "./lib/api";
 import { ToastStack, useToasts } from "./lib/toasts";
 import { TunnelsPanel } from "./TunnelsPanel";
-import { CopyValue, formatSeen, Spinner } from "./lib/ui";
+import { CopyValue, formatSeen, SkeletonBlock, Spinner } from "./lib/ui";
+import { FacetChip } from "./lib/FilterChips";
 import {
   copyText,
   dnsFilterStatusMeta,
@@ -118,12 +118,7 @@ function MachineKindStatus({ entry, size = 14 }: { entry: MeshEntry; size?: numb
   );
 }
 
-function SkeletonBlock({ className = "" }: { className?: string }) {
-  return <div className={`skeleton ${className}`} aria-hidden />;
-}
-
-export function App() {
-  const location = useLocation();
+export function App() {  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab: Tab = location.pathname.startsWith("/settings") ? "settings" : location.pathname.startsWith("/tunnels") ? "tunnels" : "mesh";
 
@@ -167,7 +162,6 @@ export function App() {
   const [splitEditor, setSplitEditor] = useState<{ index: number | null; value: string; description: string } | null>(null);
   const [splitBusy, setSplitBusy] = useState(false);
   const [routeBusy, setRouteBusy] = useState<string | null>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
   const { toasts, push, dismiss } = useToasts();
 
   const locked = busy !== null || creating || Boolean(settings?.demo);
@@ -483,7 +477,7 @@ export function App() {
   ].includes(settings?.dnsFilterStatus ?? "");
   const dnsLocation = settings?.dnsLocation;
   const settingsReady = ready && settings !== null;
-  const accountName = settings?.accountName || (ready ? "Cloudflare account" : "Loading…");
+  const accountName = settings?.accountName || "Cloudflare account";
   const accountEmail = settings?.accountEmail;
 
   if (authRequired) {
@@ -537,8 +531,10 @@ export function App() {
               mesh<span>flare</span>
             </h1>
           </Link>
-          <p className="account-line">
-            <span className="account-name">{accountName}</span>
+          <p className="account-line" aria-busy={!ready}>
+            <span className="account-name">
+              {ready ? accountName : <SkeletonBlock className="skeleton-account-name" />}
+            </span>
             {accountEmail && <span className="account-email mono">{accountEmail}</span>}
           </p>
         </div>
@@ -575,150 +571,36 @@ export function App() {
                 <span className="hint">({ready ? visibleEntries.length : "…"})</span>
               </h2>
               <div className="filters">
-                <div className="filter-group" role="group" aria-label="Filter by kind">
-                  <span className="filter-group-label">Kind</span>
-                  <div className="filter-buttons">
-                    {(
-                      [
-                        ["all", "All"],
-                        ["node", "Nodes"],
-                        ["device", "Devices"],
-                      ] as const
-                    ).map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        className={`btn ${kindFilter === value ? "btn-active" : ""}`}
-                        aria-pressed={kindFilter === value}
-                        disabled={!ready}
-                        onClick={() => {
-                          setFilterOpen(false);
-                          patchParams((next) => {
-                            if (value === "all") next.delete("kind");
-                            else next.set("kind", value);
-                          });
-                        }}
-                      >
-                        {value === "node" ? (
-                          <span className="filter-label">
-                            <Server size={13} strokeWidth={2.25} aria-hidden />
-                            {label}
-                          </span>
-                        ) : value === "device" ? (
-                          <span className="filter-label">
-                            <Smartphone size={13} strokeWidth={2.25} aria-hidden />
-                            {label}
-                          </span>
-                        ) : (
-                          label
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="filter-group" role="group" aria-label="Filter by activity">
-                  <span className="filter-group-label">Activity</span>
-                  <div className="filter-buttons">
-                    {(
-                      [
-                        ["all", "All"],
-                        ["online", "Online"],
-                        ["offline", "Offline"],
-                      ] as const
-                    ).map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        className={`btn ${activityFilter === value ? "btn-active" : ""}`}
-                        aria-pressed={activityFilter === value}
-                        disabled={!ready}
-                        onClick={() => {
-                          setFilterOpen(false);
-                          patchParams((next) => {
-                            if (value === "all") next.delete("activity");
-                            else next.set("activity", value);
-                          });
-                        }}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="filter-group filter-group-mobile">
-                  <button
-                    type="button"
-                    className="btn filter-toggle"
-                    aria-expanded={filterOpen}
-                    onClick={() => setFilterOpen((open) => !open)}
-                  >
-                    <SlidersHorizontal size={14} strokeWidth={2.25} aria-hidden />
-                    Filter
-                    {(kindFilter !== "all" || activityFilter !== "all") && (
-                      <span className="filter-count">
-                        {(kindFilter !== "all" ? 1 : 0) + (activityFilter !== "all" ? 1 : 0)}
-                      </span>
-                    )}
-                  </button>
-                  {filterOpen && (
-                    <div className="filter-menu">
-                      <div className="filter-group" role="group" aria-label="Filter by kind">
-                        <span className="filter-group-label">Kind</span>
-                        <div className="filter-buttons">
-                          {(
-                            [
-                              ["all", "All"],
-                              ["node", "Nodes"],
-                              ["device", "Devices"],
-                            ] as const
-                          ).map(([value, label]) => (
-                            <button
-                              key={value}
-                              type="button"
-                              className={`btn ${kindFilter === value ? "btn-active" : ""}`}
-                              onClick={() => {
-                                setFilterOpen(false);
-                                patchParams((next) => {
-                                  if (value === "all") next.delete("kind");
-                                  else next.set("kind", value);
-                                });
-                              }}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="filter-group" role="group" aria-label="Filter by activity">
-                        <span className="filter-group-label">Activity</span>
-                        <div className="filter-buttons">
-                          {(
-                            [
-                              ["all", "All"],
-                              ["online", "Online"],
-                              ["offline", "Offline"],
-                            ] as const
-                          ).map(([value, label]) => (
-                            <button
-                              key={value}
-                              type="button"
-                              className={`btn ${activityFilter === value ? "btn-active" : ""}`}
-                              onClick={() => {
-                                setFilterOpen(false);
-                                patchParams((next) => {
-                                  if (value === "all") next.delete("activity");
-                                  else next.set("activity", value);
-                                });
-                              }}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <FacetChip
+                  label="Kind"
+                  value={kindFilter}
+                  options={[
+                    { value: "all", label: "All" },
+                    { value: "node", label: "Nodes" },
+                    { value: "device", label: "Devices" },
+                  ]}
+                  onChange={(value) =>
+                    patchParams((next) => {
+                      if (value === "all") next.delete("kind");
+                      else next.set("kind", value);
+                    })
+                  }
+                />
+                <FacetChip
+                  label="Activity"
+                  value={activityFilter}
+                  options={[
+                    { value: "all", label: "All" },
+                    { value: "online", label: "Online" },
+                    { value: "offline", label: "Offline" },
+                  ]}
+                  onChange={(value) =>
+                    patchParams((next) => {
+                      if (value === "all") next.delete("activity");
+                      else next.set("activity", value);
+                    })
+                  }
+                />
                 <button
                   type="button"
                   className="btn btn-icon"
@@ -1742,10 +1624,7 @@ export function App() {
                 </p>
                 <pre>
                   {installLoading ? (
-                    <span className="btn-spin">
-                      <Loader2 size={14} strokeWidth={2.5} className="spin" aria-hidden />
-                      Loading token…
-                    </span>
+                    <SkeletonBlock className="skeleton-install" />
                   ) : (
                     (installCmd ?? "—")
                     )}

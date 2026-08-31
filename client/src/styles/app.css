@@ -148,7 +148,7 @@ a {
 .account-line {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.15rem;
   margin: 0;
   font-size: 0.8rem;
@@ -587,101 +587,114 @@ a {
 .filters {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.35rem;
 }
 
-.filter-group {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.filter-group-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-.filter-buttons {
-  display: inline-flex;
-  gap: 0.15rem;
-  padding: 0.12rem;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--bg0);
-}
-
-.filter-buttons .btn {
-  border-color: transparent;
-  background: transparent;
-  border-radius: 3px;
-  padding: 0.24rem 0.55rem;
-  font-size: 0.78rem;
-  font-weight: 500;
-}
-
-.filter-buttons .btn:hover:not(:disabled) {
-  background: var(--btn-hover);
-}
-
-.filter-buttons .btn.btn-active {
-  background: var(--bg1);
-  border-color: var(--line);
-  color: var(--text);
-  box-shadow: var(--shadow);
-}
-
-.filter-group-mobile {
-  display: none;
-}
-
-.filter-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
+.facet-wrap {
   position: relative;
 }
 
-.filter-count {
+.facet-chip {
+  appearance: none;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 1.1rem;
-  height: 1.1rem;
-  padding: 0 0.25rem;
+  gap: 0.4rem;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--accent);
-  color: var(--primary-text);
-  font-size: 0.68rem;
-  font-weight: 700;
+  background: var(--bg1);
+  color: var(--text);
+  padding: 0.32rem 0.7rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
 }
 
-.filter-menu {
+.facet-chip:hover {
+  background: var(--btn-hover);
+}
+
+.facet-chip.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.facet-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.facet-chip.active .facet-label {
+  color: color-mix(in srgb, var(--accent) 75%, var(--muted));
+}
+
+.facet-value {
+  font-weight: 600;
+}
+
+.facet-caret {
+  color: var(--muted);
+  transition: transform 0.12s ease;
+}
+
+.facet-caret.open {
+  transform: rotate(180deg);
+}
+
+.facet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+}
+
+.facet-menu {
   position: absolute;
-  z-index: 5;
-  top: calc(100% + 0.35rem);
-  right: 0;
+  z-index: 25;
+  top: calc(100% + 0.3rem);
+  left: 0;
   display: grid;
-  gap: 0.7rem;
-  min-width: 10rem;
-  padding: 0.65rem;
+  gap: 0.1rem;
+  min-width: 9.5rem;
+  padding: 0.3rem;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--bg1);
-  box-shadow: 0 4px 16px rgba(23, 21, 18, 0.12);
+  box-shadow: 0 8px 24px rgba(23, 21, 18, 0.14);
 }
 
-.filter-menu .filter-group {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
+.facet-option {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  border-radius: 4px;
+  padding: 0.42rem 0.6rem;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-align: left;
 }
 
-.filter-menu .filter-buttons {
-  display: grid;
-  width: 100%;
+.facet-option:hover {
+  background: var(--btn-hover);
+}
+
+.facet-option.selected {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.facet-option svg {
+  flex-shrink: 0;
 }
 
 .applied-filters {
@@ -753,14 +766,6 @@ a {
 
   .filters {
     gap: 0.3rem;
-  }
-
-  .filter-group:not(.filter-group-mobile) {
-    display: none;
-  }
-
-  .filter-group-mobile {
-    display: flex;
   }
 
   .panel {
@@ -973,6 +978,23 @@ th.sorted {
 .skeleton-drawer-title {
   height: 1.3rem;
   width: 60%;
+}
+
+.skeleton-token {
+  height: 1.6rem;
+  width: 100%;
+}
+
+.skeleton-install {
+  height: 6rem;
+  width: 100%;
+}
+
+.skeleton-account-name {
+  display: inline-block;
+  height: 0.9rem;
+  width: 7rem;
+  vertical-align: middle;
 }
 
 .skeleton-row-tr td {

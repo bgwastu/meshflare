@@ -20,6 +20,10 @@ export function Spinner({ label }: { label: string }) {
   );
 }
 
+export function SkeletonBlock({ className = "" }: { className?: string }) {
+  return <div className={`skeleton ${className}`} aria-hidden />;
+}
+
 export function CopyValue({
   value,
   onCopied,
