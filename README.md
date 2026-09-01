@@ -6,18 +6,28 @@
 
 **Cloudflare Mesh and Tunnel manager**
 
-A self-hostable control plane for Cloudflare Zero Trust — manage mesh nodes, device
-registrations, Cloudflare Tunnels, split tunnels, and DNS filtering from one dashboard.
+A self-hostable control plane for Cloudflare Zero Trust — manage mesh nodes, device registrations, Cloudflare Tunnels, split tunnels, and DNS filtering from one dashboard.
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/bgwastu/meshflare)
 [![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fbgwastu%2Fmeshflare-2496ed?logo=docker&logoColor=white)](https://github.com/bgwastu/meshflare/pkgs/container/meshflare)
 [![Bun](https://img.shields.io/badge/Bun-f9f9f9?logo=bun&logoColor=black&labelColor=f9f9f9)](https://bun.sh)
 
-**Demo:** [meshflare-demo.wastu.workers.dev](https://meshflare-demo.wastu.workers.dev) · read-only
+**Demo:** [meshflare-demo.wastu.workers.dev](https://meshflare-demo.wastu.workers.dev) (read-only)
 
 </div>
 
 ---
+
+## Features
+
+- Mesh node and device management
+- Cloudflare Tunnel and ingress management
+- Automatic Mesh DNS names
+- CIDR and hostname routes
+- WARP split-tunnel management
+- DNS filtering
+- Offline-device cleanup
+- WARP connector setup commands
 
 ## Screenshots
 
@@ -41,17 +51,6 @@ registrations, Cloudflare Tunnels, split tunnels, and DNS filtering from one das
     <img alt="meshflare settings" src="docs/screenshots/demo-settings-light.png" width="800">
   </picture>
 </p>
-
-## Features
-
-- Mesh node and device management
-- Cloudflare Tunnel and ingress management
-- Automatic Mesh DNS names
-- CIDR and hostname routes
-- WARP split-tunnel management
-- DNS filtering
-- Offline-device cleanup
-- WARP connector setup commands
 
 ## Cloudflare
 
