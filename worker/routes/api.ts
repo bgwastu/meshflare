@@ -16,7 +16,8 @@ import {
 } from "../cf/cloudflare-tunnel";
 import type { CloudflareConnector, CloudflareTunnelConnection, Env, TunnelConfig } from "../types";
 import { createCfClient, CloudflareApiError } from "../cf/client";
-import { buildMeshInventory, getDefaultGatewayDnsLocation, serializeGatewayDnsLocation, syncMeshDns, syncMeshDnsAfterDelete, syncMeshDnsAfterRename, updateDefaultGatewayDnsLocation } from "../cf/dns";
+import { buildMeshInventory, getDefaultGatewayDnsLocation, serializeGatewayDnsLocation, syncMeshDns, syncMeshDnsAfterDelete, syncMeshDnsAfterRename } from "../cf/dns";
+import { checkMaintenanceHealth, repairMaintenance } from "../cf/health";
 import {
   createMeshNodeHostnameRoute,
   createMeshNodeRoute,
@@ -91,20 +92,6 @@ api.patch("/settings", zValidator("json", settingsSchema), async (c) => {
   const body = c.req.valid("json");
   const before = await getSettings(c.env);
   const settings = await updateSettings(c.env, body);
-  const dnsEndpointTouched =
-    body.dnsIpv4Enabled !== undefined || body.dnsIpv6Enabled !== undefined || body.dnsDohEnabled !== undefined || body.dnsSourceNetwork !== undefined;
-  let dnsLocation = null;
-  if (dnsEndpointTouched) {
-    const cf = createCfClient(c.env);
-    dnsLocation = await updateDefaultGatewayDnsLocation(cf, {
-      ipv4: body.dnsIpv4Enabled,
-      ipv6: body.dnsIpv6Enabled,
-      doh: body.dnsDohEnabled,
-      ...(body.dnsSourceNetwork !== undefined
-        ? { sourceNetworks: body.dnsSourceNetwork.trim() ? [body.dnsSourceNetwork.trim()] : [] }
-        : {}),
-    });
-  }
 
   const suffixChanged =
     body.meshSuffix !== undefined && settings.meshSuffix !== before.meshSuffix;
@@ -132,14 +119,26 @@ api.patch("/settings", zValidator("json", settingsSchema), async (c) => {
   const cf = createCfClient(c.env);
   const [account, currentDnsLocation] = await Promise.all([
     fetchAccountInfo(cf),
-    dnsEndpointTouched ? Promise.resolve(null) : getDefaultGatewayDnsLocation(cf),
+    getDefaultGatewayDnsLocation(cf),
   ]);
   return c.json({
     ...(await getSettings(c.env)),
     accountName: account.name,
     accountEmail: account.email,
-    dnsLocation: dnsLocation ?? serializeGatewayDnsLocation(currentDnsLocation),
+    dnsLocation: serializeGatewayDnsLocation(currentDnsLocation),
   });
+});
+
+api.get("/maintenance/health", async (c) => {
+  const cf = createCfClient(c.env);
+  const health = await checkMaintenanceHealth(cf, c.env);
+  return c.json(health);
+});
+
+api.post("/maintenance/repair", async (c) => {
+  const cf = createCfClient(c.env);
+  const health = await repairMaintenance(cf, c.env);
+  return c.json(health);
 });
 
 api.get("/mesh", async (c) => {

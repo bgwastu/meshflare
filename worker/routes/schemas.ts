@@ -9,10 +9,6 @@ export const settingsSchema = z.object({
   dnsFilterEnabled: z.boolean().optional(),
   dnsFilterUrl: z.url().optional(),
   meshSuffix: z.string().trim().min(1).max(63).optional(),
-  dnsIpv4Enabled: z.boolean().optional(),
-  dnsIpv6Enabled: z.boolean().optional(),
-  dnsDohEnabled: z.boolean().optional(),
-  dnsSourceNetwork: z.string().trim().max(100).optional(),
 });
 
 export const routeSchema = z.object({

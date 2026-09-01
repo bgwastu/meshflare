@@ -104,11 +104,20 @@ export type SettingsPatch = Partial<{
   dnsFilterEnabled: boolean;
   dnsFilterUrl: string;
   meshSuffix: string;
-  dnsIpv4Enabled: boolean;
-  dnsIpv6Enabled: boolean;
-  dnsDohEnabled: boolean;
-  dnsSourceNetwork: string;
 }>;
+
+export type MaintenanceHealth = {
+  ok: boolean;
+  dnsFilter: {
+    configured: boolean;
+    enabled: boolean;
+    status: string;
+    remoteListChunks: number;
+    remoteRule: boolean;
+    inSync: boolean;
+    detail: string;
+  };
+};
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -203,6 +212,9 @@ export const api = {
     request<{ dns: DnsSyncStats; lastDnsSyncAt?: string }>("/api/mesh/sync-dns", {
       method: "POST",
     }),
+  maintenanceHealth: () => request<MaintenanceHealth>("/api/maintenance/health"),
+  repairMaintenance: () =>
+    request<MaintenanceHealth>("/api/maintenance/repair", { method: "POST" }),
   cleanup: () =>
     request<{
       cleanup: {

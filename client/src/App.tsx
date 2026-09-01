@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, useTransition, type FormEvent, type TransitionEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type TransitionEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Globe,
   Loader2,
@@ -14,13 +15,14 @@ import {
 import { Link, NavLink, useLocation, useSearchParams } from "react-router";
 import {
   api,
+  type MaintenanceHealth,
   type MeshEntry,
   type MeshRoute,
   type Settings,
   type SplitTunnelConfig,
 } from "./lib/api";
 import { ToastStack, useToasts } from "./lib/toasts";
-import { TunnelsPanel } from "./TunnelsPanel";
+import { TunnelsPanel, useTunnelsQuery } from "./TunnelsPanel";
 import { CopyValue, formatSeen, SkeletonBlock, Spinner } from "./lib/ui";
 import { FacetChip } from "./lib/FilterChips";
 import {
@@ -130,8 +132,53 @@ export function App() {  const location = useLocation();
   const sortDir = searchParams.get("dir") === "asc" ? "asc" : "desc";
   const selectedId = searchParams.get("id");
 
-  const [entries, setEntries] = useState<MeshEntry[]>([]);
-  const [settings, setSettings] = useState<Settings | null>(null);
+  const queryClient = useQueryClient();
+  const { toasts, push, dismiss } = useToasts();
+
+  const authQuery = useQuery({
+    queryKey: ["auth"],
+    queryFn: api.authStatus,
+    staleTime: Infinity,
+  });
+  const authRequired = authQuery.data?.required === true && !authQuery.data?.authenticated;
+
+  const meshQuery = useQuery({
+    queryKey: ["mesh"],
+    queryFn: () => api.listMesh(),
+    enabled: !authRequired,
+  });
+  const entries = meshQuery.data?.entries ?? [];
+
+  const settingsQuery = useQuery({
+    queryKey: ["settings"],
+    queryFn: api.settings,
+    enabled: !authRequired,
+  });
+  const settings = settingsQuery.data ?? null;
+
+  const tunnelsQuery = useTunnelsQuery();
+
+  const maintenanceHealthQuery = useQuery({
+    queryKey: ["maintenance-health"],
+    queryFn: api.maintenanceHealth,
+    enabled: !authRequired && tab === "settings",
+    staleTime: 60_000,
+    refetchInterval: (query) =>
+      query.state.data?.ok ? false : 15_000,
+  });
+
+  const repairMutation = useMutation({
+    mutationFn: api.repairMaintenance,
+    onSuccess: (health) => {
+      queryClient.setQueryData(["maintenance-health"], health);
+      push(
+        health.ok ? "Maintenance state repaired." : "Repair could not converge — retry in a moment.",
+        health.ok ? "success" : "error",
+      );
+    },
+    onError: (e: unknown) => push(e instanceof Error ? e.message : String(e), "error"),
+  });
+
   const [drawerEntry, setDrawerEntry] = useState<MeshEntry | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -139,38 +186,86 @@ export function App() {  const location = useLocation();
   const [offlineDays, setOfflineDays] = useState(7);
   const [meshSuffixDraft, setMeshSuffixDraft] = useState("mesh");
   const [filterUrlDraft, setFilterUrlDraft] = useState("https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt");
-  const [dnsSourceNetworkDraft, setDnsSourceNetworkDraft] = useState("");
-  const [, startTransition] = useTransition();
   const [busy, setBusy] = useState<Busy>(null);
   const [ready, setReady] = useState(false);
-  const [authRequired, setAuthRequired] = useState(false);
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [installCmd, setInstallCmd] = useState<string | null>(null);
-  const [installLoading, setInstallLoading] = useState(false);
-  const [routes, setRoutes] = useState<MeshRoute[]>([]);
-  const [routesLoading, setRoutesLoading] = useState(false);
   const [routeNetwork, setRouteNetwork] = useState("");
   const [routeType, setRouteType] = useState<"cidr" | "hostname" | null>(null);
   const [routeComment, setRouteComment] = useState("");
-  const [splitTunnels, setSplitTunnels] = useState<SplitTunnelConfig | null>(null);
-  const [splitTunnelsLoading, setSplitTunnelsLoading] = useState(false);
-  const [splitTunnelsError, setSplitTunnelsError] = useState<string | null>(null);
   const [splitEditor, setSplitEditor] = useState<{ index: number | null; value: string; description: string } | null>(null);
   const [splitBusy, setSplitBusy] = useState(false);
   const [routeBusy, setRouteBusy] = useState<string | null>(null);
-  const { toasts, push, dismiss } = useToasts();
 
   const locked = busy !== null || creating || Boolean(settings?.demo);
+
+  const selectedNodeId = selectedId;
+  const routesQuery = useQuery({
+    queryKey: ["node-routes", selectedNodeId],
+    queryFn: () => api.listNodeRoutes(selectedNodeId!),
+    enabled: Boolean(
+      selectedNodeId &&
+        drawerEntry?.kind === "node" &&
+        isNodeInitial(drawerEntry.status),
+    ),
+  });
+  const routes = routesQuery.data?.routes ?? [];
+  const routesLoading = routesQuery.isFetching;
+
+  const installQuery = useQuery({
+    queryKey: ["node-token", selectedNodeId],
+    queryFn: () => api.getNodeToken(selectedNodeId!),
+    enabled: Boolean(selectedNodeId && drawerEntry?.kind === "node"),
+    select: (data) => warpConnectorInstallCommand(data.token),
+  });
+  const installCmdFinal = installQuery.data ?? null;
+  const installLoading = installQuery.isFetching;
+  const installCmd = installCmdFinal;
+
+  const splitTunnelsQuery = useQuery({
+    queryKey: ["split-tunnels"],
+    queryFn: api.splitTunnels,
+    enabled: !authRequired && tab === "settings",
+  });
+  const splitTunnels = splitTunnelsQuery.data ?? null;
+  const splitTunnelsLoading = splitTunnelsQuery.isFetching;
+  const splitTunnelsError = splitTunnelsQuery.error instanceof Error ? splitTunnelsQuery.error.message : null;
+
+  useEffect(() => {
+    if (settings) {
+      setOfflineDays(settings.offlineDays);
+      setMeshSuffixDraft(settings.meshSuffix);
+      setFilterUrlDraft(settings.dnsFilterUrl);
+    }
+  }, [settings]);
+
+  useEffect(() => {
+    if (meshQuery.isSuccess) setReady(true);
+  }, [meshQuery.isSuccess]);
+
+  useEffect(() => {
+    if (authQuery.isError) {
+      setReady(true);
+    }
+  }, [authQuery.isError]);
+
+  useEffect(() => {
+    if (!ready) return;
+    if (meshQuery.error) push(meshQuery.error instanceof Error ? meshQuery.error.message : String(meshQuery.error), "error");
+    if (settingsQuery.error) push(settingsQuery.error instanceof Error ? settingsQuery.error.message : String(settingsQuery.error), "error");
+  }, [ready, meshQuery.error, settingsQuery.error]);
+
   const selected =
     selectedId && drawerEntry?.id === selectedId
       ? drawerEntry
       : selectedId
         ? (entries.find((e) => e.id === selectedId) ?? drawerEntry)
         : drawerEntry;
+
+  const nameChanged = Boolean(renameValue.trim() && renameValue.trim() !== (selected?.name ?? ""));
 
   function patchParams(mutate: (next: URLSearchParams) => void) {
     setSearchParams(
@@ -201,28 +296,19 @@ export function App() {  const location = useLocation();
     }
   }
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && drawerOpen) {
+        closeDrawer();
+      }
+    }
+    if (drawerOpen) window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [drawerOpen, selectedId]);
+
   function onDrawerTransitionEnd(e: TransitionEvent<HTMLDivElement>) {
     if (e.propertyName !== "opacity" || drawerOpen) return;
     setDrawerEntry(null);
-  }
-
-  async function refresh() {
-    const auth = await api.authStatus();
-    if (auth.required && !auth.authenticated) {
-      setAuthRequired(true);
-      setReady(true);
-      return [];
-    }
-    setAuthRequired(false);
-    const [mesh, s] = await Promise.all([api.listMesh(), api.settings()]);
-    setEntries(mesh.entries);
-    setSettings(s);
-    setOfflineDays(s.offlineDays);
-    setMeshSuffixDraft(s.meshSuffix);
-    setFilterUrlDraft(s.dnsFilterUrl);
-    setDnsSourceNetworkDraft(s.dnsLocation?.sourceNetworks[0] ?? "");
-    setReady(true);
-    return mesh.entries;
   }
 
   async function login(event: FormEvent<HTMLFormElement>) {
@@ -232,22 +318,18 @@ export function App() {  const location = useLocation();
     try {
       await api.login(password);
       setPassword("");
-      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["auth"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["mesh"] }),
+        queryClient.invalidateQueries({ queryKey: ["settings"] }),
+      ]);
+      setReady(true);
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : String(error));
     } finally {
       setAuthBusy(false);
     }
   }
-
-  useEffect(() => {
-    startTransition(() => {
-      void refresh().catch((e: unknown) => {
-        setReady(true);
-        push(e instanceof Error ? e.message : String(e), "error");
-      });
-    });
-  }, []);
 
   // DNS filter enable/disable runs in the background — poll while in flight.
   useEffect(() => {
@@ -258,18 +340,11 @@ export function App() {  const location = useLocation();
     ) {
       return;
     }
-    const tick = () => {
-      void api
-        .settings()
-        .then((s) => setSettings(s))
-        .catch(() => {
-          /* ignore transient poll errors */
-        });
-    };
-    tick();
-    const id = window.setInterval(tick, 1500);
+    const id = window.setInterval(() => {
+      void queryClient.invalidateQueries({ queryKey: ["settings"] });
+    }, 1500);
     return () => window.clearInterval(id);
-  }, [settings?.dnsFilterStatus]);
+  }, [settings?.dnsFilterStatus, queryClient]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -282,75 +357,6 @@ export function App() {  const location = useLocation();
     setRenameValue(found.name);
     requestAnimationFrame(() => setDrawerOpen(true));
   }, [selectedId, entries]);
-
-  useEffect(() => {
-    if (tab !== "settings" || splitTunnels || splitTunnelsLoading || splitTunnelsError) return;
-    setSplitTunnelsLoading(true);
-    setSplitTunnelsError(null);
-    void api
-      .splitTunnels()
-      .then(setSplitTunnels)
-      .catch((e: unknown) => {
-        const message = e instanceof Error ? e.message : String(e);
-        setSplitTunnelsError(message);
-        push(message, "error");
-      })
-      .finally(() => setSplitTunnelsLoading(false));
-  }, [tab, splitTunnels, splitTunnelsLoading]);
-
-  useEffect(() => {
-    if (!selected || selected.kind !== "node" || !isNodeInitial(selected.status)) {
-      setRoutes([]);
-      setRoutesLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setRoutesLoading(true);
-    void api
-      .listNodeRoutes(selected.id)
-      .then((r) => {
-        if (!cancelled) setRoutes(r.routes);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) push(e instanceof Error ? e.message : String(e), "error");
-      })
-      .finally(() => {
-        if (!cancelled) setRoutesLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selected?.id, selected?.kind]);
-
-  useEffect(() => {
-    if (!selected || selected.kind !== "node") {
-      setInstallCmd(null);
-      return;
-    }
-
-    let cancelled = false;
-    setInstallLoading(true);
-    void api
-      .getNodeToken(selected.id)
-      .then((r) => {
-        if (!cancelled) setInstallCmd(warpConnectorInstallCommand(r.token));
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) {
-          setInstallCmd(null);
-          push(e instanceof Error ? e.message : String(e), "error");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setInstallLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selected?.id, selected?.kind, selected?.status]);
 
   async function regenerateNodeCode(): Promise<string | null> {
     if (!drawerEntry || drawerEntry.kind !== "node") return null;
@@ -405,7 +411,8 @@ export function App() {  const location = useLocation();
     setBusy(key);
     try {
       const result = await action();
-      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["mesh"] });
+      await queryClient.invalidateQueries({ queryKey: ["settings"] });
       return result;
     } catch (e) {
       push(e instanceof Error ? e.message : String(e), "error");
@@ -423,7 +430,7 @@ export function App() {  const location = useLocation();
     setSplitBusy(true);
     try {
       const saved = await api.saveSplitTunnels(mode, items);
-      setSplitTunnels(saved);
+      queryClient.setQueryData(["split-tunnels"], saved);
       push(message, "success");
       return true;
     } catch (e) {
@@ -441,7 +448,9 @@ export function App() {  const location = useLocation();
     try {
       const r = await api.createNode(name);
       setNewName("");
-      const list = await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["mesh"] });
+      const meshData = queryClient.getQueryData<{ entries: MeshEntry[] }>(["mesh"]);
+      const list = meshData?.entries ?? [];
       const created =
         list.find((e) => e.kind === "node" && e.id === r.node.id) ??
         ({
@@ -569,8 +578,7 @@ export function App() {  const location = useLocation();
         </nav>
       </header>
 
-      {tab === "mesh" && (
-        <section className="panel" aria-busy={!ready}>
+      <section className="panel" hidden={tab !== "mesh"} aria-busy={!ready}>
             <div className="panel-head">
               <h2>
                 Mesh{" "}
@@ -830,16 +838,13 @@ export function App() {  const location = useLocation();
               </div>
             )}
           </section>
-      )}
 
-      {tab === "tunnels" && (
-        <section className="panel">
-          <TunnelsPanel demo={settings?.demo} locked={locked} />
-        </section>
-      )}
+      {/* Panels stay mounted so their queries are cached across tab switches. */}
+      <section className="panel" hidden={tab !== "tunnels"}>
+        <TunnelsPanel demo={settings?.demo} locked={locked} tunnelsQuery={tunnelsQuery} />
+      </section>
 
-      {tab === "settings" && (
-        <section className="settings-panel" aria-busy={!settingsReady}>
+      <section className="settings-panel" hidden={tab !== "settings"} aria-busy={!settingsReady}>
           {!settingsReady ? (
             <div className="skeleton-stack">
               <SkeletonBlock className="skeleton-label" />
@@ -988,50 +993,13 @@ export function App() {  const location = useLocation();
               <div className="settings-block dns-endpoints-block">
                 <h3>Zero Trust DNS endpoints</h3>
                 <p className="hint">
-                   Control which Gateway resolver endpoints are available to WARP connectors.
+                  Resolver endpoints on the default Gateway location, for WARP
+                  connectors. Configured in Cloudflare Zero Trust.
                 </p>
                 {!dnsLocation ? (
                   <p className="hint dns-endpoint-warning">No default Gateway DNS location found.</p>
                 ) : (
-                  <>
-                    <div className="field dns-source-network-field">
-                      <label htmlFor="dns-source-network">Shared IPv4 source network</label>
-                      <input
-                        id="dns-source-network"
-                        type="text"
-                        placeholder="203.0.113.42/32"
-                        value={dnsSourceNetworkDraft}
-                        disabled={locked}
-                        onChange={(e) => setDnsSourceNetworkDraft(e.target.value)}
-                      />
-                      <p className="hint">
-                        Required by Cloudflare before enabling the shared IPv4 endpoint. Use the public egress IP/CIDR, not a Mesh IP.
-                      </p>
-                      <button
-                        className="btn"
-                        disabled={locked || dnsSourceNetworkDraft.trim() === (dnsLocation.sourceNetworks[0] ?? "")}
-                        onClick={() =>
-                          void run("dns-endpoint", async () => {
-                            await api.patchSettings({ dnsSourceNetwork: dnsSourceNetworkDraft });
-                            push(
-                              dnsLocation.endpoints.ipv4
-                                ? "DNS source network saved."
-                                : "DNS source network saved and IPv4 endpoint enabled.",
-                              "success",
-                            );
-                          })
-                        }
-                      >
-                        {busy === "dns-endpoint" ? (
-                          <Spinner label="Saving…" />
-                        ) : dnsLocation.endpoints.ipv4 ? (
-                          "Save source network"
-                        ) : (
-                          "Save and enable IPv4"
-                        )}
-                      </button>
-                    </div>
-                    <div className="dns-endpoint-list">
+                  <div className="dns-endpoint-list">
                     {(
                       [
                         {
@@ -1060,46 +1028,48 @@ export function App() {  const location = useLocation();
                         <div className="dns-endpoint-row" key={endpoint.key}>
                           <div className="dns-endpoint-head">
                             <strong>{endpoint.label}</strong>
-                            <label className={`mode-switch ${enabled ? "include" : ""}`}>
-                              <span className="sr-only">{endpoint.label}</span>
-                              <input
-                                type="checkbox"
-                                checked={enabled}
-                                disabled={locked || busy === "dns-endpoint" || !endpoint.value}
-                                onChange={() =>
-                                  void run("dns-endpoint", async () => {
-                                    await api.patchSettings({
-                                      [`dns${endpoint.key === "ipv4" ? "Ipv4" : endpoint.key === "ipv6" ? "Ipv6" : "Doh"}Enabled`]: !enabled,
-                                    });
-                                    push(
-                                      `${endpoint.label} ${enabled ? "disabled" : "enabled"}.`,
-                                      "success",
-                                    );
-                                  })
-                                }
-                              />
-                              <span className="switch-track" aria-hidden>
-                                <span />
-                              </span>
-                              <span>{enabled ? "On" : "Off"}</span>
-                            </label>
+                            <span className={`badge ${enabled ? "cloudflare" : "local"}`}>
+                              {enabled ? "Enabled" : "Disabled"}
+                            </span>
                           </div>
                           {enabled && endpoint.value ? (
-                            <p className="dns-endpoint-value mono">{endpoint.value}</p>
+                            <p className="dns-endpoint-value">
+                              <CopyValue
+                                value={endpoint.value}
+                                onCopied={(v) => push(`Copied ${v}`, "success")}
+                              />
+                            </p>
                           ) : (
                             <p className="hint">Disabled</p>
                           )}
                         </div>
                       );
                     })}
-                    </div>
-                  </>
+                  </div>
                 )}
               </div>
 
 
               <div className="settings-block maintenance-block">
                 <h3>Maintenance</h3>
+                {maintenanceHealthQuery.data && !maintenanceHealthQuery.data.ok && (
+                  <div className="health-alert" role="alert">
+                    <div className="health-alert-copy">
+                      <strong>Out of sync</strong>
+                      <p className="hint">
+                        {maintenanceHealthQuery.data.dnsFilter.detail}
+                        {" "}The remote Gateway state no longer matches this app. Run repair to rebuild it.
+                      </p>
+                    </div>
+                    <button
+                      className="btn btn-repair"
+                      disabled={repairMutation.isPending || locked}
+                      onClick={() => void repairMutation.mutate()}
+                    >
+                      {repairMutation.isPending ? <Spinner label="Repairing…" /> : "Repair"}
+                    </button>
+                  </div>
+                )}
                 <div className="maint-row">
                   <div>
                     <strong>Sync DNS</strong>
@@ -1207,7 +1177,7 @@ export function App() {  const location = useLocation();
                 ) : splitTunnelsError ? (
                   <div className="load-error">
                     <span className="hint">Could not load split tunnels.</span>
-                    <button type="button" className="btn" onClick={() => setSplitTunnelsError(null)}>Retry</button>
+                    <button type="button" className="btn" onClick={() => void queryClient.refetchQueries({ queryKey: ["split-tunnels"] })}>Retry</button>
                   </div>
                 ) : splitTunnels ? (
                   <>
@@ -1264,7 +1234,6 @@ export function App() {  const location = useLocation();
             </div>
           )}
         </section>
-      )}
 
       {createOpen && (
         <div
@@ -1431,24 +1400,26 @@ export function App() {  const location = useLocation();
                 onChange={(e) => setRenameValue(e.target.value)}
               />
             </div>
-            <div className="row-actions" style={{ marginBottom: "1rem" }}>
-              <button
-                className="btn btn-primary"
-                disabled={locked || !renameValue.trim()}
-                onClick={() =>
-                  void run("rename", async () => {
-                    const r = await api.rename(drawerEntry.kind, drawerEntry.id, renameValue.trim());
-                    push(
-                      r.notice ?? `Renamed to "${renameValue.trim()}". DNS updated.`,
-                      r.notice ? "info" : "success",
-                    );
-                    closeDrawer();
-                  })
-                }
-              >
-                {busy === "rename" ? <Spinner label="Saving…" /> : "Save name"}
-              </button>
-            </div>
+            {nameChanged && (
+              <div className="row-actions" style={{ marginBottom: "1rem" }}>
+                <button
+                  className="btn btn-primary"
+                  disabled={locked || !renameValue.trim()}
+                  onClick={() =>
+                    void run("rename", async () => {
+                      const r = await api.rename(drawerEntry.kind, drawerEntry.id, renameValue.trim());
+                      push(
+                        r.notice ?? `Renamed to "${renameValue.trim()}". DNS updated.`,
+                        r.notice ? "info" : "success",
+                      );
+                      closeDrawer();
+                    })
+                  }
+                >
+                  {busy === "rename" ? <Spinner label="Saving…" /> : "Save name"}
+                </button>
+              </div>
+            )}
 
             <p className="hint drawer-meta-lines">
               Hostname:{" "}
@@ -1512,7 +1483,7 @@ export function App() {  const location = useLocation();
                               void api
                                 .removeNodeRoute(drawerEntry.id, route.id!)
                                 .then(() => {
-                                  setRoutes((current) => current.filter((item) => item.id !== route.id));
+                                  void queryClient.invalidateQueries({ queryKey: ["node-routes"] });
                                   push(`Deleted route ${route.network ?? route.hostname ?? ""}.`, "success");
                                 })
                                 .catch((e: unknown) =>
@@ -1547,8 +1518,8 @@ export function App() {  const location = useLocation();
                     setRouteBusy("create");
                     void api
                       .createNodeRoute(drawerEntry.id, routeType, network, routeComment.trim())
-                      .then((r) => {
-                        setRoutes((current) => [...current, r.route]);
+                      .then(() => {
+                        void queryClient.invalidateQueries({ queryKey: ["node-routes"] });
                         setRouteNetwork("");
                         setRouteComment("");
                         setRouteType(null);

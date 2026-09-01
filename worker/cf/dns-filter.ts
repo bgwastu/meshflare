@@ -11,8 +11,8 @@ import type { Env, Settings, SettingsPatch } from "../types";
 import { patchSettings as patchStoredSettings, readAppData, updateAppData } from "../db/settings";
 
 const DEFAULT_FILTER_URL = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt";
-const FILTER_LIST_PREFIX = "meshflare-dns-filter";
-const FILTER_RULE_NAME = "meshflare DNS filter";
+export const FILTER_LIST_PREFIX = "meshflare-dns-filter";
+export const FILTER_RULE_NAME = "meshflare DNS filter";
 const LIST_CHUNK = 1000;
 const CHUNKS_PER_TICK = 3;
 const FILTER_REFRESH_MS = 6 * 60 * 60 * 1000;

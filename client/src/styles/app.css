@@ -107,8 +107,6 @@ a {
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.25rem;
-  padding-bottom: 0.85rem;
-  border-bottom: 1px solid var(--line);
 }
 
 .brand-link {
@@ -342,6 +340,10 @@ a {
   overflow-wrap: anywhere;
 }
 
+.dns-endpoint-value .copy-chip {
+  font-size: 0.78rem;
+}
+
 .dns-endpoint-row > .hint {
   margin: 0.3rem 0 0;
 }
@@ -480,6 +482,40 @@ a {
   gap: 1rem;
   padding: 0.55rem 0;
   border-bottom: 1px solid var(--line);
+}
+
+.health-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line));
+  border-left: 3px solid var(--danger);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--danger) 6%, var(--bg1));
+}
+
+.health-alert-copy strong {
+  font-size: 0.88rem;
+  color: color-mix(in srgb, var(--danger) 85%, var(--text));
+}
+
+.health-alert-copy .hint {
+  margin: 0.2rem 0 0;
+}
+
+.btn-repair {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+  color: var(--danger);
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.btn-repair:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: var(--danger);
 }
 
 .maint-row:last-child {

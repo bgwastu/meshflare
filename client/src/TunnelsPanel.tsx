@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo, useTransition } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Globe,
   Loader2,
@@ -40,12 +41,20 @@ function StatusDot({ status }: { status: string }) {
 type TunnelsPanelProps = {
   demo?: boolean;
   locked: boolean;
+  tunnelsQuery: ReturnType<typeof useTunnelsQuery>;
 };
 
-export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) {
+export function useTunnelsQuery() {
+  return useQuery({
+    queryKey: ["tunnels"],
+    queryFn: () => api.listTunnels(),
+    refetchOnMount: false,
+  });
+}
+
+export function TunnelsPanel({ demo, locked: parentLocked, tunnelsQuery }: TunnelsPanelProps) {
+  const queryClient = useQueryClient();
   const { toasts, push, dismiss } = useToasts();
-  const [, startTransition] = useTransition();
-  const [tunnels, setTunnels] = useState<TunnelEntry[]>([]);
   const [search, setSearch] = useState("");
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState<Busy>(null);
@@ -55,13 +64,7 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
   const [newName, setNewName] = useState("");
   const [renameValue, setRenameValue] = useState("");
   const [creating, setCreating] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
-  const [tokenLoading, setTokenLoading] = useState(false);
-  const [config, setConfig] = useState<{ ingress: TunnelIngressRule[] } | null>(null);
-  const [configLoading, setConfigLoading] = useState(false);
   const [configBusy, setConfigBusy] = useState(false);
-  const [connections, setConnections] = useState<TunnelConnection[]>([]);
-  const [connectionsLoading, setConnectionsLoading] = useState(false);
   const [ingressEditor, setIngressEditor] = useState<{
     index: number | null;
     hostname: string;
@@ -71,6 +74,37 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
 
   const q = search.trim().toLowerCase();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  const tunnels = tunnelsQuery.data?.tunnels ?? [];
+
+  const selectedId = selected?.id;
+  const connectionsQuery = useQuery({
+    queryKey: ["tunnel-connections", selectedId],
+    queryFn: () => api.getTunnelConnections(selectedId!),
+    enabled: Boolean(selectedId),
+    staleTime: 60_000,
+  });
+  const connections = connectionsQuery.data ?? [];
+  const connectionsLoading = connectionsQuery.isFetching;
+
+  const configQuery = useQuery({
+    queryKey: ["tunnel-config", selectedId],
+    queryFn: () => api.getTunnelConfig(selectedId!),
+    enabled: Boolean(selectedId),
+    staleTime: 60_000,
+  });
+  const config = configQuery.data?.config ?? null;
+  const configLoading = configQuery.isFetching;
+
+  const tokenQuery = useQuery({
+    queryKey: ["tunnel-token", selectedId],
+    queryFn: () => api.getTunnelToken(selectedId!),
+    enabled: Boolean(selectedId),
+    staleTime: 5 * 60_000,
+  });
+  const token = tokenQuery.data?.token ?? null;
+  const tokenLoading = tokenQuery.isFetching;
+
   const filteredTunnels = useMemo(() => {
     const status = statusFilter === "all" ? null : statusFilter;
     return tunnels.filter(
@@ -86,60 +120,25 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
 
   const locked = parentLocked || busy !== null || creating || Boolean(demo);
 
-  async function refresh() {
-    const r = await api.listTunnels();
-    setTunnels(r.tunnels);
-    setReady(true);
-    return r.tunnels;
-  }
+  useEffect(() => {
+    if (tunnelsQuery.isSuccess) setReady(true);
+  }, [tunnelsQuery.isSuccess]);
 
   useEffect(() => {
-    startTransition(() => {
-      void refresh().catch((e: unknown) => {
-        setReady(true);
-        push(e instanceof Error ? e.message : String(e), "error");
-      });
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!selected) { setConnections([]); setConnectionsLoading(false); return; }
-    let cancelled = false;
-    setConnectionsLoading(true);
-    void api.getTunnelConnections(selected.id)
-      .then((conns) => { if (!cancelled) setConnections(conns); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setConnectionsLoading(false); });
-    return () => { cancelled = true; };
-  }, [selected?.id]);
-
-  useEffect(() => {
-    if (!selected) { setConfig(null); setConfigLoading(false); return; }
-    let cancelled = false;
-    setConfigLoading(true);
-    void api.getTunnelConfig(selected.id)
-      .then((c) => { if (!cancelled) setConfig(c.config ?? { ingress: [] }); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setConfigLoading(false); });
-    return () => { cancelled = true; };
-  }, [selected?.id]);
-
-  useEffect(() => {
-    if (!selected) { setToken(null); setTokenLoading(false); return; }
-    let cancelled = false;
-    setTokenLoading(true);
-    void api.getTunnelToken(selected.id)
-      .then((r) => { if (!cancelled) setToken(r.token); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setTokenLoading(false); });
-    return () => { cancelled = true; };
-  }, [selected?.id]);
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && drawerOpen) {
+        closeDrawer();
+      }
+    }
+    if (drawerOpen) window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [drawerOpen]);
 
   async function run<T = void>(key: Busy, action: () => Promise<T>): Promise<T | null> {
     setBusy(key);
     try {
       const result = await action();
-      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["tunnels"] });
       return result;
     } catch (e) {
       push(e instanceof Error ? e.message : String(e), "error");
@@ -157,7 +156,7 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
       const r = await api.createTunnel(name);
       setNewName("");
       setCreateOpen(false);
-      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["tunnels"] });
       push(`Created tunnel "${r.tunnel.name}".`, "success");
     } catch (e) {
       push(e instanceof Error ? e.message : String(e), "error");
@@ -190,7 +189,7 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
     setConfigBusy(true);
     try {
       await api.setTunnelConfig(selected.id, { config: { ingress: clean } });
-      setConfig({ ingress: clean });
+      queryClient.setQueryData(["tunnel-config", selected.id], { config: { ingress: clean } });
       push("Tunnel config updated.", "success");
     } catch (e) {
       push(e instanceof Error ? e.message : String(e), "error");
@@ -200,6 +199,7 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
   }
 
   const ingressList = config?.ingress ?? [];
+  const nameChanged = Boolean(renameValue.trim() && renameValue.trim() !== selected?.name);
 
   return (
     <>
@@ -219,7 +219,9 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
             disabled={locked}
             title="Refresh"
             aria-label="Refresh"
-            onClick={() => void run("refresh", refresh)}
+            onClick={() =>
+              void run("refresh", () => queryClient.invalidateQueries({ queryKey: ["tunnels"] }))
+            }
           >
             {busy === "refresh" ? (
               <Loader2 size={15} strokeWidth={2.25} className="spin" aria-hidden />
@@ -491,22 +493,24 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
                 onChange={(e) => setRenameValue(e.target.value)}
               />
             </div>
-            <div className="row-actions" style={{ marginBottom: "1rem" }}>
-              <button
-                className="btn btn-primary"
-                disabled={locked || !renameValue.trim() || renameValue.trim() === selected.name}
-                onClick={() =>
-                  void run("config", async () => {
-                    const updated = await api.updateTunnel(selected.id, { name: renameValue.trim() });
-                    setSelected(updated);
-                    setRenameValue(updated.name);
-                    push(`Renamed to "${updated.name}".`, "success");
-                  })
-                }
-              >
-                {busy === "config" ? <Spinner label="Saving…" /> : "Save name"}
-              </button>
-            </div>
+            {nameChanged && (
+              <div className="row-actions" style={{ marginBottom: "1rem" }}>
+                <button
+                  className="btn btn-primary"
+                  disabled={locked || !renameValue.trim()}
+                  onClick={() =>
+                    void run("config", async () => {
+                      const updated = await api.updateTunnel(selected.id, { name: renameValue.trim() });
+                      setSelected(updated);
+                      setRenameValue(updated.name);
+                      push(`Renamed to "${updated.name}".`, "success");
+                    })
+                  }
+                >
+                  {busy === "config" ? <Spinner label="Saving…" /> : "Save name"}
+                </button>
+              </div>
+            )}
 
             <div className="field">
               <label>Status</label>
@@ -647,7 +651,6 @@ export function TunnelsPanel({ demo, locked: parentLocked }: TunnelsPanelProps) 
                             if (updated.length === 0 || !updated[updated.length - 1].service.startsWith("http_status:")) {
                               updated.push({ service: "http_status:404" });
                             }
-                            setConfig({ ingress: updated });
                             void saveIngressWith(updated);
                           }}
                         >

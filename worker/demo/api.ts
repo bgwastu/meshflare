@@ -36,6 +36,36 @@ demoApi.post("/auth/logout", (c) => c.json({ ok: true }));
 
 demoApi.get("/settings", (c) => c.json(buildDemoSettings()));
 
+demoApi.get("/maintenance/health", (c) =>
+  c.json({
+    ok: true,
+    dnsFilter: {
+      configured: true,
+      enabled: true,
+      status: "enabled",
+      remoteListChunks: 2,
+      remoteRule: true,
+      inSync: true,
+      detail: "In sync",
+    },
+  }),
+);
+
+demoApi.post("/maintenance/repair", (c) =>
+  c.json({
+    ok: true,
+    dnsFilter: {
+      configured: true,
+      enabled: true,
+      status: "enabled",
+      remoteListChunks: 2,
+      remoteRule: true,
+      inSync: true,
+      detail: "In sync",
+    },
+  }),
+);
+
 demoApi.get("/mesh", (c) => c.json({ entries: buildDemoEntries(), demo: true }));
 
 demoApi.get("/mesh/nodes/:id/routes", (c) =>

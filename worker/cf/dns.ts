@@ -23,13 +23,6 @@ export type GatewayLocation = {
   networks?: Array<{ network?: string }>;
 };
 
-export type GatewayDnsEndpointUpdate = {
-  ipv4?: boolean;
-  ipv6?: boolean;
-  doh?: boolean;
-  sourceNetworks?: string[];
-};
-
 export async function getDefaultGatewayDnsLocation(
   cf: CloudflareClient,
 ): Promise<GatewayLocation | null> {
@@ -58,38 +51,6 @@ export function serializeGatewayDnsLocation(
       doh: Boolean(location.endpoints?.doh?.enabled),
     },
   };
-}
-
-export async function updateDefaultGatewayDnsLocation(
-  cf: CloudflareClient,
-  update: GatewayDnsEndpointUpdate,
-): Promise<NonNullable<Settings["dnsLocation"]>> {
-  const location = await getDefaultGatewayDnsLocation(cf);
-  if (!location?.id) throw new Error("Cloudflare Zero Trust has no default DNS location");
-  const endpoints = location.endpoints ?? {};
-  const enableIpv4ForNetwork = Boolean(update.sourceNetworks?.length) && update.ipv4 === undefined;
-  const res = await cf.request<GatewayLocation>(
-    "PUT",
-    cf.accountPath(`/gateway/locations/${location.id}`),
-    {
-      name: location.name,
-      client_default: location.client_default,
-      endpoints: {
-        ...endpoints,
-        ...(update.ipv4 === undefined && !enableIpv4ForNetwork
-          ? {}
-          : { ipv4: { ...endpoints.ipv4, enabled: update.ipv4 ?? true } }),
-        ...(update.ipv6 === undefined ? {} : { ipv6: { ...endpoints.ipv6, enabled: update.ipv6 } }),
-        ...(update.doh === undefined ? {} : { doh: { ...endpoints.doh, enabled: update.doh } }),
-      },
-      ...(update.sourceNetworks
-        ? { networks: update.sourceNetworks.map((network) => ({ network })) }
-        : {}),
-    },
-  );
-  const updated = serializeGatewayDnsLocation(res.result);
-  if (!updated) throw new Error("Cloudflare Zero Trust returned an invalid DNS location");
-  return updated;
 }
 
 /** Build unified mesh inventory (nodes + devices). */
