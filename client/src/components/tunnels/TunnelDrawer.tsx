@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Trash2, Copy, Check } from "lucide-react";
+import { X, Trash2, Copy, Check, Info, Activity, Network, Terminal } from "lucide-react";
 import { Drawer } from "../ui/Drawer";
 import { CopyValue } from "../ui/CopyValue";
 import { StatusDot } from "../ui/Badge";
@@ -86,36 +86,48 @@ export function TunnelDrawer({
         </button>
       </div>
 
-      <div className="tab-nav" style={{ marginBottom: "1rem", marginTop: "0.5rem" }}>
+      <div className="drawer-tabs" role="tablist" style={{ marginTop: "0.5rem" }}>
         <button
           type="button"
-          className={`tab-link ${activeTab === "overview" ? "is-active" : ""}`}
+          role="tab"
+          aria-selected={activeTab === "overview"}
+          className={`tab ${activeTab === "overview" ? "active" : ""}`}
           onClick={() => setActiveTab("overview")}
         >
-          {t("tunnels.drawer.tabs.overview")}
+          <Info size={13} strokeWidth={2.25} aria-hidden />
+          <span>{t("tunnels.drawer.tabs.overview")}</span>
         </button>
         <button
           type="button"
-          className={`tab-link ${activeTab === "connections" ? "is-active" : ""}`}
+          role="tab"
+          aria-selected={activeTab === "connections"}
+          className={`tab ${activeTab === "connections" ? "active" : ""}`}
           onClick={() => setActiveTab("connections")}
         >
-          {t("tunnels.drawer.tabs.connections")}
+          <Activity size={13} strokeWidth={2.25} aria-hidden />
+          <span>{t("tunnels.drawer.tabs.connections")}</span>
           {connections.length > 0 && <span className="tab-badge">{connections.length}</span>}
         </button>
         <button
           type="button"
-          className={`tab-link ${activeTab === "ingress" ? "is-active" : ""}`}
+          role="tab"
+          aria-selected={activeTab === "ingress"}
+          className={`tab ${activeTab === "ingress" ? "active" : ""}`}
           onClick={() => setActiveTab("ingress")}
         >
-          {t("tunnels.drawer.tabs.ingress")}
+          <Network size={13} strokeWidth={2.25} aria-hidden />
+          <span>{t("tunnels.drawer.tabs.ingress")}</span>
           {ingressRules.length > 0 && <span className="tab-badge">{ingressRules.length}</span>}
         </button>
         <button
           type="button"
-          className={`tab-link ${activeTab === "setup" ? "is-active" : ""}`}
+          role="tab"
+          aria-selected={activeTab === "setup"}
+          className={`tab ${activeTab === "setup" ? "active" : ""}`}
           onClick={() => setActiveTab("setup")}
         >
-          {t("tunnels.drawer.tabs.setup")}
+          <Terminal size={13} strokeWidth={2.25} aria-hidden />
+          <span>{t("tunnels.drawer.tabs.setup")}</span>
         </button>
       </div>
 

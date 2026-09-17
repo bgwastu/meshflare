@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Server, Smartphone, Plus, Trash2 } from "lucide-react";
+import { X, Server, Smartphone, Plus, Trash2, Info, Route, Terminal } from "lucide-react";
 import { Drawer } from "../ui/Drawer";
 import { CopyValue } from "../ui/CopyValue";
 import { KindBadge, MachineKindStatus } from "../ui/Badge";
@@ -84,28 +84,37 @@ export function MeshDrawer({
       </div>
 
       {isNode && (
-        <div className="tab-nav" style={{ marginBottom: "1rem" }}>
+        <div className="drawer-tabs" role="tablist">
           <button
             type="button"
-            className={`tab-link ${activeTab === "details" ? "is-active" : ""}`}
+            role="tab"
+            aria-selected={activeTab === "details"}
+            className={`tab ${activeTab === "details" ? "active" : ""}`}
             onClick={() => setActiveTab("details")}
           >
-            {t("mesh.drawer.tabs.details")}
+            <Info size={13} strokeWidth={2.25} aria-hidden />
+            <span>{t("mesh.drawer.tabs.details")}</span>
           </button>
           <button
             type="button"
-            className={`tab-link ${activeTab === "routes" ? "is-active" : ""}`}
+            role="tab"
+            aria-selected={activeTab === "routes"}
+            className={`tab ${activeTab === "routes" ? "active" : ""}`}
             onClick={() => setActiveTab("routes")}
           >
-            {t("mesh.drawer.tabs.routes")}
+            <Route size={13} strokeWidth={2.25} aria-hidden />
+            <span>{t("mesh.drawer.tabs.routes")}</span>
             {routes.length > 0 && <span className="tab-badge">{routes.length}</span>}
           </button>
           <button
             type="button"
-            className={`tab-link ${activeTab === "setup" ? "is-active" : ""}`}
+            role="tab"
+            aria-selected={activeTab === "setup"}
+            className={`tab ${activeTab === "setup" ? "active" : ""}`}
             onClick={() => setActiveTab("setup")}
           >
-            {t("mesh.drawer.tabs.setup")}
+            <Terminal size={13} strokeWidth={2.25} aria-hidden />
+            <span>{t("mesh.drawer.tabs.setup")}</span>
           </button>
         </div>
       )}

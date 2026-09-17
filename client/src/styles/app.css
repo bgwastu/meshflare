@@ -219,6 +219,57 @@ a {
   background: var(--bg2);
 }
 
+.drawer-tabs {
+  display: flex;
+  width: 100%;
+  margin-bottom: 1.1rem;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg0);
+}
+
+.drawer-tabs .tab {
+  flex: 1;
+  justify-content: center;
+  padding: 0.38rem 0.5rem;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  color: var(--muted);
+}
+
+.drawer-tabs .tab:hover {
+  color: var(--text);
+  background: var(--btn-hover);
+}
+
+.drawer-tabs .tab.active {
+  color: var(--text);
+  background: var(--bg1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+}
+
+.tab-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: var(--bg2);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tab.active .tab-badge {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
 .mesh-toolbar {
   display: flex;
   flex-wrap: wrap;
