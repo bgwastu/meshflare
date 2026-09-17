@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { TunnelFilters, type TunnelStatusFilter } from "./TunnelFilters";
+import { Search, RefreshCw, X, Loader2 } from "lucide-react";
+import { FacetChip } from "../ui/FilterChips";
 import { TunnelsTable } from "./TunnelsTable";
 import { TunnelDrawer } from "./TunnelDrawer";
 import { CreateTunnelModal } from "./CreateTunnelModal";
@@ -9,6 +10,8 @@ import { IngressEditorModal } from "./IngressEditorModal";
 import { useTunnels } from "../../hooks/useTunnels";
 import { useLanguage } from "../../hooks/useLanguage";
 import type { TunnelEntry, TunnelIngressRule } from "../../lib/api";
+
+type TunnelStatusFilter = "all" | "healthy" | "degraded" | "down" | "inactive";
 
 type TunnelsViewProps = {
   locked: boolean;
@@ -52,11 +55,7 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
     selectedTunnelId: selectedTunnel?.id ?? null,
   });
 
-  // Calculate status counts
-  const healthyCount = tunnels.filter((t) => t.status === "healthy").length;
-  const degradedCount = tunnels.filter((t) => t.status === "degraded").length;
-  const downCount = tunnels.filter((t) => t.status === "down").length;
-  const inactiveCount = tunnels.filter((t) => t.status === "inactive").length;
+  const ready = tunnelsQuery.isSuccess;
 
   // Filter tunnels by search and status
   const filteredTunnels = useMemo(() => {
@@ -115,7 +114,6 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
     if (index !== null) {
       currentRules[index] = rule;
     } else {
-      // Add right before any catch-all 404 rule or at end
       const catchAllIndex = currentRules.findIndex(
         (r) => !r.hostname && (!r.path || r.path === "/*") && r.service === "http_status:404",
       );
@@ -148,31 +146,118 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
     }
   };
 
+  const hasFilters = statusFilter !== "all" || Boolean(search.trim());
+
   return (
-    <div className="tunnels-view">
-      <TunnelFilters
-        search={search}
-        onSearchChange={setSearch}
-        statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
-        totalCount={tunnels.length}
-        healthyCount={healthyCount}
-        degradedCount={degradedCount}
-        downCount={downCount}
-        inactiveCount={inactiveCount}
-        onRefresh={() => void tunnelsQuery.refetch()}
-        isRefreshing={tunnelsQuery.isFetching}
-        onOpenCreate={() => setCreateOpen(true)}
-        locked={locked}
-      />
+    <section className="panel" aria-busy={!ready}>
+      <div className="panel-head">
+        <h2>
+          Tunnels{" "}
+          {ready ? (
+            <span className="hint">({filteredTunnels.length})</span>
+          ) : (
+            <Loader2 size={13} strokeWidth={2.5} className="spin count-spin" aria-hidden />
+          )}
+        </h2>
+
+        <div className="filters">
+          <FacetChip
+            label={t("tunnels.columns.status")}
+            value={statusFilter}
+            options={[
+              { value: "all", label: t("common.all") },
+              { value: "healthy", label: t("tunnels.filterStatus.healthy") },
+              { value: "degraded", label: t("tunnels.filterStatus.degraded") },
+              { value: "down", label: t("tunnels.filterStatus.down") },
+              { value: "inactive", label: t("tunnels.filterStatus.inactive") },
+            ]}
+            onChange={(val) => setStatusFilter(val as TunnelStatusFilter)}
+          />
+
+          <button
+            type="button"
+            className="btn btn-icon"
+            disabled={locked || tunnelsQuery.isFetching}
+            title={t("common.refresh")}
+            aria-label={t("common.refresh")}
+            onClick={() => void tunnelsQuery.refetch()}
+          >
+            {tunnelsQuery.isFetching ? (
+              <Loader2 size={15} strokeWidth={2.25} className="spin" aria-hidden />
+            ) : (
+              <RefreshCw size={15} strokeWidth={2.25} aria-hidden />
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="mesh-toolbar">
+        <div className="search-wrap">
+          <Search size={15} strokeWidth={2.25} aria-hidden />
+          <input
+            type="search"
+            placeholder={t("tunnels.searchPlaceholder")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={locked}
+          onClick={() => setCreateOpen(true)}
+        >
+          {t("tunnels.createTunnel")}
+        </button>
+      </div>
+
+      {hasFilters && ready && (
+        <div className="applied-filters">
+          {statusFilter !== "all" && (
+            <button
+              type="button"
+              className="filter-chip"
+              onClick={() => setStatusFilter("all")}
+            >
+              {t("tunnels.columns.status")}: {statusFilter}
+              <X size={12} strokeWidth={2.5} aria-hidden />
+            </button>
+          )}
+
+          {search.trim() && (
+            <button
+              type="button"
+              className="filter-chip"
+              onClick={() => setSearch("")}
+            >
+              {t("common.search")}: “{search.trim()}”
+              <X size={12} strokeWidth={2.5} aria-hidden />
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="btn filter-clear-all"
+            onClick={() => {
+              setStatusFilter("all");
+              setSearch("");
+            }}
+          >
+            {t("common.cancel")}
+          </button>
+        </div>
+      )}
 
       <TunnelsTable
         tunnels={filteredTunnels}
-        loading={tunnelsQuery.isFetching && tunnels.length === 0}
+        loading={!ready}
         onSelectTunnel={(tunnel) => setSelectedTunnel(tunnel)}
-        onOpenRename={(tunnel) => setRenameTunnel(tunnel)}
-        onOpenDelete={(tunnel) => setDeleteTunnelTarget(tunnel)}
-        locked={locked}
+        onOpenCreate={() => setCreateOpen(true)}
+        hasFilters={hasFilters}
+        onClearFilters={() => {
+          setStatusFilter("all");
+          setSearch("");
+        }}
       />
 
       <TunnelDrawer
@@ -229,6 +314,6 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
         onSave={handleSaveIngressRule}
         locked={locked}
       />
-    </div>
+    </section>
   );
 }

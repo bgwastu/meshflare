@@ -1,11 +1,14 @@
-import { DomainSettings } from "./DomainSettings";
-import { CleanupSettings } from "./CleanupSettings";
-import { SplitTunnelsSettings } from "./SplitTunnelsSettings";
-import { DnsFilterSettings } from "./DnsFilterSettings";
-import { GatewaySettings } from "./GatewaySettings";
-import { MaintenanceSettings } from "./MaintenanceSettings";
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Pencil, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { Modal } from "../ui/Modal";
+import { Spinner } from "../ui/Spinner";
+import { CopyValue } from "../ui/CopyValue";
+import { SkeletonBlock } from "../ui/Skeleton";
 import { useSettings } from "../../hooks/useSettings";
 import { useLanguage } from "../../hooks/useLanguage";
+import { dnsFilterStatusMeta } from "../../lib/warp";
+import { api, type SplitTunnelItem } from "../../lib/api";
 
 type SettingsViewProps = {
   locked: boolean;
@@ -13,70 +16,139 @@ type SettingsViewProps = {
 };
 
 export function SettingsView({ locked, onToast }: SettingsViewProps) {
-  const { t } = useLanguage();
+  const { t, formatSeen } = useLanguage();
+  const queryClient = useQueryClient();
 
   const {
     settings,
+    isSettingsLoading,
     patchSettings,
     splitTunnels,
     splitTunnelsLoading,
     saveSplitTunnels,
     maintenanceHealth,
-    maintenanceLoading,
     repairMaintenance,
+    isRepairingMaintenance,
   } = useSettings();
 
-  const handleSaveDomainSuffix = async (suffix: string) => {
+  const [meshSuffixDraft, setMeshSuffixDraft] = useState("mesh");
+  const [offlineDays, setOfflineDays] = useState(7);
+  const [filterUrlDraft, setFilterUrlDraft] = useState(
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt",
+  );
+  const [busy, setBusy] = useState<string | null>(null);
+
+  // Split tunnels state
+  const [splitEditor, setSplitEditor] = useState<{
+    index: number | null;
+    value: string;
+    description: string;
+  } | null>(null);
+  const [splitBusy, setSplitBusy] = useState(false);
+
+  useEffect(() => {
+    if (settings) {
+      setOfflineDays(settings.offlineDays);
+      setMeshSuffixDraft(settings.meshSuffix);
+      setFilterUrlDraft(settings.dnsFilterUrl);
+    }
+  }, [settings]);
+
+  const ready = !isSettingsLoading && settings !== null;
+
+  const filterMeta = dnsFilterStatusMeta(
+    settings?.dnsFilterStatus ?? "idle",
+    settings?.dnsFilterEnabled ?? false,
+  );
+  const filterOperationPending = [
+    "pending_enable",
+    "syncing",
+    "pending_refresh",
+    "pending_disable",
+  ].includes(settings?.dnsFilterStatus ?? "");
+  const dnsLocation = settings?.dnsLocation;
+
+  const handleSaveDomain = async () => {
+    const trimmed = meshSuffixDraft.trim().replace(/^\.+/, "");
+    if (!trimmed || trimmed === settings?.meshSuffix || busy || locked) return;
+    setBusy("domain");
     try {
-      await patchSettings({ meshSuffix: suffix });
+      await patchSettings({ meshSuffix: meshSuffixDraft });
       onToast(t("toasts.settingsSaved"), "success");
     } catch (e) {
       onToast(e instanceof Error ? e.message : t("toasts.settingsSaveFailed"), "error");
-      throw e;
+    } finally {
+      setBusy(null);
     }
   };
 
-  const handleSaveCleanupDays = async (days: number) => {
+  const handleSaveOfflineDays = async () => {
+    if (offlineDays === settings?.offlineDays || busy || locked) return;
+    setBusy("settings");
     try {
-      await patchSettings({ offlineDays: days });
+      await patchSettings({ offlineDays });
       onToast(t("toasts.settingsSaved"), "success");
     } catch (e) {
       onToast(e instanceof Error ? e.message : t("toasts.settingsSaveFailed"), "error");
-      throw e;
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleSaveFilterUrl = async () => {
+    const trimmed = filterUrlDraft.trim();
+    if (!trimmed || trimmed === settings?.dnsFilterUrl || busy || locked) return;
+    setBusy("filter-url");
+    try {
+      await patchSettings({ dnsFilterUrl: filterUrlDraft });
+      onToast(t("toasts.settingsSaved"), "success");
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : t("toasts.settingsSaveFailed"), "error");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleToggleFilter = async () => {
+    if (busy || locked || filterOperationPending) return;
+    setBusy("dns-filter");
+    try {
+      await patchSettings({ dnsFilterEnabled: !settings?.dnsFilterEnabled });
+      onToast(t("toasts.settingsSaved"), "success");
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : t("toasts.settingsSaveFailed"), "error");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleSyncDns = async () => {
+    setBusy("sync");
+    try {
+      await api.syncDns();
+      await queryClient.invalidateQueries({ queryKey: ["settings"] });
+      onToast(t("toasts.dnsSynced"), "success");
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : t("toasts.dnsSyncFailed"), "error");
+    } finally {
+      setBusy(null);
     }
   };
 
   const handleRunCleanup = async () => {
+    setBusy("cleanup");
     try {
-      await patchSettings({ offlineDays: settings?.offlineDays });
+      const r = await api.cleanup();
+      await queryClient.invalidateQueries({ queryKey: ["settings"] });
       onToast(t("toasts.cleanupFinished"), "success");
     } catch (e) {
       onToast(e instanceof Error ? e.message : t("toasts.cleanupFailed"), "error");
-      throw e;
+    } finally {
+      setBusy(null);
     }
   };
 
-  const handleToggleDnsFilter = async (enabled: boolean) => {
-    try {
-      await patchSettings({ dnsFilterEnabled: enabled });
-      onToast(t("toasts.settingsSaved"), "success");
-    } catch (e) {
-      onToast(e instanceof Error ? e.message : t("toasts.settingsSaveFailed"), "error");
-      throw e;
-    }
-  };
-
-  const handleSaveDnsFilterUrl = async (url: string) => {
-    try {
-      await patchSettings({ dnsFilterUrl: url });
-      onToast(t("toasts.settingsSaved"), "success");
-    } catch (e) {
-      onToast(e instanceof Error ? e.message : t("toasts.settingsSaveFailed"), "error");
-      throw e;
-    }
-  };
-
-  const handleRepairMaintenance = async () => {
+  const handleRepair = async () => {
     try {
       const res = await repairMaintenance();
       if (res.ok) {
@@ -86,58 +158,499 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
       }
     } catch (e) {
       onToast(e instanceof Error ? e.message : t("toasts.maintenanceRepairFailed"), "error");
-      throw e;
+    }
+  };
+
+  const handleSwitchSplitMode = async (newMode: "include" | "exclude") => {
+    if (!splitTunnels || locked || splitBusy) return;
+    setSplitBusy(true);
+    try {
+      await saveSplitTunnels({ mode: newMode, items: splitTunnels[newMode] });
+      onToast(t("toasts.settingsSaved"), "success");
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : t("toasts.settingsSaveFailed"), "error");
+    } finally {
+      setSplitBusy(false);
+    }
+  };
+
+  const handleSaveSplitItem = async () => {
+    if (!splitEditor || !splitTunnels) return;
+    const value = splitEditor.value.trim();
+    if (!value) return;
+
+    const item: SplitTunnelItem = value.includes("/")
+      ? { address: value, description: splitEditor.description.trim() || undefined }
+      : { host: value, description: splitEditor.description.trim() || undefined };
+
+    const activeItems = splitTunnels[splitTunnels.mode];
+    const items =
+      splitEditor.index === null
+        ? [...activeItems, item]
+        : activeItems.map((cur, idx) => (idx === splitEditor.index ? item : cur));
+
+    setSplitBusy(true);
+    try {
+      await saveSplitTunnels({ mode: splitTunnels.mode, items });
+      setSplitEditor(null);
+      onToast(t("toasts.settingsSaved"), "success");
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : t("toasts.settingsSaveFailed"), "error");
+    } finally {
+      setSplitBusy(false);
+    }
+  };
+
+  const handleDeleteSplitItem = async (index: number) => {
+    if (!splitTunnels || locked || splitBusy) return;
+    const items = splitTunnels[splitTunnels.mode].filter((_, i) => i !== index);
+    setSplitBusy(true);
+    try {
+      await saveSplitTunnels({ mode: splitTunnels.mode, items });
+      onToast(t("toasts.settingsSaved"), "success");
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : t("toasts.settingsSaveFailed"), "error");
+    } finally {
+      setSplitBusy(false);
     }
   };
 
   return (
-    <div className="settings-view" style={{ display: "grid", gap: "1.25rem" }}>
-      <DomainSettings
-        settings={settings}
-        onSave={handleSaveDomainSuffix}
-        locked={locked}
-      />
+    <section className="settings-panel" aria-busy={!ready}>
+      {!ready ? (
+        <div className="skeleton-stack">
+          <SkeletonBlock className="skeleton-label" />
+          <SkeletonBlock className="skeleton-input" />
+          <SkeletonBlock className="skeleton-btn" />
+          <SkeletonBlock className="skeleton-row" />
+        </div>
+      ) : (
+        <div className="settings-grid">
+          {/* 1. Mesh domain */}
+          <div className="settings-block">
+            <h3>{t("settings.meshDns.title")}</h3>
+            <p className="hint">{t("settings.meshDns.description")}</p>
+            <div className="field">
+              <label htmlFor="mesh-suffix">{t("settings.meshDns.suffixLabel")}</label>
+              <div className="suffix-input">
+                <span className="suffix-dot">.</span>
+                <input
+                  id="mesh-suffix"
+                  type="text"
+                  value={meshSuffixDraft}
+                  disabled={locked}
+                  onChange={(e) => setMeshSuffixDraft(e.target.value)}
+                />
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={
+                locked ||
+                !meshSuffixDraft.trim() ||
+                meshSuffixDraft.trim().replace(/^\.+/, "") === settings.meshSuffix
+              }
+              onClick={handleSaveDomain}
+            >
+              {busy === "domain" ? <Spinner label="Saving…" /> : t("settings.meshDns.saveBtn")}
+            </button>
+            {["local", "internal", "lan", "home.arpa", "corp", "private", "test", "arpa"].includes(
+              meshSuffixDraft.trim().toLowerCase().replace(/^\.+/, ""),
+            ) && (
+              <p className="hint" style={{ marginTop: "0.5rem", color: "#eab308" }}>
+                Warning: .{meshSuffixDraft.trim().replace(/^\.+/, "")} is in Cloudflare WARP's Local Domain Fallback list and will bypass Gateway DNS resolution.
+              </p>
+            )}
+          </div>
 
-      <CleanupSettings
-        settings={settings}
-        onSaveDays={handleSaveCleanupDays}
-        onRunCleanup={handleRunCleanup}
-        locked={locked}
-      />
+          {/* 2. Auto-delete */}
+          <div className="settings-block">
+            <h3>{t("settings.cleanup.title")}</h3>
+            <p className="hint">{t("settings.cleanup.description")}</p>
+            <div className="field">
+              <label htmlFor="offline-days">{t("settings.cleanup.daysLabel")}</label>
+              <input
+                id="offline-days"
+                type="number"
+                min={1}
+                max={365}
+                value={offlineDays}
+                disabled={locked}
+                onChange={(e) => setOfflineDays(Number(e.target.value))}
+              />
+            </div>
+            <button
+              type="button"
+              className="btn"
+              disabled={locked || offlineDays === settings.offlineDays}
+              onClick={handleSaveOfflineDays}
+            >
+              {busy === "settings" ? <Spinner label="Saving…" /> : t("common.save")}
+            </button>
+          </div>
 
-      <SplitTunnelsSettings
-        config={splitTunnels}
-        loading={splitTunnelsLoading}
-        onSave={async (mode, items) => {
-          try {
-            await saveSplitTunnels({ mode, items });
-            onToast(t("toasts.settingsSaved"), "success");
-          } catch (e) {
-            onToast(e instanceof Error ? e.message : t("toasts.settingsSaveFailed"), "error");
-            throw e;
+          {/* 3. DNS filtering */}
+          <div className="settings-block">
+            <h3>{t("settings.dnsFilter.title")}</h3>
+            <div className="status-label" style={{ marginBottom: "0.35rem" }}>
+              {t("settings.dnsFilter.statusLabel")}:
+              <span
+                className="status-dot"
+                data-tone={filterMeta.tone}
+                data-tip={filterMeta.tip}
+                tabIndex={0}
+                aria-label={filterMeta.tip}
+              />
+              <span className="hint">{filterMeta.tip}</span>
+            </div>
+            <p className="hint">
+              {t("settings.dnsFilter.description")}
+              {filterMeta.tone === "ok" && settings.dnsFilterLastSyncedAt
+                ? ` Last refresh ${formatSeen(settings.dnsFilterLastSyncedAt)}.`
+                : null}
+            </p>
+            <div className="field">
+              <label htmlFor="filter-url">{t("settings.dnsFilter.customUrlLabel")}</label>
+              <input
+                id="filter-url"
+                type="url"
+                value={filterUrlDraft}
+                disabled={locked || filterOperationPending}
+                onChange={(e) => setFilterUrlDraft(e.target.value)}
+              />
+            </div>
+            <div className="row-actions">
+              <button
+                type="button"
+                className="btn"
+                disabled={
+                  locked ||
+                  !filterUrlDraft.trim() ||
+                  filterUrlDraft.trim() === settings.dnsFilterUrl
+                }
+                onClick={handleSaveFilterUrl}
+              >
+                {busy === "filter-url" ? <Spinner label="Saving…" /> : t("common.save")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={locked || filterOperationPending}
+                onClick={handleToggleFilter}
+              >
+                {busy === "dns-filter" ? (
+                  <Spinner label={settings.dnsFilterStatus === "pending_disable" ? "Disabling…" : "Enabling…"} />
+                ) : settings.dnsFilterEnabled ? (
+                  t("status.disabled")
+                ) : (
+                  t("status.enabled")
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* 4. Zero Trust DNS endpoints */}
+          <div className="settings-block dns-endpoints-block">
+            <h3>{t("settings.gateway.title")}</h3>
+            <p className="hint">{t("settings.gateway.description")}</p>
+            {!dnsLocation ? (
+              <p className="hint dns-endpoint-warning">No default Gateway DNS location found.</p>
+            ) : (
+              <div className="dns-endpoint-list">
+                {[
+                  {
+                    key: "ipv4" as const,
+                    label: t("settings.gateway.ipv4Dest"),
+                    value: [dnsLocation.ipv4Destination, dnsLocation.ipv4DestinationBackup]
+                      .filter(Boolean)
+                      .join(" · "),
+                  },
+                  {
+                    key: "ipv6" as const,
+                    label: "IPv6 endpoint",
+                    value: dnsLocation.ipv6Destination ?? "",
+                  },
+                  {
+                    key: "doh" as const,
+                    label: t("settings.gateway.dohSubdomain"),
+                    value: dnsLocation.dohSubdomain
+                      ? `https://${dnsLocation.dohSubdomain}.cloudflare-gateway.com/dns-query`
+                      : "",
+                  },
+                ].map((endpoint) => {
+                  const enabled = dnsLocation.endpoints[endpoint.key];
+                  return (
+                    <div className="dns-endpoint-row" key={endpoint.key}>
+                      <div className="dns-endpoint-head">
+                        <strong>{endpoint.label}</strong>
+                        <span className={`badge ${enabled ? "cloudflare" : "local"}`}>
+                          {enabled ? t("status.enabled") : t("status.disabled")}
+                        </span>
+                      </div>
+                      {enabled && endpoint.value ? (
+                        <p className="dns-endpoint-value">
+                          <CopyValue
+                            value={endpoint.value}
+                            onCopied={() => onToast(t("common.copied"))}
+                          />
+                        </p>
+                      ) : (
+                        <p className="hint">{t("status.disabled")}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 5. Maintenance */}
+          <div className="settings-block maintenance-block">
+            <h3>{t("settings.maintenance.title")}</h3>
+            {maintenanceHealth && !maintenanceHealth.ok && (
+              <div className="health-alert" role="alert">
+                <div className="health-alert-copy">
+                  <strong>Out of sync</strong>
+                  <p className="hint">
+                    {!maintenanceHealth.dnsFilter.inSync && (
+                      <span>Filter: {maintenanceHealth.dnsFilter.detail}. </span>
+                    )}
+                    {maintenanceHealth.mesh && !maintenanceHealth.mesh.inSync && (
+                      <span>Mesh: {maintenanceHealth.mesh.detail}. </span>
+                    )}
+                    {t("settings.maintenance.degradedNotice")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-repair"
+                  disabled={isRepairingMaintenance || locked}
+                  onClick={handleRepair}
+                >
+                  {isRepairingMaintenance ? <Spinner label="Repairing…" /> : t("settings.maintenance.repairBtn")}
+                </button>
+              </div>
+            )}
+            <div className="maint-row">
+              <div>
+                <strong>{t("mesh.syncDns")}</strong>
+                <p className="hint">Last run {formatSeen(settings.lastDnsSyncAt, "never")}.</p>
+              </div>
+              <button
+                type="button"
+                className="btn"
+                disabled={locked}
+                onClick={handleSyncDns}
+              >
+                {busy === "sync" ? <Spinner label="Syncing…" /> : "Run now"}
+              </button>
+            </div>
+            <div className="maint-row">
+              <div>
+                <strong>{t("mesh.cleanup")}</strong>
+                <p className="hint">Last run {formatSeen(settings.lastCleanupAt, "never")}.</p>
+              </div>
+              <button
+                type="button"
+                className="btn"
+                disabled={locked}
+                onClick={handleRunCleanup}
+              >
+                {busy === "cleanup" ? <Spinner label="Cleaning…" /> : "Run now"}
+              </button>
+            </div>
+          </div>
+
+          {/* 6. WARP split tunnels */}
+          <div
+            className="settings-block settings-block-wide split-tunnels-block"
+            aria-busy={splitTunnelsLoading || splitBusy}
+          >
+            <div className="split-head">
+              <div>
+                <h3>{t("settings.splitTunnels.title")}</h3>
+                <p className="hint">{t("settings.splitTunnels.description")}</p>
+              </div>
+              {splitTunnels && (
+                <label className={`mode-switch ${splitTunnels.mode}`}>
+                  <span>Exclude</span>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    aria-label="Split tunnel mode"
+                    checked={splitTunnels.mode === "include"}
+                    disabled={locked || splitBusy}
+                    onChange={(e) => {
+                      const next = e.target.checked ? "include" : "exclude";
+                      void handleSwitchSplitMode(next);
+                    }}
+                  />
+                  <span className="switch-track" aria-hidden>
+                    <span />
+                  </span>
+                  <span>Include</span>
+                </label>
+              )}
+            </div>
+            <p className="hint split-mode-copy">
+              {splitTunnels?.mode === "include"
+                ? "Only listed traffic is sent through WARP."
+                : "All traffic is sent through WARP except listed traffic."}
+            </p>
+            {splitTunnels?.audit && !splitTunnels.audit.meshIpsRouted && (
+              <div className="health-alert" role="alert" style={{ marginBottom: "0.85rem" }}>
+                <div className="health-alert-copy">
+                  <strong>Mesh IP routing warning</strong>
+                  <p className="hint">{splitTunnels.audit.warning}</p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  disabled={locked || splitBusy}
+                  onClick={async () => {
+                    setSplitBusy(true);
+                    try {
+                      const updated = await api.ensureMeshRouting();
+                      queryClient.setQueryData(["split-tunnels"], updated);
+                      onToast("Split tunnels updated to route Mesh IPs through WARP.", "success");
+                    } catch (e) {
+                      onToast(e instanceof Error ? e.message : String(e), "error");
+                    } finally {
+                      setSplitBusy(false);
+                    }
+                  }}
+                >
+                  {splitBusy ? <Spinner label="Fixing…" /> : "Fix routing"}
+                </button>
+              </div>
+            )}
+
+            {splitTunnelsLoading ? (
+              <div className="split-list" aria-label="Loading split tunnels">
+                {Array.from({ length: 3 }, (_, index) => (
+                  <div className="route-row" key={index}>
+                    <div className="skeleton-stack">
+                      <SkeletonBlock className="skeleton-route-primary" />
+                      <SkeletonBlock className="skeleton-route-secondary" />
+                    </div>
+                    <SkeletonBlock className="skeleton-route-action" />
+                  </div>
+                ))}
+              </div>
+            ) : splitTunnels ? (
+              <>
+                <div className="split-list">
+                  {splitTunnels[splitTunnels.mode].map((item, index) => (
+                    <div className="route-row" key={`${item.address ?? item.host}-${index}`}>
+                      <div>
+                        <span className="mono">{item.address ?? item.host}</span>
+                        {item.description && <span className="hint">{item.description}</span>}
+                      </div>
+                      <div className="row-actions split-item-actions">
+                        <button
+                          type="button"
+                          className="btn btn-icon"
+                          title="Edit"
+                          aria-label={`Edit ${item.address ?? item.host}`}
+                          disabled={locked || splitBusy}
+                          onClick={() =>
+                            setSplitEditor({
+                              index,
+                              value: item.address ?? item.host ?? "",
+                              description: item.description ?? "",
+                            })
+                          }
+                        >
+                          <Pencil size={14} strokeWidth={2.25} aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-icon btn-danger"
+                          title="Remove"
+                          aria-label={`Remove ${item.address ?? item.host}`}
+                          disabled={locked || splitBusy}
+                          onClick={() => void handleDeleteSplitItem(index)}
+                        >
+                          <Trash2 size={14} strokeWidth={2.25} aria-hidden />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary split-add-button"
+                  disabled={locked || splitBusy}
+                  onClick={() => setSplitEditor({ index: null, value: "", description: "" })}
+                >
+                  + Add
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* Split tunnel item editor modal */}
+      {splitEditor && splitTunnels && (
+        <Modal
+          isOpen={Boolean(splitEditor)}
+          onClose={() => setSplitEditor(null)}
+          title={
+            splitEditor.index === null
+              ? t("settings.splitTunnels.modalTitleAdd")
+              : t("settings.splitTunnels.modalTitleEdit")
           }
-        }}
-        locked={locked}
-      />
-
-      <DnsFilterSettings
-        settings={settings}
-        onToggle={handleToggleDnsFilter}
-        onSaveUrl={handleSaveDnsFilterUrl}
-        locked={locked}
-      />
-
-      <GatewaySettings
-        settings={settings}
-        onToast={(msg) => onToast(msg)}
-      />
-
-      <MaintenanceSettings
-        health={maintenanceHealth}
-        loading={maintenanceLoading}
-        onRepair={handleRepairMaintenance}
-        locked={locked}
-      />
-    </div>
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleSaveSplitItem();
+            }}
+          >
+            <div className="field">
+              <label htmlFor="split-value">{t("settings.splitTunnels.addressHostLabel")}</label>
+              <input
+                id="split-value"
+                type="text"
+                value={splitEditor.value}
+                placeholder="10.0.0.0/24 or internal.example.com"
+                disabled={splitBusy}
+                autoFocus
+                onChange={(e) => setSplitEditor({ ...splitEditor, value: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="split-description">{t("settings.splitTunnels.descriptionLabel")}</label>
+              <input
+                id="split-description"
+                type="text"
+                value={splitEditor.description}
+                disabled={splitBusy}
+                onChange={(e) => setSplitEditor({ ...splitEditor, description: e.target.value })}
+              />
+            </div>
+            <div className="row-actions modal-actions">
+              <button
+                type="button"
+                className="btn"
+                disabled={splitBusy}
+                onClick={() => setSplitEditor(null)}
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={splitBusy || !splitEditor.value.trim()}
+              >
+                {splitBusy ? <Spinner label="Saving…" /> : t("common.save")}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </section>
   );
 }

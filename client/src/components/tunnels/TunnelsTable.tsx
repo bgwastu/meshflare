@@ -1,49 +1,47 @@
-import { Pencil, Trash2 } from "lucide-react";
-import { StatusDot } from "../ui/Badge";
+import { Globe } from "lucide-react";
 import { SkeletonBlock } from "../ui/Skeleton";
 import { useLanguage } from "../../hooks/useLanguage";
+import { tunnelStatusMeta } from "../../lib/warp";
 import type { TunnelEntry } from "../../lib/api";
 
 type TunnelsTableProps = {
   tunnels: TunnelEntry[];
   loading: boolean;
   onSelectTunnel: (tunnel: TunnelEntry) => void;
-  onOpenRename: (tunnel: TunnelEntry) => void;
-  onOpenDelete: (tunnel: TunnelEntry) => void;
-  locked: boolean;
+  onOpenCreate: () => void;
+  hasFilters: boolean;
+  onClearFilters: () => void;
 };
 
 export function TunnelsTable({
   tunnels,
   loading,
   onSelectTunnel,
-  onOpenRename,
-  onOpenDelete,
-  locked,
+  onOpenCreate,
+  hasFilters,
+  onClearFilters,
 }: TunnelsTableProps) {
-  const { t, formatDateTime } = useLanguage();
+  const { t, formatSeen } = useLanguage();
 
   if (loading) {
     return (
-      <div className="table-wrap">
-        <table className="inventory-table">
+      <div className="table-wrap" aria-label="Loading tunnels">
+        <table>
           <thead>
             <tr>
-              <th>{t("tunnels.columns.name")}</th>
-              <th>{t("tunnels.columns.status")}</th>
-              <th>{t("tunnels.columns.connections")}</th>
-              <th>{t("tunnels.columns.created")}</th>
-              <th style={{ textAlign: "end" }}>{t("tunnels.columns.actions")}</th>
+              {["Name", "Status", "Config", "Connections", "Created"].map((label) => (
+                <th key={label}>{label}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {[1, 2, 3].map((i) => (
-              <tr key={i}>
-                <td><SkeletonBlock className="skeleton-cell" /></td>
-                <td><SkeletonBlock className="skeleton-cell" style={{ width: 60 }} /></td>
-                <td><SkeletonBlock className="skeleton-cell" style={{ width: 50 }} /></td>
-                <td><SkeletonBlock className="skeleton-cell" style={{ width: 90 }} /></td>
-                <td><SkeletonBlock className="skeleton-cell" style={{ width: 40 }} /></td>
+            {Array.from({ length: 3 }, (_, i) => (
+              <tr key={i} className="skeleton-row-tr">
+                {Array.from({ length: 5 }, (_, j) => (
+                  <td key={j}>
+                    <SkeletonBlock className="skeleton-cell" />
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
@@ -54,78 +52,76 @@ export function TunnelsTable({
 
   if (tunnels.length === 0) {
     return (
-      <div className="empty-state" style={{ padding: "3rem 1rem", textAlign: "center", color: "var(--muted)" }}>
-        <p>{t("tunnels.empty")}</p>
+      <div className="empty">
+        <p className="empty-title">
+          {hasFilters ? t("tunnels.empty") : "No tunnels yet."}
+        </p>
+        {hasFilters ? (
+          <button type="button" className="btn" onClick={onClearFilters}>
+            {t("common.cancel")}
+          </button>
+        ) : (
+          <button type="button" className="btn btn-primary" onClick={onOpenCreate}>
+            {t("tunnels.createTunnel")}
+          </button>
+        )}
       </div>
     );
   }
 
   return (
     <div className="table-wrap">
-      <table className="inventory-table">
+      <table>
         <thead>
           <tr>
-            <th>{t("tunnels.columns.name")}</th>
-            <th>{t("tunnels.columns.status")}</th>
-            <th>{t("tunnels.columns.connections")}</th>
-            <th>{t("tunnels.columns.created")}</th>
-            <th style={{ textAlign: "end" }}>{t("tunnels.columns.actions")}</th>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Config</th>
+            <th>Connections</th>
+            <th>Created</th>
           </tr>
         </thead>
         <tbody>
-          {tunnels.map((tunnel) => (
-            <tr
-              key={tunnel.id}
-              onClick={() => onSelectTunnel(tunnel)}
-              style={{ cursor: "pointer" }}
-            >
-              <td className="name-cell">
-                <StatusDot status={tunnel.status} />
-                <span style={{ fontWeight: 600, color: "var(--text)" }}>{tunnel.name}</span>
-              </td>
-              <td>
-                <span style={{ textTransform: "capitalize", fontSize: "0.82rem" }}>
-                  {t(`status.${tunnel.status.toLowerCase()}`, { defaultValue: tunnel.status })}
-                </span>
-              </td>
-              <td>
-                <span className="badge" style={{ fontSize: "0.75rem" }}>
-                  {tunnel.connections?.length ?? 0}
-                </span>
-              </td>
-              <td style={{ color: "var(--muted)", whiteSpace: "nowrap" }}>
-                {formatDateTime(tunnel.created_at)}
-              </td>
-              <td style={{ textAlign: "end" }}>
-                <div
-                  className="row-actions"
-                  style={{ justifyContent: "flex-end" }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    onClick={() => onOpenRename(tunnel)}
-                    disabled={locked}
-                    title={t("common.rename")}
-                    aria-label={t("common.rename")}
-                  >
-                    <Pencil size={13} aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-btn danger"
-                    onClick={() => onOpenDelete(tunnel)}
-                    disabled={locked}
-                    title={t("common.delete")}
-                    aria-label={t("common.delete")}
-                  >
-                    <Trash2 size={13} aria-hidden />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
+          {tunnels.map((tunnel) => {
+            const meta = tunnelStatusMeta(tunnel.status);
+            return (
+              <tr
+                key={tunnel.id}
+                style={{ cursor: "pointer" }}
+                onClick={() => onSelectTunnel(tunnel)}
+              >
+                <td>
+                  <strong className="name-cell">
+                    <Globe size={16} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0 }} />
+                    {tunnel.name}
+                  </strong>
+                </td>
+                <td>
+                  <span className="status-cell">
+                    <span
+                      className="status-dot"
+                      data-tone={meta.tone}
+                      data-tip={meta.label}
+                      tabIndex={0}
+                      aria-label={meta.label}
+                    />
+                    {meta.label}
+                  </span>
+                </td>
+                <td>
+                  <span className={`badge ${tunnel.config_src}`}>
+                    {tunnel.config_src === "cloudflare" ? "Cloudflare" : "Local"}
+                  </span>
+                </td>
+                <td>
+                  <span className="badge">
+                    {tunnel.connections?.length ?? 0} active
+                  </span>
+                </td>
+                <td>{formatSeen(tunnel.created_at)}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

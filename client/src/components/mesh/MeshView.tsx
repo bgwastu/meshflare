@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { useSearchParams } from "react-router";
-import { MeshFilters } from "./MeshFilters";
+import { Search, RefreshCw, X, Loader2 } from "lucide-react";
+import { FacetChip } from "../ui/FilterChips";
 import { MeshTable, type SortKey } from "./MeshTable";
 import { MeshDrawer } from "./MeshDrawer";
 import { CreateNodeModal } from "./CreateNodeModal";
@@ -21,12 +21,11 @@ type MeshViewProps = {
 
 export function MeshView({ locked, onToast }: MeshViewProps) {
   const { t } = useLanguage();
-  const [searchParams, setSearchParams] = useSearchParams();
 
   const [search, setSearch] = useState("");
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
-  const [sortKey, setSortKey] = useState<SortKey>("createdAt");
+  const [sortKey, setSortKey] = useState<SortKey>("createdAt" as any);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   // Modals & Drawer state
@@ -45,8 +44,6 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
     installLoading,
     syncDns,
     isSyncingDns,
-    cleanup,
-    isCleaning,
     createNode,
     renameMachine,
     deleteMachine,
@@ -57,15 +54,7 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
     selectedNodeId: drawerEntry?.id ?? null,
   });
 
-  // Calculate counts
-  const nodeCount = entries.filter((e) => e.kind === "node").length;
-  const deviceCount = entries.filter((e) => e.kind === "device").length;
-  const onlineCount = entries.filter(
-    (e) => e.status.toLowerCase() === "online" || e.status.toLowerCase() === "healthy",
-  ).length;
-  const offlineCount = entries.filter(
-    (e) => e.status.toLowerCase() === "offline" || e.status.toLowerCase() === "down" || e.status.toLowerCase() === "inactive",
-  ).length;
+  const ready = meshQuery.isSuccess;
 
   // Filter and sort entries
   const filteredEntries = useMemo(() => {
@@ -96,9 +85,6 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
           case "name":
             cmp = a.name.localeCompare(b.name);
             break;
-          case "kind":
-            cmp = a.kind.localeCompare(b.kind);
-            break;
           case "meshHostname":
             cmp = (a.meshHostname ?? "").localeCompare(b.meshHostname ?? "");
             break;
@@ -108,10 +94,6 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
           case "lastSeenAt":
             cmp = (Date.parse(a.lastSeenAt ?? "") || 0) - (Date.parse(b.lastSeenAt ?? "") || 0);
             break;
-          case "status":
-            cmp = a.status.localeCompare(b.status);
-            break;
-          case "createdAt":
           default:
             cmp = (Date.parse(a.createdAt) || 0) - (Date.parse(b.createdAt) || 0);
             break;
@@ -135,15 +117,6 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
       onToast(t("toasts.dnsSynced"), "success");
     } catch (e) {
       onToast(e instanceof Error ? e.message : t("toasts.dnsSyncFailed"), "error");
-    }
-  };
-
-  const handleCleanup = async () => {
-    try {
-      await cleanup();
-      onToast(t("toasts.cleanupFinished"), "success");
-    } catch (e) {
-      onToast(e instanceof Error ? e.message : t("toasts.cleanupFailed"), "error");
     }
   };
 
@@ -204,38 +177,143 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
     }
   };
 
+  const hasFilters = kindFilter !== "all" || activityFilter !== "all" || Boolean(search.trim());
+
   return (
-    <div className="mesh-view">
-      <MeshFilters
-        search={search}
-        onSearchChange={setSearch}
-        kindFilter={kindFilter}
-        onKindChange={setKindFilter}
-        activityFilter={activityFilter}
-        onActivityChange={setActivityFilter}
-        totalCount={entries.length}
-        nodeCount={nodeCount}
-        deviceCount={deviceCount}
-        onlineCount={onlineCount}
-        offlineCount={offlineCount}
-        onSyncDns={() => void handleSyncDns()}
-        isSyncingDns={isSyncingDns}
-        onCleanup={() => void handleCleanup()}
-        isCleaning={isCleaning}
-        onOpenCreate={() => setCreateOpen(true)}
-        locked={locked}
-      />
+    <section className="panel" aria-busy={!ready}>
+      <div className="panel-head">
+        <h2>
+          Mesh{" "}
+          {ready ? (
+            <span className="hint">({filteredEntries.length})</span>
+          ) : (
+            <Loader2 size={13} strokeWidth={2.5} className="spin count-spin" aria-hidden />
+          )}
+        </h2>
+
+        <div className="filters">
+          <FacetChip
+            label={t("mesh.columns.kind")}
+            value={kindFilter}
+            options={[
+              { value: "all", label: t("common.all") },
+              { value: "node", label: t("mesh.filterKind.node") },
+              { value: "device", label: t("mesh.filterKind.device") },
+            ]}
+            onChange={(val) => setKindFilter(val as KindFilter)}
+          />
+
+          <FacetChip
+            label={t("mesh.columns.status")}
+            value={activityFilter}
+            options={[
+              { value: "all", label: t("common.all") },
+              { value: "online", label: t("mesh.filterActivity.online") },
+              { value: "offline", label: t("mesh.filterActivity.offline") },
+            ]}
+            onChange={(val) => setActivityFilter(val as ActivityFilter)}
+          />
+
+          <button
+            type="button"
+            className="btn btn-icon"
+            disabled={locked || isSyncingDns}
+            title={t("common.refresh")}
+            aria-label={t("common.refresh")}
+            onClick={() => void handleSyncDns()}
+          >
+            {isSyncingDns ? (
+              <Loader2 size={15} strokeWidth={2.25} className="spin" aria-hidden />
+            ) : (
+              <RefreshCw size={15} strokeWidth={2.25} aria-hidden />
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="mesh-toolbar">
+        <div className="search-wrap">
+          <Search size={15} strokeWidth={2.25} aria-hidden />
+          <input
+            type="search"
+            placeholder={t("mesh.searchPlaceholder")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={locked}
+          onClick={() => setCreateOpen(true)}
+        >
+          {t("mesh.addNode")}
+        </button>
+      </div>
+
+      {hasFilters && ready && (
+        <div className="applied-filters">
+          {kindFilter !== "all" && (
+            <button
+              type="button"
+              className="filter-chip"
+              onClick={() => setKindFilter("all")}
+            >
+              {t("mesh.columns.kind")}: {kindFilter === "node" ? t("mesh.filterKind.node") : t("mesh.filterKind.device")}
+              <X size={12} strokeWidth={2.5} aria-hidden />
+            </button>
+          )}
+
+          {activityFilter !== "all" && (
+            <button
+              type="button"
+              className="filter-chip"
+              onClick={() => setActivityFilter("all")}
+            >
+              {t("mesh.columns.status")}: {activityFilter === "online" ? t("mesh.filterActivity.online") : t("mesh.filterActivity.offline")}
+              <X size={12} strokeWidth={2.5} aria-hidden />
+            </button>
+          )}
+
+          {search.trim() && (
+            <button
+              type="button"
+              className="filter-chip"
+              onClick={() => setSearch("")}
+            >
+              {t("common.search")}: “{search.trim()}”
+              <X size={12} strokeWidth={2.5} aria-hidden />
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="btn filter-clear-all"
+            onClick={() => {
+              setSearch("");
+              setKindFilter("all");
+              setActivityFilter("all");
+            }}
+          >
+            {t("common.cancel")}
+          </button>
+        </div>
+      )}
 
       <MeshTable
         entries={filteredEntries}
-        loading={meshQuery.isFetching && entries.length === 0}
+        loading={!ready}
         sortKey={sortKey}
         sortDir={sortDir}
         onSort={handleSort}
         onSelectEntry={(entry) => setDrawerEntry(entry)}
-        onOpenRename={(entry) => setRenameEntry(entry)}
-        onOpenDelete={(entry) => setDeleteEntry(entry)}
-        locked={locked}
+        onOpenCreate={() => setCreateOpen(true)}
+        hasFilters={hasFilters}
+        onClearFilters={() => {
+          setSearch("");
+          setKindFilter("all");
+          setActivityFilter("all");
+        }}
         onToast={(msg) => onToast(msg)}
       />
 
@@ -300,6 +378,6 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
         }}
         locked={locked}
       />
-    </div>
+    </section>
   );
 }
