@@ -22,9 +22,11 @@
     "drizzle-orm": "^0.44.7",
     "hono": "^4.12.31",
     "hono-sessions": "^0.8.1",
+    "i18next": "^26.4.2",
     "lucide-react": "^1.26.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-i18next": "^17.0.14",
     "react-router": "7",
     "zod": "^4.0.17"
   },

@@ -1,0 +1,61 @@
+/* RTL styling overrides for Arabic and RTL locales */
+
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* Force LTR and bi-directional isolation for code, IPs, hostnames, tokens, and commands */
+[dir="rtl"] .mono,
+[dir="rtl"] code,
+[dir="rtl"] pre,
+[dir="rtl"] .copy-chip,
+[dir="rtl"] .token-box,
+[dir="rtl"] .cmd-block,
+[dir="rtl"] .dest-val,
+[dir="rtl"] .subdomain-text,
+[dir="rtl"] input[type="password"],
+[dir="rtl"] .ip-cell,
+[dir="rtl"] .host-cell {
+  direction: ltr !important;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+/* Side drawer animations in RTL */
+[dir="rtl"] .drawer {
+  border-left: none;
+  border-right: 1px solid var(--line);
+  transform: translateX(-100%);
+}
+
+[dir="rtl"] .drawer-backdrop.is-open .drawer {
+  transform: translateX(0);
+}
+
+/* Mirror drawer close icon or back icons if needed */
+[dir="rtl"] .modal-actions {
+  justify-content: flex-start;
+}
+
+/* Input search icon position in RTL */
+[dir="rtl"] .search-box {
+  flex-direction: row-reverse;
+}
+
+/* Tooltip alignment */
+[dir="rtl"] [data-tip]::after {
+  left: auto;
+  right: 50%;
+  transform: translateX(50%);
+}
+
+/* Header actions order */
+[dir="rtl"] .header-actions {
+  flex-direction: row-reverse;
+}
+
+/* Language selector popup positioning */
+[dir="rtl"] .lang-menu {
+  left: 0;
+  right: auto;
+}
