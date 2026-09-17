@@ -48,17 +48,17 @@ export function DeleteMachineModal({
       title={deleteTitle}
     >
       <div>
-        <p style={{ marginTop: 0 }}>
+        <p>
           {t("mesh.modals.deleteConfirm", { name: entry.name })}
         </p>
 
         {isNode && (
-          <p className="hint" style={{ color: "var(--danger)" }}>
+          <p className="hint hint-danger">
             {t("mesh.modals.deleteWarning")}
           </p>
         )}
 
-        <div className="modal-actions" style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+        <div className="modal-actions">
           <button
             type="button"
             className="btn"

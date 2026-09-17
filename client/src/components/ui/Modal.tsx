@@ -22,8 +22,13 @@ export function Modal({ isOpen, onClose, title, children, width }: ModalProps) {
       }
     };
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -45,8 +50,8 @@ export function Modal({ isOpen, onClose, title, children, width }: ModalProps) {
         aria-modal="true"
         aria-label={title}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.85rem" }}>
-          <h3 style={{ margin: 0 }}>{title}</h3>
+        <div className="modal-head">
+          <h3>{title}</h3>
           <button
             type="button"
             className="icon-btn"
@@ -57,7 +62,9 @@ export function Modal({ isOpen, onClose, title, children, width }: ModalProps) {
             <X size={15} aria-hidden />
           </button>
         </div>
-        {children}
+        <div className="modal-stack">
+          {children}
+        </div>
       </div>
     </div>
   );

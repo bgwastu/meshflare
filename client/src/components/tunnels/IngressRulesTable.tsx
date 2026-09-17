@@ -21,12 +21,11 @@ export function IngressRulesTable({
 
   return (
     <div className="ingress-rules-section">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-        <h4 style={{ margin: 0, fontSize: "0.95rem" }}>{t("tunnels.drawer.ingressTitle")}</h4>
+      <div className="drawer-section-head">
+        <h4>{t("tunnels.drawer.ingressTitle")}</h4>
         <button
           type="button"
-          className="btn btn-primary"
-          style={{ padding: "0.25rem 0.55rem", fontSize: "0.75rem" }}
+          className="btn btn-primary btn-sm"
           onClick={onOpenAdd}
           disabled={locked}
         >
@@ -38,32 +37,20 @@ export function IngressRulesTable({
       {rules.length === 0 ? (
         <p className="hint">{t("tunnels.drawer.noRules")}</p>
       ) : (
-        <div style={{ display: "grid", gap: "0.5rem", marginBottom: "0.75rem" }}>
+        <div className="drawer-list">
           {rules.map((rule, index) => (
-            <div
-              key={index}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "0.5rem 0.75rem",
-                background: "var(--bg0)",
-                border: "1px solid var(--line)",
-                borderRadius: "var(--radius)",
-                fontSize: "0.82rem",
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600 }} className="mono" dir="ltr">
+            <div key={index} className="drawer-list-item">
+              <div className="drawer-list-item-copy">
+                <div className="drawer-list-item-name mono" dir="ltr">
                   {rule.hostname || "*"}
-                  {rule.path && <span style={{ color: "var(--muted)" }}>{rule.path}</span>}
+                  {rule.path && <span className="muted">{rule.path}</span>}
                 </div>
-                <div style={{ color: "var(--accent)", fontSize: "0.78rem" }} className="mono" dir="ltr">
+                <div className="drawer-list-item-meta drawer-list-item-accent mono" dir="ltr">
                   {rule.service}
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", flexShrink: 0 }}>
+              <div className="drawer-list-item-actions">
                 <button
                   type="button"
                   className="icon-btn"
@@ -90,7 +77,7 @@ export function IngressRulesTable({
         </div>
       )}
 
-      <p className="hint" style={{ fontSize: "0.74rem", margin: "0.5rem 0 0" }}>
+      <p className="hint hint-notice">
         {t("tunnels.drawer.defaultRuleNotice")}
       </p>
     </div>

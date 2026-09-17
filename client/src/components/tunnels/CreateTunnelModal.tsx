@@ -38,7 +38,7 @@ export function CreateTunnelModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t("tunnels.modals.createTitle")}>
       <form onSubmit={handleSubmit}>
-        <p className="hint" style={{ marginTop: 0 }}>
+        <p className="hint">
           {t("tunnels.modals.createDesc")}
         </p>
 

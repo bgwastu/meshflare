@@ -63,7 +63,7 @@ export function AddRouteModal({
       title={t("mesh.modals.addRouteTitle")}
     >
       <form onSubmit={handleSubmit}>
-        <p className="hint" style={{ marginTop: 0 }}>
+        <p className="hint">
           {t("mesh.modals.addRouteDesc")}
         </p>
 

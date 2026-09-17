@@ -72,57 +72,58 @@ export function IngressEditorModal({
       }
     >
       <form onSubmit={handleSubmit}>
-        <label className="field-label" htmlFor="ingress-hostname-input">
-          {t("tunnels.modals.hostnameLabel")}
-        </label>
-        <input
-          id="ingress-hostname-input"
-          type="text"
-          className="input mono"
-          dir="ltr"
-          style={{ width: "100%", marginBottom: "0.85rem" }}
-          placeholder={t("tunnels.modals.hostnamePlaceholder")}
-          value={hostname}
-          onChange={(e) => setHostname(e.target.value)}
-          disabled={busy || locked}
-          autoFocus
-        />
+        <div className="field">
+          <label className="field-label" htmlFor="ingress-hostname-input">
+            {t("tunnels.modals.hostnameLabel")}
+          </label>
+          <input
+            id="ingress-hostname-input"
+            type="text"
+            className="input mono"
+            dir="ltr"
+            placeholder={t("tunnels.modals.hostnamePlaceholder")}
+            value={hostname}
+            onChange={(e) => setHostname(e.target.value)}
+            disabled={busy || locked}
+            autoFocus
+          />
+        </div>
 
-        <label className="field-label" htmlFor="ingress-path-input">
-          {t("tunnels.modals.pathLabel")}
-        </label>
-        <input
-          id="ingress-path-input"
-          type="text"
-          className="input mono"
-          dir="ltr"
-          style={{ width: "100%", marginBottom: "0.85rem" }}
-          placeholder={t("tunnels.modals.pathPlaceholder")}
-          value={path}
-          onChange={(e) => setPath(e.target.value)}
-          disabled={busy || locked}
-        />
+        <div className="field">
+          <label className="field-label" htmlFor="ingress-path-input">
+            {t("tunnels.modals.pathLabel")}
+          </label>
+          <input
+            id="ingress-path-input"
+            type="text"
+            className="input mono"
+            dir="ltr"
+            placeholder={t("tunnels.modals.pathPlaceholder")}
+            value={path}
+            onChange={(e) => setPath(e.target.value)}
+            disabled={busy || locked}
+          />
+        </div>
 
-        <label className="field-label" htmlFor="ingress-service-input">
-          {t("tunnels.modals.serviceLabel")}
-        </label>
-        <input
-          id="ingress-service-input"
-          type="text"
-          className="input mono"
-          dir="ltr"
-          style={{ width: "100%", marginBottom: "0.45rem" }}
-          placeholder={t("tunnels.modals.servicePlaceholder")}
-          value={service}
-          onChange={(e) => setService(e.target.value)}
-          disabled={busy || locked}
-          required
-        />
-        <p className="hint" style={{ marginTop: 0, marginBottom: "1.25rem", fontSize: "0.75rem" }}>
-          {t("tunnels.modals.serviceTip")}
-        </p>
+        <div className="field">
+          <label className="field-label" htmlFor="ingress-service-input">
+            {t("tunnels.modals.serviceLabel")}
+          </label>
+          <input
+            id="ingress-service-input"
+            type="text"
+            className="input mono"
+            dir="ltr"
+            placeholder={t("tunnels.modals.servicePlaceholder")}
+            value={service}
+            onChange={(e) => setService(e.target.value)}
+            disabled={busy || locked}
+            required
+          />
+          <p className="hint">{t("tunnels.modals.serviceTip")}</p>
+        </div>
 
-        <div className="modal-actions" style={{ display: "flex", gap: "0.5rem" }}>
+        <div className="modal-actions">
           <button
             type="button"
             className="btn"

@@ -40,15 +40,15 @@ export function DeleteTunnelModal({
       title={t("tunnels.modals.deleteTitle")}
     >
       <div>
-        <p style={{ marginTop: 0 }}>
+        <p>
           {t("tunnels.modals.deleteConfirm", { name: tunnel.name })}
         </p>
 
-        <p className="hint" style={{ color: "var(--danger)" }}>
+        <p className="hint hint-danger">
           {t("tunnels.modals.deleteWarning")}
         </p>
 
-        <div className="modal-actions" style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+        <div className="modal-actions">
           <button
             type="button"
             className="btn"

@@ -72,9 +72,9 @@ export function TunnelDrawer({
   return (
     <Drawer isOpen={isOpen} onClose={onClose}>
       <div className="drawer-head">
-        <h3 className="drawer-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <h3 className="drawer-title">
           <StatusDot status={tunnel.status} />
-          <span style={{ wordBreak: "break-all" }}>{tunnel.name}</span>
+          <span className="drawer-title-text">{tunnel.name}</span>
         </h3>
         <button
           type="button"
@@ -135,53 +135,52 @@ export function TunnelDrawer({
       {/* Overview Tab */}
       {activeTab === "overview" && (
         <div>
-          <div className="property-grid" style={{ display: "grid", gap: "0.85rem", fontSize: "0.85rem" }}>
+          <div className="property-grid">
             <div>
-              <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+              <span className="field-label">
                 {t("tunnels.drawer.properties.id")}
               </span>
-              <div style={{ wordBreak: "break-all", fontFamily: "var(--mono)", fontSize: "0.78rem" }} dir="ltr">
+              <div className="mono-break" dir="ltr">
                 {tunnel.id}
               </div>
             </div>
 
             <div>
-              <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+              <span className="field-label">
                 {t("tunnels.drawer.properties.status")}
               </span>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+              <div className="name-cell">
                 <StatusDot status={tunnel.status} />
                 <span>{tunnelStatusLabel(t, tunnel.status)}</span>
               </div>
             </div>
 
             <div>
-              <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+              <span className="field-label">
                 {t("tunnels.drawer.properties.created")}
               </span>
               <div>{formatDateTime(tunnel.created_at)}</div>
             </div>
 
             <div>
-              <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+              <span className="field-label">
                 {t("tunnels.drawer.properties.connectionsCount")}
               </span>
               <div>{connections.length}</div>
             </div>
 
             <div>
-              <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+              <span className="field-label">
                 {t("tunnels.drawer.properties.rulesCount")}
               </span>
               <div>{ingressRules.length}</div>
             </div>
           </div>
 
-          <div style={{ marginTop: "1.75rem", paddingTop: "1rem", borderTop: "1px solid var(--line)" }}>
+          <div className="drawer-danger">
             <button
               type="button"
-              className="btn btn-danger"
-              style={{ width: "100%", justifyContent: "center" }}
+              className="btn btn-danger btn-block"
               onClick={() => onOpenDelete(tunnel)}
               disabled={locked}
             >
@@ -195,39 +194,32 @@ export function TunnelDrawer({
       {/* Connections Tab */}
       {activeTab === "connections" && (
         <div>
-          <h4 style={{ margin: "0 0 0.75rem", fontSize: "0.95rem" }}>
+          <h4 className="drawer-section-title">
             {t("tunnels.drawer.connectionsTitle")}
           </h4>
 
           {connectionsLoading ? (
-            <div style={{ padding: "1rem 0" }}>
+            <div className="drawer-loading">
               <Spinner label={t("common.loading")} />
             </div>
           ) : connections.length === 0 ? (
             <p className="hint">{t("tunnels.drawer.noConnections")}</p>
           ) : (
-            <div style={{ display: "grid", gap: "0.5rem" }}>
+            <div className="drawer-list">
               {connections.map((conn) => (
-                <div
-                  key={conn.id}
-                  style={{
-                    padding: "0.6rem 0.75rem",
-                    background: "var(--bg0)",
-                    border: "1px solid var(--line)",
-                    borderRadius: "var(--radius)",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.25rem" }}>
-                    <span style={{ fontWeight: 700 }} className="mono" dir="ltr">
-                      {conn.colo_name}
-                    </span>
-                    <span style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
-                      {formatSeen(conn.opened_at)}
-                    </span>
-                  </div>
-                  <div style={{ color: "var(--muted)", fontSize: "0.75rem" }} className="mono" dir="ltr">
-                    {conn.origin_ip} · {conn.version ?? "cloudflared"}
+                <div key={conn.id} className="drawer-list-item">
+                  <div className="drawer-list-item-copy">
+                    <div className="drawer-list-item-head">
+                      <span className="mono drawer-list-item-name" dir="ltr">
+                        {conn.colo_name}
+                      </span>
+                      <span className="drawer-list-item-meta">
+                        {formatSeen(conn.opened_at)}
+                      </span>
+                    </div>
+                    <div className="drawer-list-item-meta mono" dir="ltr">
+                      {conn.origin_ip} · {conn.version ?? "cloudflared"}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -277,7 +269,9 @@ export function TunnelDrawer({
               </div>
 
               <div className="setup-token-label">{t("tunnels.drawer.tokenLabel")}</div>
-              <CopyValue value={token} onCopied={() => onToast(t("common.copied"))} />
+              <div className="setup-token-value">
+                <CopyValue value={token} onCopied={() => onToast(t("common.copied"))} />
+              </div>
             </>
           ) : null}
         </div>

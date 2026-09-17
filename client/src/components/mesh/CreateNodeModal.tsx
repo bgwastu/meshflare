@@ -38,7 +38,7 @@ export function CreateNodeModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t("mesh.modals.createTitle")}>
       <form onSubmit={handleSubmit}>
-        <p className="hint" style={{ marginTop: 0 }}>
+        <p className="hint">
           {t("mesh.modals.createDesc")}
         </p>
 

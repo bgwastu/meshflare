@@ -50,7 +50,7 @@ export function RenameMachineModal({
       title={t("mesh.modals.renameTitle")}
     >
       <form onSubmit={handleSubmit}>
-        <p className="hint" style={{ marginTop: 0 }}>
+        <p className="hint">
           {t("mesh.modals.renameDesc")}
         </p>
 

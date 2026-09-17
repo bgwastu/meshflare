@@ -50,7 +50,7 @@ export function RenameTunnelModal({
       title={t("tunnels.modals.renameTitle")}
     >
       <form onSubmit={handleSubmit}>
-        <p className="hint" style={{ marginTop: 0 }}>
+        <p className="hint">
           {t("tunnels.modals.renameDesc")}
         </p>
 

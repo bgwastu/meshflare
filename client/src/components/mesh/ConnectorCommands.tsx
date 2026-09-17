@@ -145,7 +145,7 @@ export function ConnectorCommands({
             onClick={(e) => e.stopPropagation()}
           >
             <h3>{t("mesh.modals.regenerateTitle")}</h3>
-            <p className="hint" style={{ color: "var(--danger)", marginTop: 0 }}>
+            <p className="hint hint-danger">
               {t("mesh.drawer.regenerateWarning")}
             </p>
             <div className="row-actions modal-actions">

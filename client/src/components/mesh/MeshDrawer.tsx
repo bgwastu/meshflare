@@ -61,9 +61,9 @@ export function MeshDrawer({
   return (
     <Drawer isOpen={isOpen} onClose={onClose}>
       <div className="drawer-head">
-        <h3 className="drawer-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <h3 className="drawer-title">
           {isNode ? <Server size={18} aria-hidden /> : <Smartphone size={18} aria-hidden />}
-          <span style={{ wordBreak: "break-all" }}>{entry.name}</span>
+          <span className="drawer-title-text">{entry.name}</span>
         </h3>
         <button
           type="button"
@@ -120,9 +120,9 @@ export function MeshDrawer({
       {/* Details Tab */}
       {(!isNode || activeTab === "details") && (
         <div>
-          <div className="property-grid" style={{ display: "grid", gap: "0.85rem", fontSize: "0.85rem" }}>
+          <div className="property-grid">
             <div>
-              <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+              <span className="field-label">
                 {t("mesh.drawer.properties.meshHostname")}
               </span>
               <div>
@@ -131,7 +131,7 @@ export function MeshDrawer({
             </div>
 
             <div>
-              <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+              <span className="field-label">
                 {t("mesh.drawer.properties.ipv4")}
               </span>
               <div>
@@ -141,7 +141,7 @@ export function MeshDrawer({
 
             {entry.ipv6 && (
               <div>
-                <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+                <span className="field-label">
                   {t("mesh.drawer.properties.ipv6")}
                 </span>
                 <div>
@@ -151,14 +151,14 @@ export function MeshDrawer({
             )}
 
             <div>
-              <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+              <span className="field-label">
                 {t("mesh.drawer.properties.lastSeen")}
               </span>
               <div>{formatSeen(entry.lastSeenAt)}</div>
             </div>
 
             <div>
-              <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+              <span className="field-label">
                 {t("mesh.drawer.properties.created")}
               </span>
               <div>{formatDateTime(entry.createdAt)}</div>
@@ -166,7 +166,7 @@ export function MeshDrawer({
 
             {entry.deviceId && (
               <div>
-                <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+                <span className="field-label">
                   {t("mesh.drawer.properties.deviceId")}
                 </span>
                 <div>
@@ -176,20 +176,19 @@ export function MeshDrawer({
             )}
 
             <div>
-              <span className="field-label" style={{ color: "var(--muted)", fontSize: "0.75rem" }}>
+              <span className="field-label">
                 {t("mesh.drawer.properties.id")}
               </span>
-              <div style={{ wordBreak: "break-all", fontFamily: "var(--mono)", fontSize: "0.78rem" }} dir="ltr">
+              <div className="mono-break" dir="ltr">
                 {entry.id}
               </div>
             </div>
           </div>
 
-          <div style={{ marginTop: "1.75rem", paddingTop: "1rem", borderTop: "1px solid var(--line)" }}>
+          <div className="drawer-danger">
             <button
               type="button"
-              className="btn btn-danger"
-              style={{ width: "100%", justifyContent: "center" }}
+              className="btn btn-danger btn-block"
               onClick={() => onOpenDelete(entry)}
               disabled={locked}
             >
@@ -205,12 +204,11 @@ export function MeshDrawer({
       {/* Routes Tab */}
       {isNode && activeTab === "routes" && (
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-            <h4 style={{ margin: 0, fontSize: "0.95rem" }}>{t("mesh.drawer.routesTitle")}</h4>
+          <div className="drawer-section-head">
+            <h4>{t("mesh.drawer.routesTitle")}</h4>
             <button
               type="button"
-              className="btn btn-primary"
-              style={{ padding: "0.25rem 0.55rem", fontSize: "0.75rem" }}
+              className="btn btn-primary btn-sm"
               onClick={onOpenAddRoute}
               disabled={locked}
             >
@@ -220,34 +218,25 @@ export function MeshDrawer({
           </div>
 
           {routesLoading ? (
-            <div style={{ padding: "1rem 0" }}>
+            <div className="drawer-loading">
               <Spinner label={t("common.loading")} />
             </div>
           ) : routes.length === 0 ? (
             <p className="hint">{t("mesh.drawer.noRoutes")}</p>
           ) : (
-            <div style={{ display: "grid", gap: "0.5rem" }}>
+            <div className="drawer-list">
               {routes.map((r, i) => {
                 const target = r.network || r.hostname || "—";
                 const isDeleting = deleteRouteId === r.id;
                 return (
                   <div
                     key={r.id ?? i}
-                    className="route-item"
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "0.45rem 0.65rem",
-                      background: "var(--bg0)",
-                      border: "1px solid var(--line)",
-                      borderRadius: "var(--radius)",
-                    }}
+                    className="drawer-list-item"
                   >
-                    <div>
-                      <span className="mono" dir="ltr" style={{ fontWeight: 600 }}>{target}</span>
+                    <div className="drawer-list-item-copy">
+                      <span className="mono drawer-list-item-name" dir="ltr">{target}</span>
                       {r.comment && (
-                        <div style={{ fontSize: "0.75rem", color: "var(--muted)", marginTop: "0.1rem" }}>
+                        <div className="drawer-list-item-meta">
                           {r.comment}
                         </div>
                       )}
