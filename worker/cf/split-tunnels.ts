@@ -86,3 +86,39 @@ export function auditMeshRouting(config: SplitTunnelConfig): SplitTunnelAudit {
 
   return { meshIpsRouted: true };
 }
+
+/**
+ * Automatically adjust split tunnel configuration so that Cloudflare Mesh
+ * IP space (100.96.0.0/12) is routed through WARP.
+ */
+export function ensureMeshRouting(config: SplitTunnelConfig): SplitTunnelConfig {
+  const meshSubnet = "100.96.0.0/12";
+  const cgnatSubnet = "100.64.0.0/10";
+
+  if (config.mode === "include") {
+    const included = config.include.some(
+      (item) =>
+        item.address === meshSubnet ||
+        item.address === cgnatSubnet ||
+        item.address === "0.0.0.0/0",
+    );
+    if (!included) {
+      return {
+        ...config,
+        include: [
+          ...config.include,
+          { address: meshSubnet, description: "Cloudflare Mesh (WARP Connector)" },
+        ],
+      };
+    }
+    return config;
+  }
+
+  const nextExclude = config.exclude.filter(
+    (item) => item.address !== meshSubnet && item.address !== cgnatSubnet,
+  );
+  return {
+    ...config,
+    exclude: nextExclude,
+  };
+}

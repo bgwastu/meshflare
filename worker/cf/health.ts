@@ -1,5 +1,6 @@
 import type { CloudflareClient } from "./client";
 import { buildMeshInventory, syncMeshDns } from "./dns";
+import { meshHostname } from "./names";
 import {
   FILTER_LIST_PREFIX,
   FILTER_RULE_NAME,
@@ -69,11 +70,56 @@ export async function checkMaintenanceHealth(cf: CloudflareClient, env: Env): Pr
   const meshRules = rules.filter(
     (r) => r.action === "override" && r.filters?.includes("dns") && r.name?.startsWith("meshflare DNS"),
   );
-  const routablePeers = inventory.filter((e) => Boolean(e.ipv4 || e.ipv6)).length;
-  const meshInSync = meshRules.length === routablePeers;
-  const meshDetail = meshInSync
-    ? `In sync (${meshRules.length} rule${meshRules.length === 1 ? "" : "s"})`
-    : `Divergence: ${meshRules.length} remote rule(s) vs ${routablePeers} active peer(s)`;
+
+  const desiredHosts = new Map<string, string[]>();
+  for (const entry of inventory) {
+    const ips = [entry.ipv4, entry.ipv6].filter((ip): ip is string => Boolean(ip?.trim()));
+    if (ips.length === 0) continue;
+    const host = entry.meshHostname ?? meshHostname(entry.name, settings.meshSuffix);
+    if (!desiredHosts.has(host)) desiredHosts.set(host, ips);
+  }
+
+  const remoteRulesByHost = new Map<string, string[]>();
+  for (const rule of meshRules) {
+    const prefix = "meshflare DNS: ";
+    let host: string | null = null;
+    if (rule.name?.startsWith(prefix)) {
+      host = rule.name.slice(prefix.length).trim();
+    } else {
+      const m = rule.traffic?.match(/(?:dns\.fqdn\s*==|any\(dns\.domains\[\*\]\s*==)\s*"([^"]+)"/);
+      host = m?.[1] ?? null;
+    }
+    if (host) {
+      remoteRulesByHost.set(host, (rule.rule_settings?.override_ips ?? []).slice().sort());
+    }
+  }
+
+  let missingCount = 0;
+  let staleIpCount = 0;
+  for (const [host, ips] of desiredHosts) {
+    const remoteIps = remoteRulesByHost.get(host);
+    if (!remoteIps) {
+      missingCount += 1;
+    } else {
+      const targetIps = ips.slice().sort();
+      const match =
+        remoteIps.length === targetIps.length &&
+        remoteIps.every((ip, idx) => ip === targetIps[idx]);
+      if (!match) staleIpCount += 1;
+    }
+  }
+
+  const orphanCount = Math.max(0, meshRules.length - (desiredHosts.size - missingCount));
+  const meshInSync = missingCount === 0 && staleIpCount === 0 && orphanCount === 0;
+
+  let meshDetail = `In sync (${meshRules.length} rule${meshRules.length === 1 ? "" : "s"})`;
+  if (!meshInSync) {
+    const issues: string[] = [];
+    if (missingCount > 0) issues.push(`${missingCount} missing`);
+    if (staleIpCount > 0) issues.push(`${staleIpCount} outdated IP${staleIpCount === 1 ? "" : "s"}`);
+    if (orphanCount > 0) issues.push(`${orphanCount} orphaned`);
+    meshDetail = `Divergence: ${issues.join(", ")} (${meshRules.length} remote vs ${desiredHosts.size} desired)`;
+  }
 
   return {
     ok: inSync && meshInSync,
@@ -88,7 +134,7 @@ export async function checkMaintenanceHealth(cf: CloudflareClient, env: Env): Pr
     },
     mesh: {
       activeRules: meshRules.length,
-      desiredRules: routablePeers,
+      desiredRules: desiredHosts.size,
       inSync: meshInSync,
       detail: meshDetail,
     },

@@ -448,7 +448,7 @@ export function App() {  const location = useLocation();
     try {
       const r = await api.createNode(name);
       setNewName("");
-      await queryClient.invalidateQueries({ queryKey: ["mesh"] });
+      await queryClient.refetchQueries({ queryKey: ["mesh"] });
       const meshData = queryClient.getQueryData<{ entries: MeshEntry[] }>(["mesh"]);
       const list = meshData?.entries ?? [];
       const created =
@@ -1180,6 +1180,25 @@ export function App() {  const location = useLocation();
                       <strong>Mesh IP routing warning</strong>
                       <p className="hint">{splitTunnels.audit.warning}</p>
                     </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      disabled={locked || splitBusy}
+                      onClick={async () => {
+                        setSplitBusy(true);
+                        try {
+                          const updated = await api.ensureMeshRouting();
+                          queryClient.setQueryData(["split-tunnels"], updated);
+                          push("Split tunnels updated to route Mesh IPs through WARP.", "success");
+                        } catch (e) {
+                          push(e instanceof Error ? e.message : String(e), "error");
+                        } finally {
+                          setSplitBusy(false);
+                        }
+                      }}
+                    >
+                      {splitBusy ? <Spinner label="Fixing…" /> : "Fix routing"}
+                    </button>
                   </div>
                 )}
                 {splitTunnelsLoading ? (

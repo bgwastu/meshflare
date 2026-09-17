@@ -13,6 +13,7 @@ type GatewayRule = {
   enabled?: boolean;
   filters?: string[];
   rule_settings?: { override_ips?: string[] };
+  precedence?: number;
 };
 
 type GatewayList = {
@@ -120,13 +121,12 @@ export async function createGatewayDomainList(
 }
 
 function parseManagedHostKey(rule: GatewayRule): string | null {
-  const m = rule.traffic?.match(/dns\.fqdn\s*==\s*"([^"]+)"/);
-  if (m?.[1]) return m[1];
   const prefix = `${MESH_RULE_PREFIX}: `;
   if (rule.name?.startsWith(prefix)) {
     return rule.name.slice(prefix.length).trim() || null;
   }
-  return null;
+  const m = rule.traffic?.match(/(?:dns\.fqdn\s*==|any\(dns\.domains\[\*\]\s*==)\s*"([^"]+)"/);
+  return m?.[1] || null;
 }
 
 function isManagedMeshRule(rule: GatewayRule): boolean {
@@ -182,11 +182,13 @@ export async function syncMeshDnsRules(
     const existing = managed.get(host);
     const currentIps = (existing?.rule_settings?.override_ips ?? []).slice().sort();
     const targetIps = ips.slice().sort();
+    const targetTraffic = `any(dns.domains[*] == "${host}")`;
     const ipsMatch =
       currentIps.length === targetIps.length &&
       currentIps.every((ip, idx) => ip === targetIps[idx]);
+    const trafficMatch = existing?.traffic === targetTraffic;
 
-    if (existing && ipsMatch) {
+    if (existing && ipsMatch && trafficMatch) {
       skipped += 1;
       managed.delete(host);
       continue;
@@ -225,9 +227,9 @@ export async function syncMeshDnsRules(
             enabled: true,
             action: "override",
             filters: ["dns"],
-            traffic: `dns.fqdn == "${host}"`,
+            traffic: `any(dns.domains[*] == "${host}")`,
             rule_settings: { override_ips: ips },
-            precedence: 100,
+            ...(existing?.precedence !== undefined ? { precedence: existing.precedence } : {}),
           },
           existing,
         ),

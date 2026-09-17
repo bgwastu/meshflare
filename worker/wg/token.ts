@@ -3,7 +3,12 @@ export function decodeConnectorToken(token: string): {
   tunnel_id: string;
   tunnel_secret: string;
 } {
-  const json = JSON.parse(atob(token)) as { a: string; t: string; s: string };
+  let json: { a?: string; t?: string; s?: string };
+  try {
+    json = JSON.parse(atob(token)) as { a?: string; t?: string; s?: string };
+  } catch {
+    throw new Error("Invalid base64 connector token");
+  }
   if (!json.a || !json.t || !json.s) {
     throw new Error("Invalid connector token payload");
   }

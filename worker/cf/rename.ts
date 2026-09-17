@@ -22,36 +22,42 @@ type NamedTarget =
 async function collectNames(cf: CloudflareClient): Promise<{
   taken: Set<string>;
   byName: Map<string, NamedTarget>;
+  targets: NamedTarget[];
 }> {
   const [nodes, regs] = await Promise.all([
     listMeshNodes(cf),
-    listDeviceRegistrations(cf, "active"),
+    listDeviceRegistrations(cf, "all"),
   ]);
 
   const taken = new Set<string>();
   const byName = new Map<string, NamedTarget>();
+  const targets: NamedTarget[] = [];
 
   for (const node of nodes) {
     const key = nameKey(node.name);
     taken.add(key);
-    byName.set(key, { kind: "node", id: node.id, name: node.name });
+    const target: NamedTarget = { kind: "node", id: node.id, name: node.name };
+    byName.set(key, target);
+    targets.push(target);
   }
 
   for (const reg of regs) {
     const name = reg.device?.name?.trim() || "unnamed";
     const key = nameKey(name);
-    // Prefer keeping node mapping if both somehow share a name.
-    if (byName.has(key)) continue;
-    taken.add(key);
-    byName.set(key, {
+    const target: NamedTarget = {
       kind: "device",
       id: reg.id,
       deviceId: reg.device?.id ?? reg.id,
       name,
-    });
+    };
+    targets.push(target);
+    // Prefer keeping node mapping if both somehow share a name.
+    if (byName.has(key)) continue;
+    taken.add(key);
+    byName.set(key, target);
   }
 
-  return { taken, byName };
+  return { taken, byName, targets };
 }
 
 async function applyRename(
@@ -80,24 +86,12 @@ export async function renameWithCollisionHandling(
   const desired = desiredRaw.trim();
   if (!desired) throw new Error("Name is required");
 
-  const { taken, byName } = await collectNames(cf);
+  const { taken, byName, targets } = await collectNames(cf);
 
-  let self: NamedTarget | undefined;
-  if (kind === "node") {
-    const node = (await listMeshNodes(cf)).find((n) => n.id === id);
-    if (!node) throw new Error("Mesh node not found");
-    self = { kind: "node", id: node.id, name: node.name };
-  } else {
-    const reg = (await listDeviceRegistrations(cf, "active")).find((r) => r.id === id);
-    if (!reg) throw new Error("Device registration not found");
-    self = {
-      kind: "device",
-      id: reg.id,
-      deviceId: reg.device?.id ?? reg.id,
-      name: reg.device?.name?.trim() || "unnamed",
-    };
+  const self = targets.find((t) => t.kind === kind && t.id === id);
+  if (!self) {
+    throw new Error(`${kind === "node" ? "Mesh node" : "Device registration"} not found`);
   }
-
   if (nameKey(self.name) === nameKey(desired)) {
     return {
       renamed: { id: self.id, kind: self.kind, from: self.name, to: self.name },

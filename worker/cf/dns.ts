@@ -105,11 +105,20 @@ export async function buildMeshInventory(
     });
   }
 
+  const activeNodeIds = new Set(nodes.map((n: MeshNode) => n.id));
+  for (const id of Object.keys(nodeBindings)) {
+    if (!activeNodeIds.has(id)) {
+      delete nodeBindings[id];
+      nodeBindingsChanged = true;
+    }
+  }
+
   const nodeEntries: MeshEntry[] = nodes.map((node: MeshNode) => {
-    const reg = resolveNodeRegistration(node, regsById, connectorRegsByName);
+    const cachedBinding = nodeBindings[node.id];
+    const reg = resolveNodeRegistration(node, regsById, connectorRegsByName, cachedBinding?.deviceId);
     let ipv4 = reg?.virtual_ipv4?.trim() || null;
     let ipv6 = reg?.virtual_ipv6?.trim() || null;
-    let deviceId = reg?.device?.id;
+    let deviceId = reg?.device?.id ?? cachedBinding?.deviceId;
 
     if (ipv4 || ipv6) {
       if (
@@ -120,11 +129,10 @@ export async function buildMeshInventory(
         nodeBindings[node.id] = { deviceId, ipv4, ipv6 };
         nodeBindingsChanged = true;
       }
-    } else if (nodeBindings[node.id]) {
-      const cached = nodeBindings[node.id];
-      ipv4 = cached.ipv4 ?? null;
-      ipv6 = cached.ipv6 ?? null;
-      deviceId = cached.deviceId;
+    } else if (cachedBinding) {
+      ipv4 = cachedBinding.ipv4 ?? null;
+      ipv6 = cachedBinding.ipv6 ?? null;
+      deviceId = cachedBinding.deviceId;
     }
 
     return {
@@ -142,7 +150,6 @@ export async function buildMeshInventory(
       isConnector: true,
     };
   });
-
   if (nodeBindingsChanged) {
     await updateAppData(env.DB, { nodeBindings });
   }
@@ -186,12 +193,17 @@ function resolveNodeRegistration(
   node: MeshNode,
   regsById: Map<string, DeviceRegistration>,
   connectorRegsByName: Map<string, DeviceRegistration>,
+  cachedDeviceId?: string,
 ): DeviceRegistration | undefined {
   for (const conn of node.connections ?? []) {
     const clientId = conn.client_id ?? conn.id ?? conn.uuid;
     if (!clientId) continue;
     const byConn = regsById.get(clientId);
     if (byConn) return byConn;
+  }
+  if (cachedDeviceId) {
+    const byCached = regsById.get(cachedDeviceId);
+    if (byCached) return byCached;
   }
   return connectorRegsByName.get(node.name.toLowerCase());
 }
@@ -235,8 +247,8 @@ export async function syncMeshDnsAfterRename(
   cf: CloudflareClient,
   env: Env,
   rename: {
-    renamed: { from: string; to: string };
-    displaced?: { from: string; to: string };
+    renamed: { id?: string; kind?: "node" | "device"; from: string; to: string };
+    displaced?: { id?: string; kind?: "node" | "device"; from: string; to: string };
   },
 ): Promise<Awaited<ReturnType<typeof syncMeshDnsRules>>["stats"]> {
   const suffix = await getMeshSuffix(env);
@@ -255,6 +267,7 @@ export async function syncMeshDnsAfterRename(
 
   const inventory = await buildMeshInventory(cf, env);
   const match =
+    (rename.renamed.id ? inventory.find((e) => e.id === rename.renamed.id) : undefined) ??
     inventory.find((e) => e.name.trim().toLowerCase() === rename.renamed.to.trim().toLowerCase()) ??
     inventory.find((e) => e.name.trim().toLowerCase() === rename.renamed.from.trim().toLowerCase());
 
@@ -268,12 +281,9 @@ export async function syncMeshDnsAfterRename(
     const dTo = meshHostname(rename.displaced.to, suffix);
     if (dFrom !== dTo) {
       const displacedMatch =
-        inventory.find(
-          (e) => e.name.trim().toLowerCase() === rename.displaced!.to.trim().toLowerCase(),
-        ) ??
-        inventory.find(
-          (e) => e.name.trim().toLowerCase() === rename.displaced!.from.trim().toLowerCase(),
-        );
+        (rename.displaced.id ? inventory.find((e) => e.id === rename.displaced!.id) : undefined) ??
+        inventory.find((e) => e.name.trim().toLowerCase() === rename.displaced!.to.trim().toLowerCase()) ??
+        inventory.find((e) => e.name.trim().toLowerCase() === rename.displaced!.from.trim().toLowerCase());
       const displacedIps = displacedMatch
         ? [displacedMatch.ipv4, displacedMatch.ipv6].filter((ip): ip is string => Boolean(ip?.trim()))
         : [];

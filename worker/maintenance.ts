@@ -19,9 +19,9 @@ export async function runMaintenance(env: Env): Promise<void> {
 
   try {
     const cleanup = await cleanupOfflineDevices(cf, settings.offlineDays);
+    await markCleanupRan(env);
     if (cleanup.deleted > 0) {
       console.log("meshflare offline cleanup", cleanup);
-      await markCleanupRan(env);
       await syncMeshDns(cf, env);
     }
   } catch (error) {

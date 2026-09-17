@@ -219,6 +219,10 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ mode, items }),
     }),
+  ensureMeshRouting: () =>
+    request<SplitTunnelConfig>("/api/settings/split-tunnels/ensure-mesh", {
+      method: "POST",
+    }),
   syncDns: () =>
     request<{ dns: DnsSyncStats; lastDnsSyncAt?: string }>("/api/mesh/sync-dns", {
       method: "POST",

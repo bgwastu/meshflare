@@ -58,7 +58,13 @@ export class CloudflareClient {
 
       if (res.status === 429 && attempts < 3) {
         const retrySec = Number(res.headers.get("Retry-After")) || 1;
-        await new Promise((r) => setTimeout(r, Math.min(retrySec * 1000, 2500)));
+        const jitter = Math.floor(Math.random() * 500);
+        await new Promise((r) => setTimeout(r, Math.min(retrySec * 1000 + jitter, 3000)));
+        continue;
+      }
+
+      if ([502, 503, 504].includes(res.status) && attempts < 2) {
+        await new Promise((r) => setTimeout(r, 500 + Math.floor(Math.random() * 500)));
         continue;
       }
 

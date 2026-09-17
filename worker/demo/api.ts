@@ -100,6 +100,7 @@ demoApi.get("/settings/split-tunnels", (c) =>
       { address: "192.168.0.0/16", description: "Local network" },
       { address: "10.0.0.0/8", description: "Private network" },
     ],
+    audit: { meshIpsRouted: true },
   }),
 );
 

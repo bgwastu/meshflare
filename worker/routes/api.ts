@@ -40,7 +40,7 @@ import {
   deleteMeshEntry,
   renameWithCollisionHandling,
 } from "../cf/rename";
-import { auditMeshRouting, getDefaultSplitTunnels, setDefaultSplitTunnels } from "../cf/split-tunnels";
+import { auditMeshRouting, ensureMeshRouting, getDefaultSplitTunnels, setDefaultSplitTunnels } from "../cf/split-tunnels";
 import { decodeConnectorToken } from "../wg/token";
 import {
   nameSchema,
@@ -261,6 +261,16 @@ api.put("/settings/split-tunnels", zValidator("json", splitTunnelsSchema), async
   }
   const cf = createCfClient(c.env);
   await setDefaultSplitTunnels(cf, body.mode, items);
+  const updated = await getDefaultSplitTunnels(cf);
+  const audit = auditMeshRouting(updated);
+  return c.json({ ...updated, audit });
+});
+
+api.post("/settings/split-tunnels/ensure-mesh", async (c) => {
+  const cf = createCfClient(c.env);
+  const current = await getDefaultSplitTunnels(cf);
+  const remediated = ensureMeshRouting(current);
+  await setDefaultSplitTunnels(cf, remediated.mode, remediated[remediated.mode]);
   const updated = await getDefaultSplitTunnels(cf);
   const audit = auditMeshRouting(updated);
   return c.json({ ...updated, audit });

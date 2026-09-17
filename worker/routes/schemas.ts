@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isReservedFallbackSuffix } from "../cf/names";
 
 export const nameSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -8,7 +9,19 @@ export const settingsSchema = z.object({
   offlineDays: z.number().int().min(1).max(365).optional(),
   dnsFilterEnabled: z.boolean().optional(),
   dnsFilterUrl: z.url().optional(),
-  meshSuffix: z.string().trim().min(1).max(63).optional(),
+  meshSuffix: z
+    .string()
+    .trim()
+    .min(1)
+    .max(63)
+    .refine(
+      (val: string) => !isReservedFallbackSuffix(val.replace(/^\.+/, "")),
+      {
+        message:
+          "This suffix is reserved by Cloudflare WARP Local Domain Fallback and will bypass Gateway DNS resolution. Choose another suffix.",
+      },
+    )
+    .optional(),
 });
 
 export const routeSchema = z.object({

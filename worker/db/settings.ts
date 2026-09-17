@@ -46,7 +46,10 @@ function rowToData(row: typeof settings.$inferSelect): AppData {
   };
 }
 
+let settingsEnsured = false;
+
 async function ensureSettings(db: AppDatabase): Promise<void> {
+  if (settingsEnsured) return;
   await db.insert(settings).values({
     id: 1,
     offlineDays: DEFAULT_APP_DATA.offlineDays,
@@ -58,6 +61,7 @@ async function ensureSettings(db: AppDatabase): Promise<void> {
     dnsMissingSinceJson: "{}",
     nodeBindingsJson: "{}",
   }).onConflictDoNothing();
+  settingsEnsured = true;
 }
 
 export async function readAppData(db: AppDatabase): Promise<AppData> {
