@@ -85,6 +85,9 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
           case "name":
             cmp = a.name.localeCompare(b.name);
             break;
+          case "status":
+            cmp = a.status.localeCompare(b.status);
+            break;
           case "meshHostname":
             cmp = (a.meshHostname ?? "").localeCompare(b.meshHostname ?? "");
             break;

@@ -1,10 +1,10 @@
 import { CopyValue } from "../ui/CopyValue";
-import { MachineKindStatus } from "../ui/Badge";
+import { CombinedStatusBadge } from "../ui/Badge";
 import { SkeletonBlock } from "../ui/Skeleton";
 import { useLanguage } from "../../hooks/useLanguage";
 import type { MeshEntry } from "../../lib/api";
 
-export type SortKey = "name" | "meshHostname" | "ipv4" | "lastSeenAt";
+export type SortKey = "name" | "status" | "meshHostname" | "ipv4" | "lastSeenAt";
 
 type MeshTableProps = {
   entries: MeshEntry[];
@@ -39,7 +39,7 @@ export function MeshTable({
         <table>
           <thead>
             <tr>
-              {["Name", "Domain", "IPv4", "Last seen"].map((label) => (
+              {["Name", "Status", "Domain", "IPv4", "Last seen"].map((label) => (
                 <th key={label}>{label}</th>
               ))}
             </tr>
@@ -47,7 +47,7 @@ export function MeshTable({
           <tbody>
             {Array.from({ length: 5 }, (_, i) => (
               <tr key={i} className="skeleton-row-tr">
-                {Array.from({ length: 4 }, (_, j) => (
+                {Array.from({ length: 5 }, (_, j) => (
                   <td key={j}>
                     <SkeletonBlock className="skeleton-cell" />
                   </td>
@@ -81,6 +81,7 @@ export function MeshTable({
 
   const columns: [SortKey, string][] = [
     ["name", t("mesh.sort.name")],
+    ["status", t("mesh.columns.status")],
     ["meshHostname", "Domain"],
     ["ipv4", "IPv4"],
     ["lastSeenAt", t("mesh.sort.lastSeenAt")],
@@ -112,9 +113,11 @@ export function MeshTable({
             >
               <td>
                 <strong className="name-cell">
-                  <MachineKindStatus entry={entry} />
                   {entry.name}
                 </strong>
+              </td>
+              <td>
+                <CombinedStatusBadge entry={entry} />
               </td>
               <td>
                 <CopyValue

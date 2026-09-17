@@ -97,15 +97,13 @@ export function TunnelsTable({
                   </strong>
                 </td>
                 <td>
-                  <span className="status-cell">
+                  <span className="status-pill" data-tone={meta.tone}>
                     <span
                       className="status-dot"
                       data-tone={meta.tone}
-                      data-tip={meta.label}
-                      tabIndex={0}
-                      aria-label={meta.label}
+                      aria-hidden="true"
                     />
-                    {meta.label}
+                    <span>{meta.label}</span>
                   </span>
                 </td>
                 <td>

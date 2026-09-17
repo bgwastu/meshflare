@@ -16,13 +16,28 @@ export function KindBadge({ kind }: { kind: "node" | "device" }) {
   );
 }
 
+export function CombinedStatusBadge({ entry }: { entry: MeshEntry }) {
+  const { t } = useLanguage();
+  const meta = machineStatusMeta(entry.status);
+  const Icon = entry.kind === "node" ? Server : Smartphone;
+  const kindLabel = entry.kind === "node" ? "Node" : "Device";
+  const statusKey = `status.${meta.label.toLowerCase()}`;
+  const statusLabel = t(statusKey, { defaultValue: meta.label });
+
+  return (
+    <span className="status-pill" data-tone={meta.tone}>
+      <Icon size={12} strokeWidth={2.25} aria-hidden />
+      <span>{kindLabel} · {statusLabel}</span>
+    </span>
+  );
+}
+
 export function MachineKindStatus({ entry, size = 14 }: { entry: MeshEntry; size?: number }) {
   const { t } = useLanguage();
   const meta = machineStatusMeta(entry.status);
   const Icon = entry.kind === "node" ? Server : Smartphone;
-  const kindLabel = entry.kind === "node" ? t("mesh.filterKind.node") : t("mesh.filterKind.device");
+  const kindLabel = entry.kind === "node" ? "Node" : "Device";
   const statusKey = `status.${meta.label.toLowerCase()}`;
-  // Localized status or fallback to raw label
   const statusLabel = t(statusKey, { defaultValue: meta.label });
   const tip = `${kindLabel} · ${statusLabel}`;
 
