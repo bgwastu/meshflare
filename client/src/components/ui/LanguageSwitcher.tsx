@@ -4,7 +4,7 @@ import { useLanguage } from "../../hooks/useLanguage";
 import type { SupportedLanguage } from "../../i18n/types";
 
 export function LanguageSwitcher() {
-  const { language, languageMeta, languages, setLanguage } = useLanguage();
+  const { language, languageMeta, languages, setLanguage, t } = useLanguage();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -47,11 +47,10 @@ export function LanguageSwitcher() {
         onClick={() => setOpen((prev) => !prev)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label="Select language"
+        aria-label={t("common.language")}
       >
         <Globe size={13} aria-hidden />
-        <span className="lang-name-full">{languageMeta.nativeName}</span>
-        <span className="lang-flag-badge">{languageMeta.flagCode}</span>
+        <span className="lang-code">{languageMeta.flagCode}</span>
         <ChevronDown size={11} style={{ opacity: 0.7 }} aria-hidden />
       </button>
 

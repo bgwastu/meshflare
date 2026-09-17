@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Pencil, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import { Spinner } from "../ui/Spinner";
 import { CopyValue } from "../ui/CopyValue";
@@ -138,7 +138,7 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
   const handleRunCleanup = async () => {
     setBusy("cleanup");
     try {
-      const r = await api.cleanup();
+      await api.cleanup();
       await queryClient.invalidateQueries({ queryKey: ["settings"] });
       onToast(t("toasts.cleanupFinished"), "success");
     } catch (e) {
@@ -217,6 +217,11 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
 
   return (
     <section className="settings-panel" aria-busy={!ready}>
+      <header className="settings-intro">
+        <h2>{t("settings.title")}</h2>
+        <p className="hint">{t("settings.subtitle")}</p>
+      </header>
+
       {!ready ? (
         <div className="skeleton-stack">
           <SkeletonBlock className="skeleton-label" />
@@ -226,7 +231,6 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
         </div>
       ) : (
         <div className="settings-grid">
-          {/* 1. Mesh domain */}
           <div className="settings-block">
             <h3>{t("settings.meshDns.title")}</h3>
             <p className="hint">{t("settings.meshDns.description")}</p>
@@ -253,18 +257,23 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
               }
               onClick={handleSaveDomain}
             >
-              {busy === "domain" ? <Spinner label="Saving…" /> : t("settings.meshDns.saveBtn")}
+              {busy === "domain" ? (
+                <Spinner label={t("settings.meshDns.savingBtn")} />
+              ) : (
+                t("settings.meshDns.saveBtn")
+              )}
             </button>
             {["local", "internal", "lan", "home.arpa", "corp", "private", "test", "arpa"].includes(
               meshSuffixDraft.trim().toLowerCase().replace(/^\.+/, ""),
             ) && (
-              <p className="hint" style={{ marginTop: "0.5rem", color: "#eab308" }}>
-                Warning: .{meshSuffixDraft.trim().replace(/^\.+/, "")} is in Cloudflare WARP's Local Domain Fallback list and will bypass Gateway DNS resolution.
+              <p className="hint hint-warn">
+                {t("settings.meshDns.warpFallbackWarning", {
+                  suffix: meshSuffixDraft.trim().replace(/^\.+/, ""),
+                })}
               </p>
             )}
           </div>
 
-          {/* 2. Auto-delete */}
           <div className="settings-block">
             <h3>{t("settings.cleanup.title")}</h3>
             <p className="hint">{t("settings.cleanup.description")}</p>
@@ -286,28 +295,40 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
               disabled={locked || offlineDays === settings.offlineDays}
               onClick={handleSaveOfflineDays}
             >
-              {busy === "settings" ? <Spinner label="Saving…" /> : t("common.save")}
+              {busy === "settings" ? <Spinner label={t("common.saving")} /> : t("common.save")}
             </button>
           </div>
 
-          {/* 3. DNS filtering */}
           <div className="settings-block">
-            <h3>{t("settings.dnsFilter.title")}</h3>
-            <div className="status-label" style={{ marginBottom: "0.35rem" }}>
-              {t("settings.dnsFilter.statusLabel")}:
-              <span
-                className="status-dot"
-                data-tone={filterMeta.tone}
-                data-tip={filterMeta.tip}
-                tabIndex={0}
-                aria-label={filterMeta.tip}
-              />
-              <span className="hint">{filterMeta.tip}</span>
+            <div className="settings-block-head">
+              <h3>{t("settings.dnsFilter.title")}</h3>
+              <label
+                className={`mode-switch ${settings.dnsFilterEnabled ? "is-on" : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  role="switch"
+                  aria-label={t("settings.dnsFilter.toggleLabel")}
+                  checked={settings.dnsFilterEnabled}
+                  disabled={locked || filterOperationPending || busy === "dns-filter"}
+                  onChange={() => void handleToggleFilter()}
+                />
+                <span className="switch-track" aria-hidden>
+                  <span />
+                </span>
+              </label>
             </div>
             <p className="hint">
               {t("settings.dnsFilter.description")}
               {filterMeta.tone === "ok" && settings.dnsFilterLastSyncedAt
-                ? ` Last refresh ${formatSeen(settings.dnsFilterLastSyncedAt)}.`
+                ? ` ${t("settings.dnsFilter.lastRefresh", {
+                    when: formatSeen(settings.dnsFilterLastSyncedAt),
+                  })}`
+                : null}
+              {filterOperationPending || busy === "dns-filter"
+                ? ` ${t(`status.${settings.dnsFilterStatus}`, {
+                    defaultValue: filterMeta.tip,
+                  })}`
                 : null}
             </p>
             <div className="field">
@@ -331,31 +352,90 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
                 }
                 onClick={handleSaveFilterUrl}
               >
-                {busy === "filter-url" ? <Spinner label="Saving…" /> : t("common.save")}
+                {busy === "filter-url" ? <Spinner label={t("common.saving")} /> : t("common.save")}
               </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={locked || filterOperationPending}
-                onClick={handleToggleFilter}
-              >
-                {busy === "dns-filter" ? (
-                  <Spinner label={settings.dnsFilterStatus === "pending_disable" ? "Disabling…" : "Enabling…"} />
-                ) : settings.dnsFilterEnabled ? (
-                  t("status.disabled")
+            </div>
+          </div>
+
+          <div className="settings-block maintenance-block">
+            <h3>{t("settings.maintenance.title")}</h3>
+            {maintenanceHealth && !maintenanceHealth.ok && (
+              <div className="health-alert" role="alert">
+                <div className="health-alert-copy">
+                  <strong>{t("settings.maintenance.outOfSync")}</strong>
+                  <p className="hint">
+                    {!maintenanceHealth.dnsFilter.inSync && (
+                      <span>
+                        {t("settings.maintenance.filterDetail", {
+                          detail: maintenanceHealth.dnsFilter.detail,
+                        })}{" "}
+                      </span>
+                    )}
+                    {maintenanceHealth.mesh && !maintenanceHealth.mesh.inSync && (
+                      <span>
+                        {t("settings.maintenance.meshDetail", {
+                          detail: maintenanceHealth.mesh.detail,
+                        })}{" "}
+                      </span>
+                    )}
+                    {t("settings.maintenance.degradedNotice")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-repair"
+                  disabled={isRepairingMaintenance || locked}
+                  onClick={handleRepair}
+                >
+                  {isRepairingMaintenance ? (
+                    <Spinner label={t("settings.maintenance.repairingBtn")} />
+                  ) : (
+                    t("settings.maintenance.repairBtn")
+                  )}
+                </button>
+              </div>
+            )}
+            <div className="maint-row">
+              <div>
+                <strong>{t("mesh.syncDns")}</strong>
+                <p className="hint">
+                  {t("settings.maintenance.lastRun", {
+                    when: formatSeen(settings.lastDnsSyncAt, "never"),
+                  })}
+                </p>
+              </div>
+              <button type="button" className="btn" disabled={locked} onClick={handleSyncDns}>
+                {busy === "sync" ? (
+                  <Spinner label={t("status.syncing")} />
                 ) : (
-                  t("status.enabled")
+                  t("settings.maintenance.runNow")
+                )}
+              </button>
+            </div>
+            <div className="maint-row">
+              <div>
+                <strong>{t("mesh.cleanup")}</strong>
+                <p className="hint">
+                  {t("settings.maintenance.lastRun", {
+                    when: formatSeen(settings.lastCleanupAt, "never"),
+                  })}
+                </p>
+              </div>
+              <button type="button" className="btn" disabled={locked} onClick={handleRunCleanup}>
+                {busy === "cleanup" ? (
+                  <Spinner label={t("settings.cleanup.runningBtn")} />
+                ) : (
+                  t("settings.maintenance.runNow")
                 )}
               </button>
             </div>
           </div>
 
-          {/* 4. Zero Trust DNS endpoints */}
           <div className="settings-block dns-endpoints-block">
             <h3>{t("settings.gateway.title")}</h3>
             <p className="hint">{t("settings.gateway.description")}</p>
             {!dnsLocation ? (
-              <p className="hint dns-endpoint-warning">No default Gateway DNS location found.</p>
+              <p className="hint dns-endpoint-warning">{t("settings.gateway.noLocation")}</p>
             ) : (
               <div className="dns-endpoint-list">
                 {[
@@ -368,7 +448,7 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
                   },
                   {
                     key: "ipv6" as const,
-                    label: "IPv6 endpoint",
+                    label: t("settings.gateway.ipv6Dest"),
                     value: dnsLocation.ipv6Destination ?? "",
                   },
                   {
@@ -405,64 +485,6 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
             )}
           </div>
 
-          {/* 5. Maintenance */}
-          <div className="settings-block maintenance-block">
-            <h3>{t("settings.maintenance.title")}</h3>
-            {maintenanceHealth && !maintenanceHealth.ok && (
-              <div className="health-alert" role="alert">
-                <div className="health-alert-copy">
-                  <strong>Out of sync</strong>
-                  <p className="hint">
-                    {!maintenanceHealth.dnsFilter.inSync && (
-                      <span>Filter: {maintenanceHealth.dnsFilter.detail}. </span>
-                    )}
-                    {maintenanceHealth.mesh && !maintenanceHealth.mesh.inSync && (
-                      <span>Mesh: {maintenanceHealth.mesh.detail}. </span>
-                    )}
-                    {t("settings.maintenance.degradedNotice")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-repair"
-                  disabled={isRepairingMaintenance || locked}
-                  onClick={handleRepair}
-                >
-                  {isRepairingMaintenance ? <Spinner label="Repairing…" /> : t("settings.maintenance.repairBtn")}
-                </button>
-              </div>
-            )}
-            <div className="maint-row">
-              <div>
-                <strong>{t("mesh.syncDns")}</strong>
-                <p className="hint">Last run {formatSeen(settings.lastDnsSyncAt, "never")}.</p>
-              </div>
-              <button
-                type="button"
-                className="btn"
-                disabled={locked}
-                onClick={handleSyncDns}
-              >
-                {busy === "sync" ? <Spinner label="Syncing…" /> : "Run now"}
-              </button>
-            </div>
-            <div className="maint-row">
-              <div>
-                <strong>{t("mesh.cleanup")}</strong>
-                <p className="hint">Last run {formatSeen(settings.lastCleanupAt, "never")}.</p>
-              </div>
-              <button
-                type="button"
-                className="btn"
-                disabled={locked}
-                onClick={handleRunCleanup}
-              >
-                {busy === "cleanup" ? <Spinner label="Cleaning…" /> : "Run now"}
-              </button>
-            </div>
-          </div>
-
-          {/* 6. WARP split tunnels */}
           <div
             className="settings-block settings-block-wide split-tunnels-block"
             aria-busy={splitTunnelsLoading || splitBusy}
@@ -474,11 +496,11 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
               </div>
               {splitTunnels && (
                 <label className={`mode-switch ${splitTunnels.mode}`}>
-                  <span>Exclude</span>
+                  <span>{t("settings.splitTunnels.modeExclude")}</span>
                   <input
                     type="checkbox"
                     role="switch"
-                    aria-label="Split tunnel mode"
+                    aria-label={t("settings.splitTunnels.modeSwitchLabel")}
                     checked={splitTunnels.mode === "include"}
                     disabled={locked || splitBusy}
                     onChange={(e) => {
@@ -489,19 +511,19 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
                   <span className="switch-track" aria-hidden>
                     <span />
                   </span>
-                  <span>Include</span>
+                  <span>{t("settings.splitTunnels.modeInclude")}</span>
                 </label>
               )}
             </div>
             <p className="hint split-mode-copy">
               {splitTunnels?.mode === "include"
-                ? "Only listed traffic is sent through WARP."
-                : "All traffic is sent through WARP except listed traffic."}
+                ? t("settings.splitTunnels.modeIncludeHint")
+                : t("settings.splitTunnels.modeExcludeHint")}
             </p>
             {splitTunnels?.audit && !splitTunnels.audit.meshIpsRouted && (
-              <div className="health-alert" role="alert" style={{ marginBottom: "0.85rem" }}>
+              <div className="health-alert" role="alert">
                 <div className="health-alert-copy">
-                  <strong>Mesh IP routing warning</strong>
+                  <strong>{t("settings.splitTunnels.meshRoutingWarning")}</strong>
                   <p className="hint">{splitTunnels.audit.warning}</p>
                 </div>
                 <button
@@ -513,7 +535,7 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
                     try {
                       const updated = await api.ensureMeshRouting();
                       queryClient.setQueryData(["split-tunnels"], updated);
-                      onToast("Split tunnels updated to route Mesh IPs through WARP.", "success");
+                      onToast(t("settings.splitTunnels.meshRoutingFixed"), "success");
                     } catch (e) {
                       onToast(e instanceof Error ? e.message : String(e), "error");
                     } finally {
@@ -521,13 +543,17 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
                     }
                   }}
                 >
-                  {splitBusy ? <Spinner label="Fixing…" /> : "Fix routing"}
+                  {splitBusy ? (
+                    <Spinner label={t("settings.splitTunnels.fixingRoutingBtn")} />
+                  ) : (
+                    t("settings.splitTunnels.fixRoutingBtn")
+                  )}
                 </button>
               </div>
             )}
 
             {splitTunnelsLoading ? (
-              <div className="split-list" aria-label="Loading split tunnels">
+              <div className="split-list" aria-label={t("settings.splitTunnels.title")}>
                 {Array.from({ length: 3 }, (_, index) => (
                   <div className="route-row" key={index}>
                     <div className="skeleton-stack">
@@ -551,8 +577,8 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
                         <button
                           type="button"
                           className="btn btn-icon"
-                          title="Edit"
-                          aria-label={`Edit ${item.address ?? item.host}`}
+                          title={t("settings.splitTunnels.editEntry")}
+                          aria-label={`${t("settings.splitTunnels.editEntry")}: ${item.address ?? item.host}`}
                           disabled={locked || splitBusy}
                           onClick={() =>
                             setSplitEditor({
@@ -567,8 +593,8 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
                         <button
                           type="button"
                           className="btn btn-icon btn-danger"
-                          title="Remove"
-                          aria-label={`Remove ${item.address ?? item.host}`}
+                          title={t("settings.splitTunnels.deleteEntry")}
+                          aria-label={`${t("settings.splitTunnels.deleteEntry")}: ${item.address ?? item.host}`}
                           disabled={locked || splitBusy}
                           onClick={() => void handleDeleteSplitItem(index)}
                         >
@@ -584,7 +610,7 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
                   disabled={locked || splitBusy}
                   onClick={() => setSplitEditor({ index: null, value: "", description: "" })}
                 >
-                  + Add
+                  {t("settings.splitTunnels.addEntryBtn")}
                 </button>
               </>
             ) : null}
@@ -592,7 +618,6 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
         </div>
       )}
 
-      {/* Split tunnel item editor modal */}
       {splitEditor && splitTunnels && (
         <Modal
           isOpen={Boolean(splitEditor)}
@@ -615,7 +640,7 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
                 id="split-value"
                 type="text"
                 value={splitEditor.value}
-                placeholder="10.0.0.0/24 or internal.example.com"
+                placeholder={t("settings.splitTunnels.addressHostPlaceholder")}
                 disabled={splitBusy}
                 autoFocus
                 onChange={(e) => setSplitEditor({ ...splitEditor, value: e.target.value })}
@@ -627,6 +652,7 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
                 id="split-description"
                 type="text"
                 value={splitEditor.description}
+                placeholder={t("settings.splitTunnels.descriptionPlaceholder")}
                 disabled={splitBusy}
                 onChange={(e) => setSplitEditor({ ...splitEditor, description: e.target.value })}
               />
@@ -645,7 +671,11 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
                 className="btn btn-primary"
                 disabled={splitBusy || !splitEditor.value.trim()}
               >
-                {splitBusy ? <Spinner label="Saving…" /> : t("common.save")}
+                {splitBusy ? (
+                  <Spinner label={t("settings.splitTunnels.savingBtn")} />
+                ) : (
+                  t("common.save")
+                )}
               </button>
             </div>
           </form>

@@ -331,6 +331,7 @@
     "requiredNotice": "このインスタンスは認証が必要です。"
   },
   "status": {
+    "labeled": "Status: {{status}}",
     "healthy": "正常",
     "degraded": "低下",
     "down": "停止",

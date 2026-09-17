@@ -54,7 +54,7 @@
     },
     "filterActivity": {
       "all": "Semua",
-      "online": "Online",
+      "online": "Sehat",
       "offline": "Offline"
     },
     "sort": {
@@ -331,11 +331,12 @@
     "requiredNotice": "Instans ini memerlukan autentikasi."
   },
   "status": {
+    "labeled": "Status: {{status}}",
     "healthy": "Sehat",
     "degraded": "Menurun",
     "down": "Mati",
     "inactive": "Nonaktif",
-    "online": "Online",
+    "online": "Sehat",
     "offline": "Offline",
     "registered": "Terdaftar",
     "active": "Aktif",

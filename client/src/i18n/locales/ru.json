@@ -335,6 +335,7 @@
     "requiredNotice": "Для этого экземпляра требуется аутентификация."
   },
   "status": {
+    "labeled": "Status: {{status}}",
     "healthy": "Исправен",
     "degraded": "Ухудшен",
     "down": "Отключен",

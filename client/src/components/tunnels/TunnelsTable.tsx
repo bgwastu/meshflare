@@ -1,6 +1,7 @@
 import { Globe } from "lucide-react";
 import { SkeletonBlock } from "../ui/Skeleton";
 import { useLanguage } from "../../hooks/useLanguage";
+import { tunnelStatusLabel } from "../../i18n/status";
 import { tunnelStatusMeta } from "../../lib/warp";
 import type { TunnelEntry } from "../../lib/api";
 
@@ -103,7 +104,7 @@ export function TunnelsTable({
                       data-tone={meta.tone}
                       aria-hidden="true"
                     />
-                    <span>{meta.label}</span>
+                    <span>{tunnelStatusLabel(t, tunnel.status)}</span>
                   </span>
                 </td>
                 <td>

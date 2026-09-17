@@ -22,6 +22,14 @@ export function DeleteMachineModal({
 
   if (!entry) return null;
 
+  const isNode = entry.kind === "node";
+  const deleteTitle = isNode
+    ? t("mesh.modals.deleteTitleNode")
+    : t("mesh.modals.deleteTitleDevice");
+  const confirmDeleteBtn = isNode
+    ? t("mesh.modals.confirmDeleteBtnNode")
+    : t("mesh.modals.confirmDeleteBtnDevice");
+
   const handleConfirm = async () => {
     if (busy || locked) return;
     setBusy(true);
@@ -37,14 +45,14 @@ export function DeleteMachineModal({
     <Modal
       isOpen={Boolean(entry)}
       onClose={onClose}
-      title={t("mesh.modals.deleteTitle")}
+      title={deleteTitle}
     >
       <div>
         <p style={{ marginTop: 0 }}>
           {t("mesh.modals.deleteConfirm", { name: entry.name })}
         </p>
 
-        {entry.kind === "node" && (
+        {isNode && (
           <p className="hint" style={{ color: "var(--danger)" }}>
             {t("mesh.modals.deleteWarning")}
           </p>
@@ -68,7 +76,7 @@ export function DeleteMachineModal({
             {busy ? (
               <Spinner label={t("mesh.modals.deletingBtn")} />
             ) : (
-              t("mesh.modals.confirmDeleteBtn")
+              confirmDeleteBtn
             )}
           </button>
         </div>

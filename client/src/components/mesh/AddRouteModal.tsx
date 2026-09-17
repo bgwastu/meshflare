@@ -63,72 +63,71 @@ export function AddRouteModal({
       title={t("mesh.modals.addRouteTitle")}
     >
       <form onSubmit={handleSubmit}>
-        <p className="hint" style={{ marginTop: 0, marginBottom: "0.85rem" }}>
+        <p className="hint" style={{ marginTop: 0 }}>
           {t("mesh.modals.addRouteDesc")}
         </p>
 
-        <label className="field-label">{t("mesh.modals.routeTypeLabel")}</label>
-        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-          <button
-            type="button"
-            className={`btn ${routeType === "cidr" ? "btn-primary" : ""}`}
-            style={{ flex: 1 }}
-            onClick={() => setRouteType("cidr")}
-          >
-            CIDR
-          </button>
-          <button
-            type="button"
-            className={`btn ${routeType === "hostname" ? "btn-primary" : ""}`}
-            style={{ flex: 1 }}
-            onClick={() => setRouteType("hostname")}
-          >
-            Hostname
-          </button>
+        <div className="field">
+          <span className="field-label" id="route-type-label">
+            {t("mesh.modals.routeTypeLabel")}
+          </span>
+          <div className="tabs tabs-stretch" role="group" aria-labelledby="route-type-label">
+            <button
+              type="button"
+              className={`tab ${routeType === "cidr" ? "active" : ""}`}
+              aria-pressed={routeType === "cidr"}
+              onClick={() => setRouteType("cidr")}
+            >
+              {t("mesh.modals.typeCidrShort")}
+            </button>
+            <button
+              type="button"
+              className={`tab ${routeType === "hostname" ? "active" : ""}`}
+              aria-pressed={routeType === "hostname"}
+              onClick={() => setRouteType("hostname")}
+            >
+              {t("mesh.modals.typeHostnameShort")}
+            </button>
+          </div>
         </div>
 
-        <label className="field-label" htmlFor="route-target-val">
-          {routeType === "cidr" ? t("mesh.modals.typeCidr") : t("mesh.modals.typeHostname")}
-        </label>
-        <input
-          id="route-target-val"
-          type="text"
-          className="input mono"
-          dir="ltr"
-          style={{ width: "100%", marginBottom: "0.85rem" }}
-          placeholder={
-            routeType === "cidr"
-              ? t("mesh.modals.networkPlaceholder")
-              : t("mesh.modals.hostnamePlaceholder")
-          }
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          disabled={busy || locked}
-          autoFocus
-          required
-        />
+        <div className="field">
+          <label htmlFor="route-target-val">
+            {routeType === "cidr" ? t("mesh.modals.typeCidr") : t("mesh.modals.typeHostname")}
+          </label>
+          <input
+            id="route-target-val"
+            type="text"
+            className="input mono"
+            dir="ltr"
+            placeholder={
+              routeType === "cidr"
+                ? t("mesh.modals.networkPlaceholder")
+                : t("mesh.modals.hostnamePlaceholder")
+            }
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            disabled={busy || locked}
+            autoFocus
+            required
+          />
+        </div>
 
-        <label className="field-label" htmlFor="route-comment-val">
-          {t("mesh.modals.commentLabel")}
-        </label>
-        <input
-          id="route-comment-val"
-          type="text"
-          className="input"
-          style={{ width: "100%", marginBottom: "1.25rem" }}
-          placeholder={t("mesh.modals.commentPlaceholder")}
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          disabled={busy || locked}
-        />
+        <div className="field">
+          <label htmlFor="route-comment-val">{t("mesh.modals.commentLabel")}</label>
+          <input
+            id="route-comment-val"
+            type="text"
+            className="input"
+            placeholder={t("mesh.modals.commentPlaceholder")}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            disabled={busy || locked}
+          />
+        </div>
 
-        <div className="modal-actions" style={{ display: "flex", gap: "0.5rem" }}>
-          <button
-            type="button"
-            className="btn"
-            onClick={onClose}
-            disabled={busy}
-          >
+        <div className="row-actions modal-actions">
+          <button type="button" className="btn" onClick={onClose} disabled={busy}>
             {t("common.cancel")}
           </button>
           <button

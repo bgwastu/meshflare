@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router";
 import { Server, Globe, Settings as SettingsIcon, LogOut } from "lucide-react";
 import { LanguageSwitcher } from "../ui/LanguageSwitcher";
+import { SkeletonBlock } from "../ui/Skeleton";
 import { useLanguage } from "../../hooks/useLanguage";
 import type { Settings } from "../../lib/api";
 
@@ -14,12 +15,11 @@ type HeaderProps = {
 export function Header({
   settings,
   authRequired,
-  tunnelsCount,
   onLogout,
 }: HeaderProps) {
   const { t } = useLanguage();
 
-  const accountName = settings?.accountName || "Cloudflare account";
+  const accountName = settings?.accountName;
   const accountEmail = settings?.accountEmail;
 
   return (
@@ -37,15 +37,24 @@ export function Header({
             mesh<span>flare</span>
           </h1>
         </Link>
-        <p className="account-line">
-          <span className="account-name">{accountName}</span>
-          {accountEmail ? (
-            <span className="account-email mono">{accountEmail}</span>
-          ) : null}
-        </p>
+        <div className="account-line" aria-busy={!settings}>
+          {settings ? (
+            <>
+              <span className="account-name">{accountName || t("settings.account.notConfigured")}</span>
+              {accountEmail ? (
+                <span className="account-email mono">{accountEmail}</span>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <SkeletonBlock className="skeleton-account-name" />
+              <SkeletonBlock className="skeleton-account-email" />
+            </>
+          )}
+        </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+      <div className="header-actions">
         <nav className="tabs" aria-label="Primary">
           <NavLink
             to="/mesh"
@@ -60,9 +69,6 @@ export function Header({
           >
             <Globe size={14} strokeWidth={2.25} aria-hidden />
             <span>Tunnels</span>
-            {typeof tunnelsCount === "number" && tunnelsCount > 0 && (
-              <span className="tab-badge">{tunnelsCount}</span>
-            )}
           </NavLink>
           <NavLink
             to="/settings"
@@ -78,8 +84,7 @@ export function Header({
         {authRequired && onLogout && (
           <button
             type="button"
-            className="btn btn-ghost"
-            style={{ padding: "0.38rem 0.6rem", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}
+            className="btn btn-ghost btn-logout"
             onClick={onLogout}
             title={t("nav.logout")}
             aria-label={t("nav.logout")}

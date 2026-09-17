@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run --hot server/selfhost.ts",
-    "dev:client": "vite",
-    "dev:demo": "DEMO_MODE=true bun run --hot server/selfhost.ts",
+    "dev": "bun scripts/dev.mjs",
+    "dev:api": "bun run --hot server/selfhost.ts",
+    "dev:client": "vite --host 127.0.0.1 --port 5173",
+    "dev:demo": "DEMO_MODE=true bun scripts/dev.mjs",
     "build": "vite build",
     "deploy": "bun run build && node scripts/deploy-worker.mjs",
     "start": "bun run server/selfhost.ts",

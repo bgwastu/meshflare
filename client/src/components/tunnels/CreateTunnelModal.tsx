@@ -36,39 +36,29 @@ export function CreateTunnelModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={t("tunnels.modals.createTitle")}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={t("tunnels.modals.createTitle")}>
       <form onSubmit={handleSubmit}>
-        <p className="hint" style={{ marginTop: 0, marginBottom: "0.85rem" }}>
+        <p className="hint" style={{ marginTop: 0 }}>
           {t("tunnels.modals.createDesc")}
         </p>
 
-        <label className="field-label" htmlFor="new-tunnel-name">
-          {t("tunnels.modals.tunnelNameLabel")}
-        </label>
-        <input
-          id="new-tunnel-name"
-          type="text"
-          className="input"
-          style={{ width: "100%", marginBottom: "1rem" }}
-          placeholder={t("tunnels.modals.tunnelNamePlaceholder")}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          disabled={busy || locked}
-          autoFocus
-          required
-        />
+        <div className="field">
+          <label htmlFor="new-tunnel-name">{t("tunnels.modals.tunnelNameLabel")}</label>
+          <input
+            id="new-tunnel-name"
+            type="text"
+            className="input"
+            placeholder={t("tunnels.modals.tunnelNamePlaceholder")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={busy || locked}
+            autoFocus
+            required
+          />
+        </div>
 
-        <div className="modal-actions" style={{ display: "flex", gap: "0.5rem" }}>
-          <button
-            type="button"
-            className="btn"
-            onClick={onClose}
-            disabled={busy}
-          >
+        <div className="row-actions modal-actions">
+          <button type="button" className="btn" onClick={onClose} disabled={busy}>
             {t("common.cancel")}
           </button>
           <button
@@ -76,11 +66,7 @@ export function CreateTunnelModal({
             className="btn btn-primary"
             disabled={!name.trim() || busy || locked}
           >
-            {busy ? (
-              <Spinner label={t("tunnels.creating")} />
-            ) : (
-              t("tunnels.modals.createBtn")
-            )}
+            {busy ? <Spinner label={t("tunnels.creating")} /> : t("tunnels.modals.createBtn")}
           </button>
         </div>
       </form>

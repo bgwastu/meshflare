@@ -36,39 +36,29 @@ export function CreateNodeModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={t("mesh.modals.createTitle")}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={t("mesh.modals.createTitle")}>
       <form onSubmit={handleSubmit}>
-        <p className="hint" style={{ marginTop: 0, marginBottom: "0.85rem" }}>
+        <p className="hint" style={{ marginTop: 0 }}>
           {t("mesh.modals.createDesc")}
         </p>
 
-        <label className="field-label" htmlFor="new-node-name">
-          {t("mesh.modals.nodeNameLabel")}
-        </label>
-        <input
-          id="new-node-name"
-          type="text"
-          className="input"
-          style={{ width: "100%", marginBottom: "1rem" }}
-          placeholder={t("mesh.modals.nodeNamePlaceholder")}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          disabled={busy || locked}
-          autoFocus
-          required
-        />
+        <div className="field">
+          <label htmlFor="new-node-name">{t("mesh.modals.nodeNameLabel")}</label>
+          <input
+            id="new-node-name"
+            type="text"
+            className="input"
+            placeholder={t("mesh.modals.nodeNamePlaceholder")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={busy || locked}
+            autoFocus
+            required
+          />
+        </div>
 
-        <div className="modal-actions" style={{ display: "flex", gap: "0.5rem" }}>
-          <button
-            type="button"
-            className="btn"
-            onClick={onClose}
-            disabled={busy}
-          >
+        <div className="row-actions modal-actions">
+          <button type="button" className="btn" onClick={onClose} disabled={busy}>
             {t("common.cancel")}
           </button>
           <button
@@ -76,11 +66,7 @@ export function CreateNodeModal({
             className="btn btn-primary"
             disabled={!name.trim() || busy || locked}
           >
-            {busy ? (
-              <Spinner label={t("mesh.modals.creatingBtn")} />
-            ) : (
-              t("mesh.modals.createBtn")
-            )}
+            {busy ? <Spinner label={t("mesh.modals.creatingBtn")} /> : t("mesh.modals.createBtn")}
           </button>
         </div>
       </form>

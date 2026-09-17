@@ -331,6 +331,7 @@
     "requiredNotice": "এই সার্ভারটিতে প্রবেশের জন্য প্রমাণীকরণ প্রয়োজন।"
   },
   "status": {
+    "labeled": "Status: {{status}}",
     "healthy": "সুস্থ",
     "degraded": "অবনমিত",
     "down": "ডাউন",

@@ -57,7 +57,7 @@ export function ConnectorCommands({
 
   if (loading) {
     return (
-      <div style={{ padding: "1rem 0" }}>
+      <div className="connector-setup-box">
         <Spinner label={t("common.loading")} />
       </div>
     );
@@ -69,18 +69,14 @@ export function ConnectorCommands({
 
   return (
     <div className="connector-setup-box">
-      <h4 style={{ margin: "0 0 0.35rem", fontSize: "0.95rem" }}>
-        {t("mesh.drawer.setupTitle")}
-      </h4>
-      <p className="hint" style={{ marginTop: 0, marginBottom: "0.85rem" }}>
-        {t("mesh.drawer.setupDesc")}
-      </p>
+      <h4>{t("mesh.drawer.setupTitle")}</h4>
+      <p className="hint">{t("mesh.drawer.setupDesc")}</p>
 
-      {/* Platform switcher */}
-      <div style={{ display: "flex", gap: "0.35rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+      <div className="platform-chips" role="group" aria-label={t("mesh.drawer.setupTitle")}>
         <button
           type="button"
           className={`chip ${platform === "debian" ? "is-active" : ""}`}
+          aria-pressed={platform === "debian"}
           onClick={() => setPlatform("debian")}
         >
           {t("mesh.drawer.platformDebian")}
@@ -88,6 +84,7 @@ export function ConnectorCommands({
         <button
           type="button"
           className={`chip ${platform === "rhel" ? "is-active" : ""}`}
+          aria-pressed={platform === "rhel"}
           onClick={() => setPlatform("rhel")}
         >
           {t("mesh.drawer.platformRhel")}
@@ -95,52 +92,45 @@ export function ConnectorCommands({
         <button
           type="button"
           className={`chip ${platform === "docker" ? "is-active" : ""}`}
+          aria-pressed={platform === "docker"}
           onClick={() => setPlatform("docker")}
         >
           {t("mesh.drawer.platformDocker")}
         </button>
       </div>
 
-      {/* Code command */}
-      <div style={{ position: "relative", marginBottom: "1rem" }}>
-        <pre className="cmd-block mono" dir="ltr" style={{ margin: 0, paddingRight: "3rem" }}>
+      <div className="cmd-block-wrap">
+        <pre className="cmd-block mono" dir="ltr">
           {command}
         </pre>
         <button
           type="button"
           className="icon-btn"
-          style={{ position: "absolute", top: "0.45rem", right: "0.45rem" }}
           onClick={() => void handleCopyCmd()}
           title={t("common.copy")}
+          aria-label={t("common.copy")}
         >
-          {copiedCmd ? <Check size={14} style={{ color: "var(--ok)" }} /> : <Copy size={14} />}
+          {copiedCmd ? <Check size={14} style={{ color: "var(--ok)" }} aria-hidden /> : <Copy size={14} aria-hidden />}
         </button>
       </div>
 
-      {/* Token box */}
-      <div style={{ marginBottom: "1.25rem" }}>
-        <div style={{ fontSize: "0.78rem", color: "var(--muted)", marginBottom: "0.3rem" }}>
-          {t("mesh.drawer.tokenLabel")}
+      <div className="setup-token-label">{t("mesh.drawer.tokenLabel")}</div>
+      <div className="setup-token-row">
+        <div className="setup-token-value">
+          <CopyValue value={token} onCopied={() => onCopied(t("common.copied"))} />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <CopyValue value={token} onCopied={() => onCopied(t("common.copied"))} />
-          </div>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem" }}
-            onClick={() => setRegenOpen(true)}
-            disabled={locked}
-            title={t("mesh.drawer.regenerateToken")}
-          >
-            <RefreshCw size={12} aria-hidden />
-            <span>{t("mesh.drawer.regenerateToken")}</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={() => setRegenOpen(true)}
+          disabled={locked}
+          title={t("mesh.drawer.regenerateToken")}
+        >
+          <RefreshCw size={12} aria-hidden />
+          <span>{t("mesh.drawer.regenerateToken")}</span>
+        </button>
       </div>
 
-      {/* Regenerate confirmation modal */}
       {regenOpen && (
         <div
           className="modal-backdrop"
@@ -154,11 +144,11 @@ export function ConnectorCommands({
             aria-label={t("mesh.modals.regenerateTitle")}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: "0 0 0.85rem" }}>{t("mesh.modals.regenerateTitle")}</h3>
+            <h3>{t("mesh.modals.regenerateTitle")}</h3>
             <p className="hint" style={{ color: "var(--danger)", marginTop: 0 }}>
               {t("mesh.drawer.regenerateWarning")}
             </p>
-            <div className="modal-actions" style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+            <div className="row-actions modal-actions">
               <button
                 type="button"
                 className="btn"

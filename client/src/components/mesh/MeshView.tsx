@@ -9,6 +9,7 @@ import { DeleteMachineModal } from "./DeleteMachineModal";
 import { AddRouteModal } from "./AddRouteModal";
 import { useMesh } from "../../hooks/useMesh";
 import { useLanguage } from "../../hooks/useLanguage";
+import { canonicalMachineStatusKey } from "../../i18n/status";
 import type { MeshEntry, MeshRoute } from "../../lib/api";
 
 type KindFilter = "all" | "node" | "device";
@@ -64,8 +65,7 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
       .filter((entry) => {
         if (kindFilter !== "all" && entry.kind !== kindFilter) return false;
 
-        const isOnline =
-          entry.status.toLowerCase() === "online" || entry.status.toLowerCase() === "healthy";
+        const isOnline = canonicalMachineStatusKey(entry.status) === "online";
         if (activityFilter === "online" && !isOnline) return false;
         if (activityFilter === "offline" && isOnline) return false;
 
@@ -236,12 +236,13 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
 
       <div className="mesh-toolbar">
         <div className="search-wrap">
-          <Search size={15} strokeWidth={2.25} aria-hidden />
+          <Search size={15} strokeWidth={2.25} className="search-icon" aria-hidden />
           <input
             type="search"
             placeholder={t("mesh.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label={t("mesh.searchPlaceholder")}
           />
         </div>
         <button

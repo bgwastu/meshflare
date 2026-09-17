@@ -331,6 +331,7 @@
     "requiredNotice": "इस इंस्टेंस के लिए प्रमाणीकरण आवश्यक है।"
   },
   "status": {
+    "labeled": "Status: {{status}}",
     "healthy": "स्वस्थ",
     "degraded": "निम्नीकृत",
     "down": "डाउन",

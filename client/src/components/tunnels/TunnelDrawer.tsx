@@ -6,6 +6,7 @@ import { StatusDot } from "../ui/Badge";
 import { Spinner } from "../ui/Spinner";
 import { IngressRulesTable } from "./IngressRulesTable";
 import { useLanguage } from "../../hooks/useLanguage";
+import { tunnelStatusLabel } from "../../i18n/status";
 import { copyText } from "../../lib/warp";
 import type {
   TunnelEntry,
@@ -86,7 +87,7 @@ export function TunnelDrawer({
         </button>
       </div>
 
-      <div className="drawer-tabs" role="tablist" style={{ marginTop: "0.5rem" }}>
+      <div className="drawer-tabs" role="tablist">
         <button
           type="button"
           role="tab"
@@ -150,9 +151,7 @@ export function TunnelDrawer({
               </span>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
                 <StatusDot status={tunnel.status} />
-                <span style={{ textTransform: "capitalize" }}>
-                  {t(`status.${tunnel.status.toLowerCase()}`, { defaultValue: tunnel.status })}
-                </span>
+                <span>{tunnelStatusLabel(t, tunnel.status)}</span>
               </div>
             </div>
 
@@ -250,41 +249,35 @@ export function TunnelDrawer({
 
       {/* Setup Tab */}
       {activeTab === "setup" && (
-        <div>
-          <h4 style={{ margin: "0 0 0.35rem", fontSize: "0.95rem" }}>
-            {t("tunnels.drawer.setupTitle")}
-          </h4>
-          <p className="hint" style={{ marginTop: 0, marginBottom: "0.85rem" }}>
-            {t("tunnels.drawer.setupDesc")}
-          </p>
+        <div className="connector-setup-box">
+          <h4>{t("tunnels.drawer.setupTitle")}</h4>
+          <p className="hint">{t("tunnels.drawer.setupDesc")}</p>
 
           {tokenLoading ? (
-            <div style={{ padding: "1rem 0" }}>
-              <Spinner label={t("common.loading")} />
-            </div>
+            <Spinner label={t("common.loading")} />
           ) : token ? (
             <>
-              <div style={{ position: "relative", marginBottom: "1rem" }}>
-                <pre className="cmd-block mono" dir="ltr" style={{ margin: 0, paddingRight: "3rem" }}>
+              <div className="cmd-block-wrap">
+                <pre className="cmd-block mono" dir="ltr">
                   {runCommand}
                 </pre>
                 <button
                   type="button"
                   className="icon-btn"
-                  style={{ position: "absolute", top: "0.45rem", right: "0.45rem" }}
                   onClick={() => void handleCopyCmd()}
                   title={t("common.copy")}
+                  aria-label={t("common.copy")}
                 >
-                  {copiedCmd ? <Check size={14} style={{ color: "var(--ok)" }} /> : <Copy size={14} />}
+                  {copiedCmd ? (
+                    <Check size={14} style={{ color: "var(--ok)" }} aria-hidden />
+                  ) : (
+                    <Copy size={14} aria-hidden />
+                  )}
                 </button>
               </div>
 
-              <div>
-                <div style={{ fontSize: "0.78rem", color: "var(--muted)", marginBottom: "0.3rem" }}>
-                  {t("tunnels.drawer.tokenLabel")}
-                </div>
-                <CopyValue value={token} onCopied={() => onToast(t("common.copied"))} />
-              </div>
+              <div className="setup-token-label">{t("tunnels.drawer.tokenLabel")}</div>
+              <CopyValue value={token} onCopied={() => onToast(t("common.copied"))} />
             </>
           ) : null}
         </div>

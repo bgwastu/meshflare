@@ -102,6 +102,18 @@ bun run db:migrate
 bun run dev
 ```
 
+Open **http://127.0.0.1:$PORT** (default `5173`) for the Vite UI with HMR.
+The API listens on `API_PORT` (default `8787`, or a free port if that is busy) and is proxied as `/api`.
+
+```bash
+PORT=8000 bun run dev          # UI at :8000, API at :8787 (or free)
+API_PORT=4000 bun run dev      # UI at :5173, API at :4000
+```
+
+- `bun run start` / Docker — single server; `PORT` is that server (default `3000`)
+- `bun run dev:api` — API only (serves built `dist/` if present; uses `PORT`)
+- `bun run dev:client` — Vite UI only (proxies `/api` to `API_PORT`, default `8787`)
+
 Docker:
 
 ```bash
@@ -121,7 +133,8 @@ docker run --rm -p 3000:3000 \
 | `CLOUDFLARE_API_TOKEN` | Cloudflare account API token |
 | `MESHFLARE_PASSWORD` | Optional dashboard password, minimum 32 characters |
 | `DATA_DIR` | SQLite directory; default `./data` or `/data` in Docker |
-| `PORT` | Self-hosted port; default `3000` |
+| `PORT` | UI port in `bun run dev` (default `5173`); server port for `bun run start` (default `3000`) |
+| `API_PORT` | API port during `bun run dev` only (default `8787`); Vite proxies `/api` here |
 | `DEMO_MODE` | Enables read-only demo fixtures |
 
 Mesh suffix, offline cleanup days, and DNS filter settings are managed from the

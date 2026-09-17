@@ -331,6 +331,7 @@
     "requiredNotice": "此实例已启用密码身份验证保护。"
   },
   "status": {
+    "labeled": "Status: {{status}}",
     "healthy": "健康",
     "degraded": "降级",
     "down": "离线",

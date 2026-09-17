@@ -339,6 +339,7 @@
     "requiredNotice": "يتطلب هذا الخادم مصادقة للدخول."
   },
   "status": {
+    "labeled": "Status: {{status}}",
     "healthy": "سليم",
     "degraded": "متدهور",
     "down": "معطل",

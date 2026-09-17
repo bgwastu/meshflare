@@ -331,6 +331,7 @@
     "requiredNotice": "Esta instancia requiere autenticación."
   },
   "status": {
+    "labeled": "Status: {{status}}",
     "healthy": "Saludable",
     "degraded": "Degradado",
     "down": "Caído",

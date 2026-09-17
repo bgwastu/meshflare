@@ -50,32 +50,26 @@ export function RenameMachineModal({
       title={t("mesh.modals.renameTitle")}
     >
       <form onSubmit={handleSubmit}>
-        <p className="hint" style={{ marginTop: 0, marginBottom: "0.85rem" }}>
+        <p className="hint" style={{ marginTop: 0 }}>
           {t("mesh.modals.renameDesc")}
         </p>
 
-        <label className="field-label" htmlFor="rename-machine-input">
-          {t("mesh.modals.newNameLabel")}
-        </label>
-        <input
-          id="rename-machine-input"
-          type="text"
-          className="input"
-          style={{ width: "100%", marginBottom: "1rem" }}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          disabled={busy || locked}
-          autoFocus
-          required
-        />
+        <div className="field">
+          <label htmlFor="rename-machine-input">{t("mesh.modals.newNameLabel")}</label>
+          <input
+            id="rename-machine-input"
+            type="text"
+            className="input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={busy || locked}
+            autoFocus
+            required
+          />
+        </div>
 
-        <div className="modal-actions" style={{ display: "flex", gap: "0.5rem" }}>
-          <button
-            type="button"
-            className="btn"
-            onClick={onClose}
-            disabled={busy}
-          >
+        <div className="row-actions modal-actions">
+          <button type="button" className="btn" onClick={onClose} disabled={busy}>
             {t("common.cancel")}
           </button>
           <button
@@ -83,11 +77,7 @@ export function RenameMachineModal({
             className="btn btn-primary"
             disabled={!name.trim() || name.trim() === entry.name || busy || locked}
           >
-            {busy ? (
-              <Spinner label={t("common.loading")} />
-            ) : (
-              t("common.save")
-            )}
+            {busy ? <Spinner label={t("common.saving")} /> : t("common.save")}
           </button>
         </div>
       </form>

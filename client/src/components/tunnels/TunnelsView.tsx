@@ -193,12 +193,13 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
 
       <div className="mesh-toolbar">
         <div className="search-wrap">
-          <Search size={15} strokeWidth={2.25} aria-hidden />
+          <Search size={15} strokeWidth={2.25} className="search-icon" aria-hidden />
           <input
             type="search"
             placeholder={t("tunnels.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label={t("tunnels.searchPlaceholder")}
           />
         </div>
         <button

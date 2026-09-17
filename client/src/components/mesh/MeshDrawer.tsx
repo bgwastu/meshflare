@@ -2,11 +2,10 @@ import { useState } from "react";
 import { X, Server, Smartphone, Plus, Trash2, Info, Route, Terminal } from "lucide-react";
 import { Drawer } from "../ui/Drawer";
 import { CopyValue } from "../ui/CopyValue";
-import { KindBadge, MachineKindStatus } from "../ui/Badge";
+import { KindBadge, StatusChip } from "../ui/Badge";
 import { Spinner } from "../ui/Spinner";
 import { ConnectorCommands } from "./ConnectorCommands";
 import { useLanguage } from "../../hooks/useLanguage";
-import { isNodeInitial } from "../../lib/warp";
 import type { MeshEntry, MeshRoute } from "../../lib/api";
 
 type MeshDrawerProps = {
@@ -47,7 +46,6 @@ export function MeshDrawer({
   if (!entry) return null;
 
   const isNode = entry.kind === "node";
-  const isInactive = isNodeInitial(entry.status);
 
   const handleDeleteRoute = async (route: MeshRoute) => {
     const id = route.id;
@@ -78,9 +76,9 @@ export function MeshDrawer({
         </button>
       </div>
 
-      <div className="meta" style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+      <div className="meta">
         <KindBadge kind={entry.kind} />
-        <MachineKindStatus entry={entry} />
+        <StatusChip status={entry.status} />
       </div>
 
       {isNode && (
@@ -196,7 +194,9 @@ export function MeshDrawer({
               disabled={locked}
             >
               <Trash2 size={13} aria-hidden />
-              <span>{t("mesh.modals.deleteTitle")}</span>
+              <span>
+                {isNode ? t("mesh.modals.deleteTitleNode") : t("mesh.modals.deleteTitleDevice")}
+              </span>
             </button>
           </div>
         </div>
