@@ -48,6 +48,12 @@ demoApi.get("/maintenance/health", (c) =>
       inSync: true,
       detail: "In sync",
     },
+    mesh: {
+      activeRules: 5,
+      desiredRules: 5,
+      inSync: true,
+      detail: "In sync (5 rules)",
+    },
   }),
 );
 
@@ -62,6 +68,12 @@ demoApi.post("/maintenance/repair", (c) =>
       remoteRule: true,
       inSync: true,
       detail: "In sync",
+    },
+    mesh: {
+      activeRules: 5,
+      desiredRules: 5,
+      inSync: true,
+      detail: "In sync (5 rules)",
     },
   }),
 );

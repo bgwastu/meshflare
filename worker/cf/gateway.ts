@@ -25,8 +25,20 @@ type GatewayRuleFilters = "dns" | "http" | "network" | "resolve";
 export async function listGatewayRules(
   cf: CloudflareClient,
 ): Promise<GatewayRule[]> {
-  const res = await cf.request<GatewayRule[]>("GET", cf.accountPath("/gateway/rules"));
-  return res.result ?? [];
+  const all: GatewayRule[] = [];
+  let page = 1;
+  for (;;) {
+    const res = await cf.request<GatewayRule[]>(
+      "GET",
+      cf.accountPath(`/gateway/rules?per_page=100&page=${page}`),
+    );
+    const batch = res.result ?? [];
+    all.push(...batch);
+    if (batch.length < 100) break;
+    page += 1;
+    if (page > 50) break;
+  }
+  return all;
 }
 
 export async function listGatewayLists(
@@ -58,17 +70,19 @@ export async function upsertGatewayRule(
     filters: GatewayRuleFilters[];
     traffic: string;
     rule_settings?: Record<string, unknown>;
+    precedence?: number;
   },
   existing?: GatewayRule,
 ): Promise<void> {
   const body = {
-      name: rule.name,
-      description: rule.description,
-      enabled: rule.enabled === true,
-      action: rule.action,
-      filters: rule.filters,
-      traffic: rule.traffic,
-      rule_settings: rule.rule_settings,
+    name: rule.name,
+    description: rule.description,
+    enabled: rule.enabled === true,
+    action: rule.action,
+    filters: rule.filters,
+    traffic: rule.traffic,
+    rule_settings: rule.rule_settings,
+    ...(rule.precedence !== undefined ? { precedence: rule.precedence } : {}),
   };
   if (existing) {
     await cf.request("PUT", cf.accountPath(`/gateway/rules/${existing.id}`), body);
@@ -133,12 +147,13 @@ export type DnsSyncStats = {
 
 export type MeshDnsOptions = {
   purgeHosts?: string[];
-  forceDesired?: Map<string, string>;
+  forceDesired?: Map<string, string[]>;
+  purgeAllUnmatched?: boolean;
 };
 
 export async function syncMeshDnsRules(
   cf: CloudflareClient,
-  desired: Map<string, string>,
+  desired: Map<string, string[]>,
   appData: { dnsMissingSince: Record<string, string> },
   options?: MeshDnsOptions,
 ): Promise<{ stats: DnsSyncStats; nextMissingSince: Record<string, string> }> {
@@ -159,28 +174,25 @@ export async function syncMeshDnsRules(
   const missingSince = { ...(appData.dnsMissingSince ?? {}) };
   const nextMissingSince: Record<string, string> = {};
 
-  for (const [host, ipv4] of desired) {
+  const toUpsert: Array<{ host: string; ips: string[]; existing?: GatewayRule }> = [];
+  const toDelete: GatewayRule[] = [];
+
+  for (const [host, ips] of desired) {
     delete missingSince[host];
     const existing = managed.get(host);
-    const current = existing?.rule_settings?.override_ips?.[0];
-    if (existing && current === ipv4) {
+    const currentIps = (existing?.rule_settings?.override_ips ?? []).slice().sort();
+    const targetIps = ips.slice().sort();
+    const ipsMatch =
+      currentIps.length === targetIps.length &&
+      currentIps.every((ip, idx) => ip === targetIps[idx]);
+
+    if (existing && ipsMatch) {
       skipped += 1;
       managed.delete(host);
       continue;
     }
-    await upsertGatewayRule(
-      cf,
-      {
-        name: `${MESH_RULE_PREFIX}: ${host}`,
-        description: `meshflare auto-sync: ${host} → ${ipv4}`,
-        enabled: true,
-        action: "override",
-        filters: ["dns"],
-        traffic: `dns.fqdn == "${host}"`,
-        rule_settings: { override_ips: [ipv4] },
-      },
-      existing,
-    );
+
+    toUpsert.push({ host, ips, existing });
     if (existing) {
       updated += 1;
       managed.delete(host);
@@ -190,15 +202,43 @@ export async function syncMeshDnsRules(
   }
 
   for (const [host, rule] of managed) {
-    if (!purgeHosts.has(host)) {
+    if (!options?.purgeAllUnmatched && !purgeHosts.has(host)) {
       const startedAt = Date.parse(missingSince[host] ?? "");
       if (!Number.isFinite(startedAt) || now - startedAt < DNS_MISSING_GRACE_MS) {
         nextMissingSince[host] = missingSince[host] ?? new Date(now).toISOString();
         continue;
       }
     }
-    await deleteGatewayRule(cf, rule.id);
+    toDelete.push(rule);
     deleted += 1;
+  }
+
+  const BATCH_SIZE = 6;
+  for (let i = 0; i < toUpsert.length; i += BATCH_SIZE) {
+    await Promise.all(
+      toUpsert.slice(i, i + BATCH_SIZE).map(({ host, ips, existing }) =>
+        upsertGatewayRule(
+          cf,
+          {
+            name: `${MESH_RULE_PREFIX}: ${host}`,
+            description: `meshflare auto-sync: ${host} → ${ips.join(", ")}`,
+            enabled: true,
+            action: "override",
+            filters: ["dns"],
+            traffic: `dns.fqdn == "${host}"`,
+            rule_settings: { override_ips: ips },
+            precedence: 100,
+          },
+          existing,
+        ),
+      ),
+    );
+  }
+
+  for (let i = 0; i < toDelete.length; i += BATCH_SIZE) {
+    await Promise.all(
+      toDelete.slice(i, i + BATCH_SIZE).map((rule) => deleteGatewayRule(cf, rule.id)),
+    );
   }
 
   return {

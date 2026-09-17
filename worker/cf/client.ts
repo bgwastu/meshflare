@@ -47,20 +47,38 @@ export class CloudflareClient {
       ? path
       : `https://api.cloudflare.com/client/v4${path}`;
 
-    const res = await fetch(url, {
-      method,
-      headers: this.headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
+    let attempts = 0;
+    for (;;) {
+      attempts += 1;
+      const res = await fetch(url, {
+        method,
+        headers: this.headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
 
-    const json = (await res.json()) as CfApiResult<T>;
-    if (!res.ok || !json.success) {
-      const msg =
-        json.errors?.map((e) => e.message).join("; ") ||
-        `Cloudflare API ${res.status}`;
-      throw new CloudflareApiError(msg, res.status, json.errors ?? []);
+      if (res.status === 429 && attempts < 3) {
+        const retrySec = Number(res.headers.get("Retry-After")) || 1;
+        await new Promise((r) => setTimeout(r, Math.min(retrySec * 1000, 2500)));
+        continue;
+      }
+
+      const text = await res.text();
+      let json: CfApiResult<T> | null = null;
+      try {
+        json = JSON.parse(text) as CfApiResult<T>;
+      } catch {
+        /* non-JSON response from Cloudflare edge */
+      }
+
+      if (!res.ok || !json?.success) {
+        const msg =
+          json?.errors?.map((e) => e.message).join("; ") ||
+          (text.length > 0 && text.length < 300 ? text.trim() : `Cloudflare API ${res.status}`);
+        throw new CloudflareApiError(msg, res.status, json?.errors ?? []);
+      }
+
+      return json;
     }
-    return json;
   }
 
   accountPath(suffix: string): string {

@@ -1,4 +1,5 @@
 import type { CloudflareClient } from "./client";
+import { buildMeshInventory, syncMeshDns } from "./dns";
 import {
   FILTER_LIST_PREFIX,
   FILTER_RULE_NAME,
@@ -20,16 +21,24 @@ export type MaintenanceHealth = {
     inSync: boolean;
     detail: string;
   };
+  mesh: {
+    activeRules: number;
+    desiredRules: number;
+    inSync: boolean;
+    detail: string;
+  };
 };
 
 /**
- * Compare the DNS filter state stored in the app database with what actually
- * exists in Cloudflare Gateway. Divergence happens when someone edits the
- * remote list/rule manually, or when a previous sync partially failed.
+ * Compare both DNS filter and Mesh DNS state with what actually exists in Cloudflare Gateway.
  */
 export async function checkMaintenanceHealth(cf: CloudflareClient, env: Env): Promise<MaintenanceHealth> {
   const settings = await getSettings(env);
-  const [rules, lists] = await Promise.all([listGatewayRules(cf), listGatewayLists(cf)]);
+  const [rules, lists, inventory] = await Promise.all([
+    listGatewayRules(cf),
+    listGatewayLists(cf),
+    buildMeshInventory(cf, env),
+  ]);
 
   const filter = settings.dnsFilterEnabled
     ? settings.dnsFilterStatus === "enabled" || settings.dnsFilterStatus === "idle"
@@ -57,8 +66,17 @@ export async function checkMaintenanceHealth(cf: CloudflareClient, env: Env): Pr
     detail = "Disabled locally but filter artifacts still exist remotely";
   }
 
+  const meshRules = rules.filter(
+    (r) => r.action === "override" && r.filters?.includes("dns") && r.name?.startsWith("meshflare DNS"),
+  );
+  const routablePeers = inventory.filter((e) => Boolean(e.ipv4 || e.ipv6)).length;
+  const meshInSync = meshRules.length === routablePeers;
+  const meshDetail = meshInSync
+    ? `In sync (${meshRules.length} rule${meshRules.length === 1 ? "" : "s"})`
+    : `Divergence: ${meshRules.length} remote rule(s) vs ${routablePeers} active peer(s)`;
+
   return {
-    ok: inSync,
+    ok: inSync && meshInSync,
     dnsFilter: {
       configured: true,
       enabled: settings.dnsFilterEnabled,
@@ -68,19 +86,23 @@ export async function checkMaintenanceHealth(cf: CloudflareClient, env: Env): Pr
       inSync,
       detail: filter && inSync ? "In sync" : detail,
     },
+    mesh: {
+      activeRules: meshRules.length,
+      desiredRules: routablePeers,
+      inSync: meshInSync,
+      detail: meshDetail,
+    },
   };
 }
 
 /**
- * Repair out-of-sync DNS filter state by forcing the filter state machine to
- * rebuild. Deletes leftover remote artifacts first, then re-enables from the
- * stored URL.
+ * Repair out-of-sync state by forcing filter state machine to rebuild and resyncing Mesh DNS.
  */
 export async function repairMaintenance(cf: CloudflareClient, env: Env): Promise<MaintenanceHealth> {
   const settings = await getSettings(env);
   const nextStatus = settings.dnsFilterEnabled ? "pending_enable" : "pending_disable";
   await processDnsFilterTick(cf, env).catch(() => undefined);
-  // Force the state machine to start fresh on the next tick.
   await updateAppData(env.DB, { dnsFilterStatus: nextStatus });
+  await syncMeshDns(cf, env, { purgeAllUnmatched: true }).catch(() => undefined);
   return checkMaintenanceHealth(cf, env);
 }

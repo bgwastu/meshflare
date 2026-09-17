@@ -1,11 +1,11 @@
 /** Slugify a mesh name for DNS labels (name.mesh). */
-function slugifyName(name: string): string {
+export function slugifyName(name: string): string {
   const slug = name
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 63);
+    .slice(0, 58)
+    .replace(/^-+|-+$/g, "");
   return slug || "unnamed";
 }
 
@@ -52,4 +52,20 @@ export function isConnectorRegistration(reg: {
 }): boolean {
   const email = reg.user?.email?.toLowerCase() ?? "";
   return email.includes("warp_connector@");
+}
+
+const RESERVED_FALLBACK_SUFFIXES = new Set([
+  "local",
+  "internal",
+  "lan",
+  "home.arpa",
+  "corp",
+  "private",
+  "test",
+  "arpa",
+]);
+
+/** Cloudflare WARP client bypasses Gateway for Local Domain Fallback suffixes by default. */
+export function isReservedFallbackSuffix(suffix: string): boolean {
+  return RESERVED_FALLBACK_SUFFIXES.has(suffix.trim().toLowerCase());
 }

@@ -59,14 +59,17 @@ export async function buildMeshInventory(
   env: Env,
 ): Promise<MeshEntry[]> {
   const suffix = await getMeshSuffix(env);
-  const [nodes, regs] = await Promise.all([
+  const [nodes, regs, appData] = await Promise.all([
     listMeshNodes(cf),
     listDeviceRegistrations(cf, "active"),
+    readAppData(env.DB),
   ]);
 
   const connectorRegsByName = new Map<string, DeviceRegistration>();
   const regsById = new Map<string, DeviceRegistration>();
   const deviceEntries: MeshEntry[] = [];
+  const nodeBindings = { ...(appData.nodeBindings ?? {}) };
+  let nodeBindingsChanged = false;
 
   for (const reg of regs) {
     regsById.set(reg.id, reg);
@@ -91,7 +94,7 @@ export async function buildMeshInventory(
       id: reg.id,
       deviceId: reg.device?.id ?? reg.id,
       name,
-      meshHostname: ipv4 ? meshHostname(name, suffix) : null,
+      meshHostname: meshHostname(name, suffix),
       ipv4,
       ipv6,
       status: devicePresenceStatus(reg.last_seen_at),
@@ -104,14 +107,32 @@ export async function buildMeshInventory(
 
   const nodeEntries: MeshEntry[] = nodes.map((node: MeshNode) => {
     const reg = resolveNodeRegistration(node, regsById, connectorRegsByName);
-    const ipv4 = reg?.virtual_ipv4?.trim() || null;
-    const ipv6 = reg?.virtual_ipv6?.trim() || null;
+    let ipv4 = reg?.virtual_ipv4?.trim() || null;
+    let ipv6 = reg?.virtual_ipv6?.trim() || null;
+    let deviceId = reg?.device?.id;
+
+    if (ipv4 || ipv6) {
+      if (
+        nodeBindings[node.id]?.ipv4 !== ipv4 ||
+        nodeBindings[node.id]?.ipv6 !== ipv6 ||
+        nodeBindings[node.id]?.deviceId !== deviceId
+      ) {
+        nodeBindings[node.id] = { deviceId, ipv4, ipv6 };
+        nodeBindingsChanged = true;
+      }
+    } else if (nodeBindings[node.id]) {
+      const cached = nodeBindings[node.id];
+      ipv4 = cached.ipv4 ?? null;
+      ipv6 = cached.ipv6 ?? null;
+      deviceId = cached.deviceId;
+    }
+
     return {
       kind: "node" as const,
       id: node.id,
-      deviceId: reg?.device?.id,
+      deviceId,
       name: node.name,
-      meshHostname: ipv4 ? meshHostname(node.name, suffix) : null,
+      meshHostname: meshHostname(node.name, suffix),
       ipv4,
       ipv6,
       status: node.status,
@@ -122,16 +143,21 @@ export async function buildMeshInventory(
     };
   });
 
+  if (nodeBindingsChanged) {
+    await updateAppData(env.DB, { nodeBindings });
+  }
+
+  // Nodes take precedence over devices on equal timestamps; oldest created keeps base hostname.
   const entries = [...nodeEntries, ...deviceEntries].sort((a, b) => {
-    const tb = Date.parse(b.createdAt) || 0;
+    if (a.kind !== b.kind) return a.kind === "node" ? -1 : 1;
     const ta = Date.parse(a.createdAt) || 0;
-    if (tb !== ta) return tb - ta;
+    const tb = Date.parse(b.createdAt) || 0;
+    if (ta !== tb) return ta - tb;
     return a.name.localeCompare(b.name);
   });
 
   const usedHostnames = new Set<string>();
   for (const entry of entries) {
-    if (!entry.ipv4) continue;
     const base = meshHostname(entry.name, suffix);
     let hostname = base;
     let counter = 2;
@@ -171,13 +197,9 @@ function resolveNodeRegistration(
 }
 
 /**
- * Sync Gateway DNS overrides for *.<suffix> — only when an IP is known.
+ * Sync Gateway DNS overrides for *.<suffix> with dual-stack IPv4/IPv6 support.
  * Removes all meshflare-managed override rules that are no longer desired,
  * including leftovers from a previous suffix.
- *
- * `purgeHosts` forces removal of specific hostnames even if inventory still
- * briefly reports the old name (e.g. right after a device rename).
- * `forceDesired` injects host→IP mappings that must exist after rename.
  */
 export async function syncMeshDns(
   cf: CloudflareClient,
@@ -186,19 +208,20 @@ export async function syncMeshDns(
 ): Promise<Awaited<ReturnType<typeof syncMeshDnsRules>>["stats"]> {
   const suffix = await getMeshSuffix(env);
   const inventory = await buildMeshInventory(cf, env);
-  const desired = new Map<string, string>();
+  const desired = new Map<string, string[]>();
 
   for (const entry of inventory) {
-    if (!entry.ipv4) continue;
+    const ips = [entry.ipv4, entry.ipv6].filter((ip): ip is string => Boolean(ip?.trim()));
+    if (ips.length === 0) continue;
     const host = entry.meshHostname ?? meshHostname(entry.name, suffix);
-    if (!desired.has(host)) desired.set(host, entry.ipv4);
+    if (!desired.has(host)) desired.set(host, ips);
   }
 
   for (const host of options?.purgeHosts ?? []) {
     desired.delete(host);
   }
-  for (const [host, ipv4] of options?.forceDesired ?? []) {
-    desired.set(host, ipv4);
+  for (const [host, ips] of options?.forceDesired ?? []) {
+    desired.set(host, ips);
   }
 
   const appData = await readAppData(env.DB);
@@ -218,7 +241,7 @@ export async function syncMeshDnsAfterRename(
 ): Promise<Awaited<ReturnType<typeof syncMeshDnsRules>>["stats"]> {
   const suffix = await getMeshSuffix(env);
   const purgeHosts: string[] = [];
-  const forceDesired = new Map<string, string>();
+  const forceDesired = new Map<string, string[]>();
 
   const fromHost = meshHostname(rename.renamed.from, suffix);
   const toHost = meshHostname(rename.renamed.to, suffix);
@@ -235,8 +258,9 @@ export async function syncMeshDnsAfterRename(
     inventory.find((e) => e.name.trim().toLowerCase() === rename.renamed.to.trim().toLowerCase()) ??
     inventory.find((e) => e.name.trim().toLowerCase() === rename.renamed.from.trim().toLowerCase());
 
-  if (match?.ipv4 && fromHost !== toHost) {
-    forceDesired.set(match.meshHostname ?? toHost, match.ipv4);
+  const matchIps = match ? [match.ipv4, match.ipv6].filter((ip): ip is string => Boolean(ip?.trim())) : [];
+  if (matchIps.length > 0 && fromHost !== toHost) {
+    forceDesired.set(toHost, matchIps);
   }
 
   if (rename.displaced) {
@@ -250,8 +274,11 @@ export async function syncMeshDnsAfterRename(
         inventory.find(
           (e) => e.name.trim().toLowerCase() === rename.displaced!.from.trim().toLowerCase(),
         );
-      if (displacedMatch?.ipv4) {
-        forceDesired.set(displacedMatch.meshHostname ?? dTo, displacedMatch.ipv4);
+      const displacedIps = displacedMatch
+        ? [displacedMatch.ipv4, displacedMatch.ipv6].filter((ip): ip is string => Boolean(ip?.trim()))
+        : [];
+      if (displacedIps.length > 0) {
+        forceDesired.set(dTo, displacedIps);
       }
     }
   }
@@ -263,11 +290,21 @@ export async function syncMeshDnsAfterRename(
 export async function syncMeshDnsAfterDelete(
   cf: CloudflareClient,
   env: Env,
-  entry: { name: string; meshHostname?: string | null },
+  entry: { id?: string; kind?: "node" | "device"; name: string; meshHostname?: string | null },
 ): Promise<Awaited<ReturnType<typeof syncMeshDnsRules>>["stats"]> {
   const suffix = await getMeshSuffix(env);
   const purgeHosts = new Set<string>();
   purgeHosts.add(meshHostname(entry.name, suffix));
   if (entry.meshHostname?.trim()) purgeHosts.add(entry.meshHostname.trim());
+
+  if (entry.id && entry.kind === "node") {
+    const appData = await readAppData(env.DB);
+    if (appData.nodeBindings?.[entry.id]) {
+      const nextBindings = { ...appData.nodeBindings };
+      delete nextBindings[entry.id];
+      await updateAppData(env.DB, { nodeBindings: nextBindings });
+    }
+  }
+
   return syncMeshDns(cf, env, { purgeHosts: [...purgeHosts] });
 }

@@ -13,6 +13,7 @@ const DEFAULT_APP_DATA: AppData = {
   lastDnsSyncAt: null,
   lastCleanupAt: null,
   dnsMissingSince: {},
+  nodeBindings: {},
 };
 
 function rowToData(row: typeof settings.$inferSelect): AppData {
@@ -21,6 +22,13 @@ function rowToData(row: typeof settings.$inferSelect): AppData {
     dnsMissingSince = JSON.parse(row.dnsMissingSinceJson) as Record<string, string>;
   } catch {
     dnsMissingSince = {};
+  }
+
+  let nodeBindings: Record<string, { deviceId?: string; ipv4?: string | null; ipv6?: string | null }> = {};
+  try {
+    nodeBindings = JSON.parse(row.nodeBindingsJson ?? "{}") as Record<string, { deviceId?: string; ipv4?: string | null; ipv6?: string | null }>;
+  } catch {
+    nodeBindings = {};
   }
 
   return {
@@ -34,6 +42,7 @@ function rowToData(row: typeof settings.$inferSelect): AppData {
     lastDnsSyncAt: row.lastDnsSyncAt,
     lastCleanupAt: row.lastCleanupAt,
     dnsMissingSince,
+    nodeBindings,
   };
 }
 
@@ -47,6 +56,7 @@ async function ensureSettings(db: AppDatabase): Promise<void> {
     dnsFilterCursor: DEFAULT_APP_DATA.dnsFilterCursor,
     meshSuffix: DEFAULT_APP_DATA.meshSuffix,
     dnsMissingSinceJson: "{}",
+    nodeBindingsJson: "{}",
   }).onConflictDoNothing();
 }
 
@@ -72,6 +82,7 @@ export async function updateAppData(
   if (patch.lastDnsSyncAt !== undefined) values.lastDnsSyncAt = patch.lastDnsSyncAt;
   if (patch.lastCleanupAt !== undefined) values.lastCleanupAt = patch.lastCleanupAt;
   if (patch.dnsMissingSince !== undefined) values.dnsMissingSinceJson = JSON.stringify(patch.dnsMissingSince);
+  if (patch.nodeBindings !== undefined) values.nodeBindingsJson = JSON.stringify(patch.nodeBindings);
   if (Object.keys(values).length > 0) {
     await db.update(settings).set(values).where(eq(settings.id, 1));
   }

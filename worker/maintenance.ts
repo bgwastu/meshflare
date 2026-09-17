@@ -12,6 +12,7 @@ export async function runMaintenance(env: Env): Promise<void> {
   try {
     const dns = await syncMeshDns(cf, env);
     console.log("meshflare dns sync", dns);
+    await markDnsSynced(env);
   } catch (error) {
     console.error("meshflare dns sync", error);
   }
@@ -33,5 +34,4 @@ export async function runMaintenance(env: Env): Promise<void> {
   } catch (error) {
     console.error("meshflare dns filter", error);
   }
-  await markDnsSynced(env);
 }

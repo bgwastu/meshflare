@@ -12,6 +12,7 @@ export type AppData = {
   lastDnsSyncAt: string | null;
   lastCleanupAt: string | null;
   dnsMissingSince: Record<string, string>;
+  nodeBindings?: Record<string, { deviceId?: string; ipv4?: string | null; ipv6?: string | null }>;
 };
 
 export type SettingsPatch = Partial<{

@@ -60,12 +60,17 @@ export type TunnelIngressRule = {
   originRequest?: Record<string, unknown>;
 };
 
+export type SplitTunnelAudit = {
+  meshIpsRouted: boolean;
+  warning?: string;
+};
+
 export type SplitTunnelConfig = {
   mode: "include" | "exclude";
   include: SplitTunnelItem[];
   exclude: SplitTunnelItem[];
+  audit?: SplitTunnelAudit;
 };
-
 export type DnsSyncStats = {
   created: number;
   updated: number;
@@ -114,6 +119,12 @@ export type MaintenanceHealth = {
     status: string;
     remoteListChunks: number;
     remoteRule: boolean;
+    inSync: boolean;
+    detail: string;
+  };
+  mesh?: {
+    activeRules: number;
+    desiredRules: number;
     inSync: boolean;
     detail: string;
   };

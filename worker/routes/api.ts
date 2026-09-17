@@ -40,7 +40,7 @@ import {
   deleteMeshEntry,
   renameWithCollisionHandling,
 } from "../cf/rename";
-import { getDefaultSplitTunnels, setDefaultSplitTunnels } from "../cf/split-tunnels";
+import { auditMeshRouting, getDefaultSplitTunnels, setDefaultSplitTunnels } from "../cf/split-tunnels";
 import { decodeConnectorToken } from "../wg/token";
 import {
   nameSchema,
@@ -97,7 +97,7 @@ api.patch("/settings", zValidator("json", settingsSchema), async (c) => {
     body.meshSuffix !== undefined && settings.meshSuffix !== before.meshSuffix;
   if (suffixChanged) {
     const cf = createCfClient(c.env);
-    await syncMeshDns(cf, c.env);
+    await syncMeshDns(cf, c.env, { purgeAllUnmatched: true });
     await markDnsSynced(c.env);
   }
 
@@ -238,7 +238,9 @@ api.delete("/mesh/nodes/:id/routes/:routeId", async (c) => {
 
 api.get("/settings/split-tunnels", async (c) => {
   const cf = createCfClient(c.env);
-  return c.json(await getDefaultSplitTunnels(cf));
+  const config = await getDefaultSplitTunnels(cf);
+  const audit = auditMeshRouting(config);
+  return c.json({ ...config, audit });
 });
 
 api.put("/settings/split-tunnels", zValidator("json", splitTunnelsSchema), async (c) => {
@@ -259,7 +261,9 @@ api.put("/settings/split-tunnels", zValidator("json", splitTunnelsSchema), async
   }
   const cf = createCfClient(c.env);
   await setDefaultSplitTunnels(cf, body.mode, items);
-  return c.json(await getDefaultSplitTunnels(cf));
+  const updated = await getDefaultSplitTunnels(cf);
+  const audit = auditMeshRouting(updated);
+  return c.json({ ...updated, audit });
 });
 
 api.post("/mesh/sync-dns", async (c) => {

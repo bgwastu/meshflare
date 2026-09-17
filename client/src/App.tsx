@@ -31,6 +31,7 @@ import {
   machineStatusMeta,
   isNodeInitial,
   warpConnectorInstallCommand,
+  type InstallPlatform,
 } from "./lib/warp";
 
 type Tab = "mesh" | "tunnels" | "settings";
@@ -199,6 +200,7 @@ export function App() {  const location = useLocation();
   const [splitEditor, setSplitEditor] = useState<{ index: number | null; value: string; description: string } | null>(null);
   const [splitBusy, setSplitBusy] = useState(false);
   const [routeBusy, setRouteBusy] = useState<string | null>(null);
+  const [installPlatform, setInstallPlatform] = useState<InstallPlatform>("debian");
 
   const locked = busy !== null || creating || Boolean(settings?.demo);
 
@@ -219,12 +221,10 @@ export function App() {  const location = useLocation();
     queryKey: ["node-token", selectedNodeId],
     queryFn: () => api.getNodeToken(selectedNodeId!),
     enabled: Boolean(selectedNodeId && drawerEntry?.kind === "node"),
-    select: (data) => warpConnectorInstallCommand(data.token),
   });
-  const installCmdFinal = installQuery.data ?? null;
+  const nodeToken = installQuery.data?.token ?? null;
+  const installCmd = nodeToken ? warpConnectorInstallCommand(nodeToken, installPlatform) : null;
   const installLoading = installQuery.isFetching;
-  const installCmd = installCmdFinal;
-
   const splitTunnelsQuery = useQuery({
     queryKey: ["split-tunnels"],
     queryFn: api.splitTunnels,
@@ -886,6 +886,13 @@ export function App() {  const location = useLocation();
                 >
                   {busy === "domain" ? <Spinner label="Saving…" /> : "Save domain"}
                 </button>
+                {["local", "internal", "lan", "home.arpa", "corp", "private", "test", "arpa"].includes(
+                  meshSuffixDraft.trim().toLowerCase().replace(/^\.+/, "")
+                ) && (
+                  <p className="hint" style={{ marginTop: "0.5rem", color: "#eab308" }}>
+                    Warning: .{meshSuffixDraft.trim().replace(/^\.+/, "")} is in Cloudflare WARP&apos;s Local Domain Fallback list and will bypass Gateway DNS resolution.
+                  </p>
+                )}
               </div>
 
               <div className="settings-block">
@@ -1057,8 +1064,13 @@ export function App() {  const location = useLocation();
                     <div className="health-alert-copy">
                       <strong>Out of sync</strong>
                       <p className="hint">
-                        {maintenanceHealthQuery.data.dnsFilter.detail}
-                        {" "}The remote Gateway state no longer matches this app. Run repair to rebuild it.
+                        {!maintenanceHealthQuery.data.dnsFilter.inSync && (
+                          <span>Filter: {maintenanceHealthQuery.data.dnsFilter.detail}. </span>
+                        )}
+                        {maintenanceHealthQuery.data.mesh && !maintenanceHealthQuery.data.mesh.inSync && (
+                          <span>Mesh: {maintenanceHealthQuery.data.mesh.detail}. </span>
+                        )}
+                        The remote Gateway state no longer matches this app. Run repair to rebuild it.
                       </p>
                     </div>
                     <button
@@ -1162,6 +1174,14 @@ export function App() {  const location = useLocation();
                     ? "Only listed traffic is sent through WARP."
                     : "All traffic is sent through WARP except listed traffic."}
                 </p>
+                {splitTunnels?.audit && !splitTunnels.audit.meshIpsRouted && (
+                  <div className="health-alert" role="alert" style={{ marginBottom: "0.85rem" }}>
+                    <div className="health-alert-copy">
+                      <strong>Mesh IP routing warning</strong>
+                      <p className="hint">{splitTunnels.audit.warning}</p>
+                    </div>
+                  </div>
+                )}
                 {splitTunnelsLoading ? (
                   <div className="split-list" aria-label="Loading split tunnels">
                     {Array.from({ length: 3 }, (_, index) => (
@@ -1575,41 +1595,57 @@ export function App() {  const location = useLocation();
               </div>
             )}
 
-            {drawerEntry.kind === "node" && isNodeInitial(drawerEntry.status) && (
+            {drawerEntry.kind === "node" && (
               <div className="install-box">
-                <div className="row-actions">
-                  <strong style={{ fontSize: "0.85rem" }}>Install &amp; connect (warp-cli)</strong>
-                  <button
-                    className="btn"
-                    disabled={!installCmd || installLoading || locked}
-                    onClick={() =>
-                      void (async () => {
-                        if (!installCmd) return;
-                        try {
-                          await copyText(installCmd);
-                          push("Install command copied.", "success");
-                        } catch (e) {
-                          push(
-                            e instanceof Error ? e.message : "Could not copy",
-                            "error",
-                          );
-                        }
-                      })()
-                    }
-                  >
-                    Copy
-                  </button>
+                <div className="row-actions" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+                  <strong style={{ fontSize: "0.85rem" }}>Install &amp; connect</strong>
+                  <div style={{ display: "flex", gap: "0.25rem" }}>
+                    {(["debian", "rhel", "docker"] as const).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        className={`btn ${installPlatform === p ? "btn-primary" : ""}`}
+                        style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }}
+                        onClick={() => setInstallPlatform(p)}
+                      >
+                        {p === "debian" ? "Debian/Ubuntu" : p === "rhel" ? "RHEL/CentOS" : "Docker"}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ padding: "0.2rem 0.5rem", fontSize: "0.75rem" }}
+                      disabled={!installCmd || installLoading || locked}
+                      onClick={() =>
+                        void (async () => {
+                          if (!installCmd) return;
+                          try {
+                            await copyText(installCmd);
+                            push("Install command copied.", "success");
+                          } catch (e) {
+                            push(e instanceof Error ? e.message : "Could not copy", "error");
+                          }
+                        })()
+                      }
+                    >
+                      Copy
+                    </button>
+                  </div>
                 </div>
                 <p className="hint" style={{ marginTop: "0.4rem" }}>
-                  Run on the host that should join this mesh node (Debian/Ubuntu).
+                  {installPlatform === "docker"
+                    ? "Run Cloudflare WARP Connector container with host networking."
+                    : installPlatform === "rhel"
+                    ? "Run on RHEL 9+, Rocky, AlmaLinux, CentOS Stream, or Fedora."
+                    : "Run on Debian or Ubuntu host with root privileges."}
                 </p>
                 <pre>
                   {installLoading ? (
                     <SkeletonBlock className="skeleton-install" />
                   ) : (
                     (installCmd ?? "—")
-                    )}
-                  </pre>
+                  )}
+                </pre>
               </div>
             )}
 

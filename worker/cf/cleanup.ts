@@ -31,7 +31,8 @@ export async function cleanupOfflineDevices(
       continue;
     }
 
-    const days = daysSince(reg.last_seen_at, now);
+    const effectiveTimestamp = reg.last_seen_at ?? reg.created_at;
+    const days = daysSince(effectiveTimestamp, now);
     if (days === null || days <= offlineDays) {
       stats.skippedRecent += 1;
       continue;

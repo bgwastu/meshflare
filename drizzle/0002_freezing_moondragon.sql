@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `node_bindings_json` text DEFAULT '{}' NOT NULL;

@@ -41,7 +41,7 @@ export function buildDemoEntries(now = Date.now()): MeshEntry[] {
       kind: "node",
       id: "demo-node-spare",
       name: "spare-node",
-      meshHostname: null,
+      meshHostname: "spare-node.mesh",
       ipv4: null,
       ipv6: null,
        status: "inactive",

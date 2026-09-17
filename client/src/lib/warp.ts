@@ -56,13 +56,35 @@ export function tunnelStatusMeta(status: string): {
 }
 
 /** Debian/Ubuntu one-liner: install cloudflare-warp + enroll connector + connect. */
-export function warpConnectorInstallCommand(token: string): string {
+export type InstallPlatform = "debian" | "rhel" | "docker";
+
+/** One-liner installer for WARP Connector / Cloudflare Mesh node. */
+export function warpConnectorInstallCommand(token: string, platform: InstallPlatform = "debian"): string {
+  if (platform === "docker") {
+    return [
+      `docker run -d --name cloudflare-warp \\`,
+      `  --restart always \\`,
+      `  --cap-add NET_ADMIN \\`,
+      `  --device /dev/net/tun \\`,
+      `  -e WARP_CONNECTOR_TOKEN="${token}" \\`,
+      `  cloudflare/warp-connector:latest`,
+    ].join("\n");
+  }
+  if (platform === "rhel") {
+    return [
+      `sudo dnf install -y epel-release &&`,
+      `curl -fsSl https://pkg.cloudflareclient.com/cloudflare-warp-ascii.repo | sudo tee /etc/yum.repos.d/cloudflare-warp.repo &&`,
+      `sudo dnf install -y cloudflare-warp &&`,
+      `printf 'net.ipv4.ip_forward = 1\\nnet.ipv6.conf.all.forwarding = 1\\nnet.ipv6.conf.all.accept_ra = 2\\n' | sudo tee /etc/sysctl.d/99-zzz-cloudflare-warp-connector.conf && sudo sysctl --system &&`,
+      `sudo warp-cli --accept-tos connector new ${token} && sudo warp-cli --accept-tos connect`,
+    ].join("\n");
+  }
   return [
     `curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg &&`,
     `echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(. /etc/os-release && echo "$VERSION_CODENAME") main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list &&`,
     `sudo apt-get update -qq && sudo apt-get install -y -qq cloudflare-warp &&`,
-    `printf 'net.ipv4.ip_forward = 1\\nnet.ipv6.conf.all.forwarding = 1\\nnet.ipv6.conf.all.accept_ra = 2\\n' | sudo tee /etc/sysctl.d/99-zzz-cloudflare-warp-connector.conf && sudo sysctl --system`,
-    `warp-cli connector new ${token} && warp-cli connect`,
+    `printf 'net.ipv4.ip_forward = 1\\nnet.ipv6.conf.all.forwarding = 1\\nnet.ipv6.conf.all.accept_ra = 2\\n' | sudo tee /etc/sysctl.d/99-zzz-cloudflare-warp-connector.conf && sudo sysctl --system &&`,
+    `sudo warp-cli --accept-tos connector new ${token} && sudo warp-cli --accept-tos connect`,
   ].join("\n");
 }
 
