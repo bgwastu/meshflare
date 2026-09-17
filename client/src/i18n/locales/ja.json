@@ -1,7 +1,7 @@
 {
   "common": {
     "appName": "meshflare",
-    "tagline": "Cloudflare Mesh & トンネルマネージャー",
+    "tagline": "Cloudflare Mesh and Tunnel manager",
     "search": "検索…",
     "filter": "フィルター",
     "all": "すべて",
@@ -32,7 +32,7 @@
   },
   "nav": {
     "mesh": "Mesh",
-    "tunnels": "トンネル",
+    "tunnels": "Tunnels",
     "settings": "設定",
     "account": "アカウント",
     "logout": "サインアウト"

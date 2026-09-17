@@ -1,7 +1,7 @@
 {
   "common": {
     "appName": "meshflare",
-    "tagline": "Cloudflare Mesh- und Tunnel-Manager",
+    "tagline": "Cloudflare Mesh and Tunnel manager",
     "search": "Suchen…",
     "filter": "Filtern",
     "all": "Alle",
@@ -32,7 +32,7 @@
   },
   "nav": {
     "mesh": "Mesh",
-    "tunnels": "Tunnel",
+    "tunnels": "Tunnels",
     "settings": "Einstellungen",
     "account": "Konto",
     "logout": "Abmelden"

@@ -1,7 +1,7 @@
 {
   "common": {
     "appName": "meshflare",
-    "tagline": "Gestionnaire de Mesh et Tunnels Cloudflare",
+    "tagline": "Cloudflare Mesh and Tunnel manager",
     "search": "Rechercher…",
     "filter": "Filtrer",
     "all": "Tous",

@@ -1,7 +1,6 @@
 import { type ReactNode } from "react";
 import { Header } from "./Header";
 import { DemoBanner } from "./DemoBanner";
-import { NavTabs } from "./NavTabs";
 import { ToastStack, type ToastItem } from "../../lib/toasts";
 import type { Settings } from "../../lib/api";
 
@@ -26,17 +25,16 @@ export function Layout({
 }: LayoutProps) {
   return (
     <div className="app">
+      <DemoBanner show={Boolean(settings?.demo)} />
+
       <Header
         settings={settings}
         authRequired={authRequired}
+        tunnelsCount={tunnelsCount}
         onLogout={onLogout}
       />
 
-      <DemoBanner show={Boolean(settings?.demo)} />
-
-      <NavTabs tunnelsCount={tunnelsCount} />
-
-      <main style={{ marginTop: "1rem" }}>
+      <main>
         {children}
       </main>
 

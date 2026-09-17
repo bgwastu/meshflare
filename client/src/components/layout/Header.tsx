@@ -1,4 +1,5 @@
-import { LogOut, User } from "lucide-react";
+import { Link, NavLink } from "react-router";
+import { Server, Globe, Settings as SettingsIcon, LogOut } from "lucide-react";
 import { LanguageSwitcher } from "../ui/LanguageSwitcher";
 import { useLanguage } from "../../hooks/useLanguage";
 import type { Settings } from "../../lib/api";
@@ -6,36 +7,71 @@ import type { Settings } from "../../lib/api";
 type HeaderProps = {
   settings: Settings | null;
   authRequired: boolean;
+  tunnelsCount?: number;
   onLogout?: () => void;
 };
 
-export function Header({ settings, authRequired, onLogout }: HeaderProps) {
+export function Header({
+  settings,
+  authRequired,
+  tunnelsCount,
+  onLogout,
+}: HeaderProps) {
   const { t } = useLanguage();
 
+  const accountName = settings?.accountName || "Cloudflare account";
+  const accountEmail = settings?.accountEmail;
+
   return (
-    <header className="header-bar">
-      <div className="header-brand">
-        <div>
-          <h1 style={{ margin: 0, fontSize: "1.35rem", letterSpacing: "-0.02em" }}>
-            {t("common.appName")}
+    <header className="top">
+      <div className="brand">
+        <Link to="/mesh" className="brand-link" title="Mesh">
+          <img
+            src="/icon-192.png"
+            alt=""
+            className="brand-mark"
+            width={32}
+            height={32}
+          />
+          <h1>
+            mesh<span>flare</span>
           </h1>
-          <div style={{ fontSize: "0.82rem", color: "var(--muted)", marginTop: "0.1rem" }}>
-            {t("common.tagline")}
-          </div>
-        </div>
+        </Link>
+        <p className="account-line">
+          <span className="account-name">{accountName}</span>
+          {accountEmail ? (
+            <span className="account-email mono">{accountEmail}</span>
+          ) : null}
+        </p>
       </div>
 
-      <div className="header-actions">
-        {settings?.accountEmail && (
-          <div
-            className="chip mono"
-            title={`${settings.accountName ?? ""} (${settings.accountEmail})`}
-            style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.78rem" }}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+        <nav className="tabs" aria-label="Primary">
+          <NavLink
+            to="/mesh"
+            className={({ isActive }) => `tab ${isActive ? "active" : ""}`}
           >
-            <User size={12} aria-hidden />
-            <span>{settings.accountEmail}</span>
-          </div>
-        )}
+            <Server size={14} strokeWidth={2.25} aria-hidden />
+            <span>Mesh</span>
+          </NavLink>
+          <NavLink
+            to="/tunnels"
+            className={({ isActive }) => `tab ${isActive ? "active" : ""}`}
+          >
+            <Globe size={14} strokeWidth={2.25} aria-hidden />
+            <span>Tunnels</span>
+            {typeof tunnelsCount === "number" && tunnelsCount > 0 && (
+              <span className="tab-badge">{tunnelsCount}</span>
+            )}
+          </NavLink>
+          <NavLink
+            to="/settings"
+            className={({ isActive }) => `tab ${isActive ? "active" : ""}`}
+          >
+            <SettingsIcon size={14} strokeWidth={2.25} aria-hidden />
+            <span>{t("nav.settings")}</span>
+          </NavLink>
+        </nav>
 
         <LanguageSwitcher />
 
@@ -43,9 +79,10 @@ export function Header({ settings, authRequired, onLogout }: HeaderProps) {
           <button
             type="button"
             className="btn btn-ghost"
-            style={{ padding: "0.28rem 0.6rem", fontSize: "0.8rem" }}
+            style={{ padding: "0.38rem 0.6rem", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}
             onClick={onLogout}
             title={t("nav.logout")}
+            aria-label={t("nav.logout")}
           >
             <LogOut size={13} aria-hidden />
             <span>{t("nav.logout")}</span>

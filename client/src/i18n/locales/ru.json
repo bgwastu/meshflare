@@ -1,7 +1,7 @@
 {
   "common": {
     "appName": "meshflare",
-    "tagline": "Диспетчер Mesh-сетей и туннелей Cloudflare",
+    "tagline": "Cloudflare Mesh and Tunnel manager",
     "search": "Поиск…",
     "filter": "Фильтр",
     "all": "Все",
@@ -31,8 +31,8 @@
     "empty": "—"
   },
   "nav": {
-    "mesh": "Mesh-сеть",
-    "tunnels": "Туннели",
+    "mesh": "Mesh",
+    "tunnels": "Tunnels",
     "settings": "Настройки",
     "account": "Аккаунт",
     "logout": "Выйти"

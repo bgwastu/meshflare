@@ -1659,3 +1659,17 @@ th.sorted {
   font-size: 0.72rem;
   color: var(--muted);
 }
+
+@media (max-width: 640px) {
+  .lang-name-full {
+    display: none;
+  }
+  .lang-toggle-btn {
+    padding: 0.28rem 0.45rem;
+    gap: 0.3rem;
+  }
+  .lang-dropdown-menu {
+    right: 0;
+    max-width: calc(100vw - 2rem);
+  }
+}

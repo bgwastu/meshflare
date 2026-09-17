@@ -50,7 +50,7 @@ export function LanguageSwitcher() {
         aria-label="Select language"
       >
         <Globe size={13} aria-hidden />
-        <span>{languageMeta.nativeName}</span>
+        <span className="lang-name-full">{languageMeta.nativeName}</span>
         <span className="lang-flag-badge">{languageMeta.flagCode}</span>
         <ChevronDown size={11} style={{ opacity: 0.7 }} aria-hidden />
       </button>
