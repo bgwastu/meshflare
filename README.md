@@ -8,9 +8,9 @@
 
 A self-hostable control plane for Cloudflare Zero Trust — manage mesh nodes, device registrations, Cloudflare Tunnels, split tunnels, and DNS filtering from one dashboard.
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/bgwastu/meshflare)
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fbgwastu%2Fmeshflare-2496ed?logo=docker&logoColor=white)](https://github.com/bgwastu/meshflare/pkgs/container/meshflare)
-[![Bun](https://img.shields.io/badge/Bun-f9f9f9?logo=bun&logoColor=black&labelColor=f9f9f9)](https://bun.sh)
+<a href="https://deploy.workers.cloudflare.com/?url=https://github.com/bgwastu/meshflare"><img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare Workers" height="20"></a>
+<a href="https://github.com/bgwastu/meshflare/pkgs/container/meshflare"><img src="https://img.shields.io/badge/Docker-ghcr.io%2Fbgwastu%2Fmeshflare-2496ed?logo=docker&logoColor=white" alt="Docker"></a>
+<a href="https://bun.sh"><img src="https://img.shields.io/badge/Bun-f9f9f9?logo=bun&logoColor=black&labelColor=f9f9f9" alt="Bun"></a>
 
 **Demo:** [meshflare-demo.wastu.workers.dev](https://meshflare-demo.wastu.workers.dev) (read-only)
 
