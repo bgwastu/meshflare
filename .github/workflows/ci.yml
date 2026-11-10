@@ -22,6 +22,8 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
+      # worker-configuration.d.ts is generated and gitignored.
+      - run: bun run cf:typegen
       - run: bun run typecheck
       - run: bun test
       - run: bun run build
