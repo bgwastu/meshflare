@@ -10,6 +10,13 @@ import { useLanguage } from "../../hooks/useLanguage";
 import { dnsFilterStatusMeta } from "../../lib/warp";
 import type { SplitTunnelItem } from "../../lib/api";
 
+type SplitTunnelMode = "include" | "exclude";
+
+const MESH_INCLUDE_ITEM: SplitTunnelItem = {
+  address: "100.96.0.0/12",
+  description: "Cloudflare Mesh (WARP Connector)",
+};
+
 type SettingsViewProps = {
   locked: boolean;
   onToast: (msg: string, tone?: "success" | "error" | "warn") => void;
@@ -53,6 +60,7 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
     value: string;
     description: string;
   } | null>(null);
+  const [pendingSplitMode, setPendingSplitMode] = useState<SplitTunnelMode | null>(null);
 
   /** Run one action at a time and report the outcome as a toast. */
   const run = async (
@@ -160,8 +168,21 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
   const saveSplitItems = (mode: "include" | "exclude", items: SplitTunnelItem[]) =>
     run("split", () => saveSplitTunnels({ mode, items }));
 
-  const handleSwitchSplitMode = (mode: "include" | "exclude") => {
-    if (splitTunnels) void saveSplitItems(mode, splitTunnels[mode]);
+  const switchSplitMode = (mode: SplitTunnelMode) => {
+    if (!splitTunnels) return;
+    const items = splitTunnels[mode];
+    // An empty Include list would leave Cloudflare in Exclude mode, so start from the Mesh range.
+    return saveSplitItems(mode, mode === "include" && items.length === 0 ? [MESH_INCLUDE_ITEM] : items);
+  };
+
+  // Cloudflare keeps one list per mode and clears the other on a switch, so always confirm first.
+  const handleSwitchSplitMode = (mode: SplitTunnelMode) => setPendingSplitMode(mode);
+
+  const handleConfirmSplitMode = async () => {
+    if (!pendingSplitMode) return;
+    const mode = pendingSplitMode;
+    setPendingSplitMode(null);
+    await switchSplitMode(mode);
   };
 
   const handleSaveSplitItem = async () => {
@@ -574,6 +595,32 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
           ) : null}
         </div>
       </div>
+
+      <Modal
+        isOpen={pendingSplitMode !== null}
+        onClose={() => setPendingSplitMode(null)}
+        title={t("settings.splitTunnels.switchTitle")}
+      >
+        <div>
+          <p className="hint">
+            {t("settings.splitTunnels.switchWarning", {
+              mode: t(
+                pendingSplitMode === "include"
+                  ? "settings.splitTunnels.modeInclude"
+                  : "settings.splitTunnels.modeExclude",
+              ),
+            })}
+          </p>
+          <div className="row-actions modal-actions">
+            <button type="button" className="btn" onClick={() => setPendingSplitMode(null)}>
+              {t("common.cancel")}
+            </button>
+            <button type="button" className="btn btn-danger" onClick={() => void handleConfirmSplitMode()}>
+              {t("settings.splitTunnels.switchConfirmBtn")}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {splitEditor && splitTunnels && (
         <Modal

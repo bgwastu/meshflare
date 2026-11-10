@@ -70,6 +70,10 @@ export const splitTunnelsSchema = z.object({
         ...(description ? { description } : {}),
       })),
   ),
+}).refine((body) => body.mode !== "include" || body.items.length > 0, {
+  // Cloudflare reads an empty Include list as "no Include mode" and silently drops back to Exclude.
+  message: "Include mode needs at least one destination",
+  path: ["items"],
 });
 
 export const createTunnelSchema = z.object({

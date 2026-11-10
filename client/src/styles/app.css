@@ -560,6 +560,19 @@ a {
 }
 
 .settings-block-head .switch {
+  margin-top: 0;
+}
+
+.split-head .hint,
+.split-mode-copy {
+  margin: var(--space-1) 0 0;
+}
+
+.split-mode-copy {
+  margin-bottom: var(--space-3);
+}
+
+.switch {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -586,7 +599,12 @@ a {
   pointer-events: none;
 }
 
+.switch > span:not(.switch-track) {
+  white-space: nowrap;
+}
+
 .switch-track {
+  flex-shrink: 0;
   width: 2.5rem;
   height: 1.4rem;
   box-sizing: border-box;
