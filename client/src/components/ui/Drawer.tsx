@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode, type TransitionEvent } from "react";
+import type { ReactNode, TransitionEvent } from "react";
+import { useEscapeLayer } from "../../hooks/useEscapeLayer";
 
 type DrawerProps = {
   isOpen: boolean;
@@ -8,18 +9,7 @@ type DrawerProps = {
 };
 
 export function Drawer({ isOpen, onClose, children, onTransitionEnd }: DrawerProps) {
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  useEscapeLayer(isOpen, onClose);
 
   return (
     <div

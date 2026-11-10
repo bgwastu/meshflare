@@ -4,7 +4,7 @@ import { FacetChip } from "../ui/FilterChips";
 import { MeshTable, type SortKey } from "./MeshTable";
 import { MeshDrawer } from "./MeshDrawer";
 import { CreateNodeModal } from "./CreateNodeModal";
-import { EditMachineModal } from "./EditMachineModal";
+import { EditMachineModal, type EditMachineField } from "./EditMachineModal";
 import { DeleteMachineModal } from "./DeleteMachineModal";
 import { AddRouteModal } from "./AddRouteModal";
 import { useMesh } from "../../hooks/useMesh";
@@ -48,6 +48,7 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
   // Modals & drawer hold a reference, so they always show the latest entry data.
   const [createOpen, setCreateOpen] = useState(false);
   const [editRef, setEditRef] = useState<EntryRef | null>(null);
+  const [editFocus, setEditFocus] = useState<EditMachineField>("name");
   const [deleteRef, setDeleteRef] = useState<EntryRef | null>(null);
   const [drawerRef, setDrawerRef] = useState<EntryRef | null>(null);
   const [addRouteNodeId, setAddRouteNodeId] = useState<string | null>(null);
@@ -329,7 +330,10 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
         nodeToken={nodeToken}
         tokenLoading={installLoading}
         onRegenerateToken={handleRegenerateToken}
-        onOpenEdit={(entry) => setEditRef({ kind: entry.kind, id: entry.id })}
+        onOpenEdit={(entry, field = "name") => {
+          setEditFocus(field);
+          setEditRef({ kind: entry.kind, id: entry.id });
+        }}
         onOpenDelete={(entry) => setDeleteRef({ kind: entry.kind, id: entry.id })}
         locked={locked}
         onToast={onToast}
@@ -344,6 +348,7 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
 
       <EditMachineModal
         entry={editEntry}
+        focus={editFocus}
         suffix={suffix}
         onClose={() => setEditRef(null)}
         onSave={handleSaveEntry}

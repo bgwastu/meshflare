@@ -95,6 +95,7 @@
       "titleDevice": "उपकरण विवरण",
       "close": "पैनल बंद करें",
       "edit": "नाम और होस्टनेम संपादित करें",
+      "editHostname": "होस्टनेम संपादित करें",
       "customHostname": "कस्टम",
       "tabs": {
         "details": "विवरण",

@@ -99,6 +99,7 @@
       "titleDevice": "تفاصيل الجهاز",
       "close": "إغلاق اللوحة",
       "edit": "تعديل الاسم واسم المضيف",
+      "editHostname": "تعديل اسم المضيف",
       "customHostname": "مخصص",
       "tabs": {
         "details": "التفاصيل",

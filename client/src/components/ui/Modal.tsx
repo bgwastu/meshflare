@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { useEscapeLayer } from "../../hooks/useEscapeLayer";
 import { useLanguage } from "../../hooks/useLanguage";
 
 type ModalProps = {
@@ -13,23 +14,16 @@ type ModalProps = {
 export function Modal({ isOpen, onClose, title, children, width }: ModalProps) {
   const { t } = useLanguage();
 
+  useEscapeLayer(isOpen, onClose);
+
   useEffect(() => {
     if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

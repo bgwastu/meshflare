@@ -559,20 +559,8 @@ a {
   margin: 0;
 }
 
-.settings-block-head .mode-switch {
-  margin-top: 0;
-}
-
-.split-head .hint,
-.split-mode-copy {
-  margin: var(--space-1) 0 0;
-}
-
-.split-mode-copy {
-  margin-bottom: var(--space-3);
-}
-
-.mode-switch {
+.settings-block-head .switch {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -582,15 +570,26 @@ a {
   font-weight: 600;
 }
 
-.mode-switch input {
+/* Clipped, not just transparent: `input:disabled` styles can't bring it back. */
+.switch .switch-input {
+  appearance: none;
   position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
   opacity: 0;
+  background: none;
   pointer-events: none;
 }
 
 .switch-track {
   width: 2.5rem;
   height: 1.4rem;
+  box-sizing: border-box;
   padding: 2px;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
@@ -599,7 +598,7 @@ a {
   transition: background 0.15s, border-color 0.15s;
 }
 
-.switch-track span {
+.switch-thumb {
   display: block;
   width: 1rem;
   height: 1rem;
@@ -608,24 +607,22 @@ a {
   transition: transform 0.16s ease, background 0.15s;
 }
 
-.mode-switch.is-on .switch-track,
-.mode-switch.include .switch-track {
+.switch.is-on .switch-track {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
 
-.mode-switch.is-on .switch-track span,
-.mode-switch.include .switch-track span {
+.switch.is-on .switch-thumb {
   transform: translateX(1.1rem);
   background: var(--accent);
 }
 
-.mode-switch input:focus-visible + .switch-track {
+.switch .switch-input:focus-visible + .switch-track {
   outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
   outline-offset: 2px;
 }
 
-.mode-switch input:disabled + .switch-track {
+.switch .switch-input:disabled + .switch-track {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -861,6 +858,20 @@ a {
   cursor: pointer;
   user-select: none;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.icon-btn-sm {
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  min-width: var(--control-h-sm);
+}
+
+/* A value with a small action button beside it (e.g. hostname + edit). */
+.value-with-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .btn-icon:hover:not(:disabled),

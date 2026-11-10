@@ -5,6 +5,7 @@ import { CopyValue } from "../ui/CopyValue";
 import { KindBadge, StatusChip } from "../ui/Badge";
 import { Spinner } from "../ui/Spinner";
 import { ConnectorCommands } from "./ConnectorCommands";
+import type { EditMachineField } from "./EditMachineModal";
 import { useLanguage } from "../../hooks/useLanguage";
 import type { MeshEntry, MeshRoute } from "../../lib/api";
 
@@ -19,7 +20,7 @@ type MeshDrawerProps = {
   nodeToken: string | null;
   tokenLoading: boolean;
   onRegenerateToken: () => Promise<void>;
-  onOpenEdit: (entry: MeshEntry) => void;
+  onOpenEdit: (entry: MeshEntry, focus?: EditMachineField) => void;
   onOpenDelete: (entry: MeshEntry) => void;
   locked: boolean;
   onToast: (msg: string) => void;
@@ -142,8 +143,18 @@ export function MeshDrawer({
                   <span className="field-tag">{t("mesh.drawer.customHostname")}</span>
                 )}
               </span>
-              <div>
+              <div className="value-with-action">
                 <CopyValue value={entry.meshHostname} onCopied={() => onToast(t("common.copied"))} />
+                <button
+                  type="button"
+                  className="icon-btn icon-btn-sm"
+                  onClick={() => onOpenEdit(entry, "hostname")}
+                  disabled={locked}
+                  title={t("mesh.drawer.editHostname")}
+                  aria-label={t("mesh.drawer.editHostname")}
+                >
+                  <Pencil size={12} aria-hidden />
+                </button>
               </div>
             </div>
 

@@ -95,6 +95,7 @@
       "titleDevice": "デバイス詳細",
       "close": "ドロワーを閉じる",
       "edit": "名前とホスト名を編集",
+      "editHostname": "ホスト名を編集",
       "customHostname": "カスタム",
       "tabs": {
         "details": "詳細",

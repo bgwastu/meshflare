@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { Modal } from "../ui/Modal";
 import { Spinner } from "../ui/Spinner";
+import { Switch } from "../ui/Switch";
 import { CopyValue } from "../ui/CopyValue";
 import { SkeletonBlock } from "../ui/Skeleton";
 import { isDnsFilterBusy, useSettings } from "../../hooks/useSettings";
@@ -133,9 +134,9 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
     }
   };
 
-  const handleToggleFilter = () => {
+  const handleToggleFilter = (enabled: boolean) => {
     if (filterOperationPending) return;
-    void run("dns-filter", () => patchSettings({ dnsFilterEnabled: !settings.dnsFilterEnabled }));
+    void run("dns-filter", () => patchSettings({ dnsFilterEnabled: enabled }));
   };
 
   const handleSyncDns = () =>
@@ -266,21 +267,12 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
         <div className="settings-block">
           <div className="settings-block-head">
             <h3>{t("settings.dnsFilter.title")}</h3>
-            <label
-              className={`mode-switch ${settings.dnsFilterEnabled ? "is-on" : ""}`}
-            >
-              <input
-                type="checkbox"
-                role="switch"
-                aria-label={t("settings.dnsFilter.toggleLabel")}
-                checked={settings.dnsFilterEnabled}
-                disabled={locked || filterOperationPending || Boolean(busy)}
-                onChange={handleToggleFilter}
-              />
-              <span className="switch-track" aria-hidden>
-                <span />
-              </span>
-            </label>
+            <Switch
+              checked={settings.dnsFilterEnabled}
+              label={t("settings.dnsFilter.toggleLabel")}
+              disabled={locked || filterOperationPending || Boolean(busy)}
+              onChange={handleToggleFilter}
+            />
           </div>
           <p className="hint">
             {t("settings.dnsFilter.description")}
@@ -472,21 +464,14 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
               <p className="hint">{t("settings.splitTunnels.description")}</p>
             </div>
             {splitTunnels && (
-              <label className={`mode-switch ${splitTunnels.mode}`}>
-                <span>{t("settings.splitTunnels.modeExclude")}</span>
-                <input
-                  type="checkbox"
-                  role="switch"
-                  aria-label={t("settings.splitTunnels.modeSwitchLabel")}
-                  checked={splitTunnels.mode === "include"}
-                  disabled={locked || splitBusy}
-                  onChange={(e) => handleSwitchSplitMode(e.target.checked ? "include" : "exclude")}
-                />
-                <span className="switch-track" aria-hidden>
-                  <span />
-                </span>
-                <span>{t("settings.splitTunnels.modeInclude")}</span>
-              </label>
+              <Switch
+                checked={splitTunnels.mode === "include"}
+                label={t("settings.splitTunnels.modeSwitchLabel")}
+                startLabel={t("settings.splitTunnels.modeExclude")}
+                endLabel={t("settings.splitTunnels.modeInclude")}
+                disabled={locked || splitBusy}
+                onChange={(on) => handleSwitchSplitMode(on ? "include" : "exclude")}
+              />
             )}
           </div>
           <p className="hint split-mode-copy">

@@ -49,3 +49,8 @@
   left: 0;
   right: auto;
 }
+
+/* The thumb travels toward the inline end. */
+[dir="rtl"] .switch.is-on .switch-thumb {
+  transform: translateX(-1.1rem);
+}

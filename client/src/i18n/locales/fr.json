@@ -95,6 +95,7 @@
       "titleDevice": "Détails de l'appareil",
       "close": "Fermer le volet",
       "edit": "Modifier le nom et le nom d'hôte",
+      "editHostname": "Modifier le nom d'hôte",
       "customHostname": "Personnalisé",
       "tabs": {
         "details": "Détails",

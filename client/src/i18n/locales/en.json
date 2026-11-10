@@ -95,6 +95,7 @@
       "titleDevice": "Device Details",
       "close": "Close drawer",
       "edit": "Edit name and hostname",
+      "editHostname": "Edit hostname",
       "customHostname": "Custom",
       "tabs": {
         "details": "Details",

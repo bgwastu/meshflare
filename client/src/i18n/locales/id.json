@@ -95,6 +95,7 @@
       "titleDevice": "Detail Perangkat",
       "close": "Tutup panel",
       "edit": "Ubah nama dan hostname",
+      "editHostname": "Ubah hostname",
       "customHostname": "Kustom",
       "tabs": {
         "details": "Detail",

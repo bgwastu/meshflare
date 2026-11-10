@@ -95,6 +95,7 @@
       "titleDevice": "Gerätedetails",
       "close": "Seitenleiste schließen",
       "edit": "Name und Hostname bearbeiten",
+      "editHostname": "Hostname bearbeiten",
       "customHostname": "Benutzerdefiniert",
       "tabs": {
         "details": "Details",

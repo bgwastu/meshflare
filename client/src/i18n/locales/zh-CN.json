@@ -95,6 +95,7 @@
       "titleDevice": "设备详情",
       "close": "关闭抽屉",
       "edit": "编辑名称和主机名",
+      "editHostname": "编辑主机名",
       "customHostname": "自定义",
       "tabs": {
         "details": "详情",

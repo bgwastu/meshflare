@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Globe, Check, ChevronDown } from "lucide-react";
+import { useEscapeLayer } from "../../hooks/useEscapeLayer";
 import { useLanguage } from "../../hooks/useLanguage";
 import type { SupportedLanguage } from "../../i18n/types";
 
@@ -7,6 +8,8 @@ export function LanguageSwitcher() {
   const { language, languageMeta, languages, setLanguage, t } = useLanguage();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEscapeLayer(open, () => setOpen(false));
 
   useEffect(() => {
     if (!open) return;
@@ -20,17 +23,9 @@ export function LanguageSwitcher() {
       }
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-      }
-    };
-
     document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
 

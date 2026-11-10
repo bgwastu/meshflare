@@ -95,6 +95,7 @@
       "titleDevice": "Detalhes do Dispositivo",
       "close": "Fechar painel",
       "edit": "Editar nome e hostname",
+      "editHostname": "Editar hostname",
       "customHostname": "Personalizado",
       "tabs": {
         "details": "Detalhes",

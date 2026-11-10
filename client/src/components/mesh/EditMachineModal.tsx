@@ -5,8 +5,13 @@ import { useLanguage } from "../../hooks/useLanguage";
 import { isValidMeshLabel, normalizeMeshLabel, slugifyName } from "../../lib/hostname";
 import type { MeshEntry, MeshEntryPatch } from "../../lib/api";
 
+/** Which input receives focus when the dialog opens. */
+export type EditMachineField = "name" | "hostname";
+
 type EditMachineModalProps = {
   entry: MeshEntry | null;
+  /** Defaults to the name field. */
+  focus?: EditMachineField;
   suffix: string;
   onClose: () => void;
   onSave: (entry: MeshEntry, patch: MeshEntryPatch) => Promise<void>;
@@ -21,6 +26,7 @@ export function EditMachineModal({ entry, ...props }: EditMachineModalProps) {
 
 function EditMachineForm({
   entry,
+  focus = "name",
   suffix,
   onClose,
   onSave,
@@ -71,7 +77,7 @@ function EditMachineForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={busy || locked}
-            autoFocus
+            autoFocus={focus === "name"}
             required
           />
         </div>
@@ -86,6 +92,7 @@ function EditMachineForm({
               placeholder={slugifyName(trimmedName || entry.name)}
               onChange={(e) => setLabel(e.target.value)}
               disabled={busy || locked}
+              autoFocus={focus === "hostname"}
               aria-invalid={labelInvalid}
               aria-describedby="edit-machine-label-hint"
               autoCapitalize="off"
