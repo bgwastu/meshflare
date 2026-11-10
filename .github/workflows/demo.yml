@@ -5,8 +5,9 @@ on:
     branches: [main]
     paths:
       - "client/**"
-      - "worker/demo/**"
-      - "server/demo-worker.ts"
+      - "worker/**"
+      - "tsconfig.json"
+      - "vite.config.ts"
       - "wrangler.demo.jsonc"
       - "package.json"
       - "bun.lock"
@@ -16,7 +17,11 @@ on:
   workflow_dispatch:
 
 jobs:
+  check:
+    uses: ./.github/workflows/ci.yml
+
   deploy:
+    needs: check
     runs-on: ubuntu-latest
     permissions:
       contents: read
