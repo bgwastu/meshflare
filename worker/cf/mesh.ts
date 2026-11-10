@@ -100,21 +100,29 @@ export async function deleteMeshNodeRoute(
   await cf.request("DELETE", cf.accountPath(`/teamnet/routes/${routeId}`));
 }
 
-export async function deleteMeshNode(
-  cf: CloudflareClient,
-  tunnelId: string,
-): Promise<void> {
-  const [routes, hostnameRoutes] = await Promise.all([
+async function listAllNodeRoutes(cf: CloudflareClient, tunnelId: string) {
+  const [cidr, hostname] = await Promise.all([
     listMeshNodeRoutes(cf, tunnelId),
     listMeshNodeHostnameRoutes(cf, tunnelId),
   ]);
-  for (const route of routes) {
-    if (route.id) await deleteMeshNodeRoute(cf, route.id);
-  }
-  for (const route of hostnameRoutes) {
-    if (route.id) await deleteMeshNodeHostnameRoute(cf, route.id);
-  }
+  return { cidr, hostname };
+}
+
+/** Routes must go before the tunnel itself; Cloudflare rejects deleting a routed tunnel. */
+async function deleteNodeWithRoutes(
+  cf: CloudflareClient,
+  tunnelId: string,
+  routes: { cidr: MeshRoute[]; hostname: MeshRoute[] },
+): Promise<void> {
+  await Promise.all([
+    ...routes.cidr.flatMap((r) => (r.id ? [deleteMeshNodeRoute(cf, r.id)] : [])),
+    ...routes.hostname.flatMap((r) => (r.id ? [deleteMeshNodeHostnameRoute(cf, r.id)] : [])),
+  ]);
   await cf.request("DELETE", cf.accountPath(`/warp_connector/${tunnelId}`));
+}
+
+export async function deleteMeshNode(cf: CloudflareClient, tunnelId: string): Promise<void> {
+  await deleteNodeWithRoutes(cf, tunnelId, await listAllNodeRoutes(cf, tunnelId));
 }
 
 /** Replace a node with a fresh inactive tunnel while preserving its name and routes. */
@@ -125,25 +133,16 @@ export async function recreateMeshNode(
   const node = (await listMeshNodes(cf)).find((item) => item.id === tunnelId);
   if (!node) throw new Error("Mesh node not found");
 
-  const [routes, hostnameRoutes] = await Promise.all([
-    listMeshNodeRoutes(cf, tunnelId),
-    listMeshNodeHostnameRoutes(cf, tunnelId),
-  ]);
-  for (const route of routes) {
-    if (route.id) await deleteMeshNodeRoute(cf, route.id);
-  }
-  for (const route of hostnameRoutes) {
-    if (route.id) await deleteMeshNodeHostnameRoute(cf, route.id);
-  }
-  await cf.request("DELETE", cf.accountPath(`/warp_connector/${tunnelId}`));
+  const routes = await listAllNodeRoutes(cf, tunnelId);
+  await deleteNodeWithRoutes(cf, tunnelId, routes);
 
   const replacement = await createMeshNode(cf, node.name);
-  for (const route of routes) {
-    if (route.network) await createMeshNodeRoute(cf, replacement.id, route.network, route.comment);
-  }
-  for (const route of hostnameRoutes) {
-    if (route.hostname) await createMeshNodeHostnameRoute(cf, replacement.id, route.hostname, route.comment);
-  }
+  await Promise.all([
+    ...routes.cidr.flatMap((r) =>
+      r.network ? [createMeshNodeRoute(cf, replacement.id, r.network, r.comment)] : []),
+    ...routes.hostname.flatMap((r) =>
+      r.hostname ? [createMeshNodeHostnameRoute(cf, replacement.id, r.hostname, r.comment)] : []),
+  ]);
   return replacement;
 }
 

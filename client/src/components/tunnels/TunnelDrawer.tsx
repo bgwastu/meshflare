@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Trash2, Copy, Check, Info, Activity, Network, Terminal } from "lucide-react";
+import { X, Trash2, Copy, Check, Info, Activity, Network, Terminal, Pencil } from "lucide-react";
 import { Drawer } from "../ui/Drawer";
 import { CopyValue } from "../ui/CopyValue";
 import { StatusDot } from "../ui/Badge";
@@ -27,6 +27,7 @@ type TunnelDrawerProps = {
   onDeleteIngress: (index: number) => void;
   token: string | null;
   tokenLoading: boolean;
+  onOpenRename: (tunnel: TunnelEntry) => void;
   onOpenDelete: (tunnel: TunnelEntry) => void;
   locked: boolean;
   onToast: (msg: string) => void;
@@ -45,6 +46,7 @@ export function TunnelDrawer({
   onDeleteIngress,
   token,
   tokenLoading,
+  onOpenRename,
   onOpenDelete,
   locked,
   onToast,
@@ -76,15 +78,27 @@ export function TunnelDrawer({
           <StatusDot status={tunnel.status} />
           <span className="drawer-title-text">{tunnel.name}</span>
         </h3>
-        <button
-          type="button"
-          className="icon-btn drawer-close"
-          onClick={onClose}
-          title={t("tunnels.drawer.close")}
-          aria-label={t("tunnels.drawer.close")}
-        >
-          <X size={16} aria-hidden />
-        </button>
+        <div className="drawer-head-actions">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => onOpenRename(tunnel)}
+            disabled={locked}
+            title={t("tunnels.modals.renameTitle")}
+            aria-label={t("tunnels.modals.renameTitle")}
+          >
+            <Pencil size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="icon-btn drawer-close"
+            onClick={onClose}
+            title={t("tunnels.drawer.close")}
+            aria-label={t("tunnels.drawer.close")}
+          >
+            <X size={16} aria-hidden />
+          </button>
+        </div>
       </div>
 
       <div className="drawer-tabs" role="tablist">

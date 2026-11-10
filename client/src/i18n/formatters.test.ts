@@ -82,6 +82,28 @@ describe("locale key parity", () => {
   });
 
   for (const [langCode, dict] of Object.entries(locales)) {
+    it(`locale ${langCode} translates every English key`, () => {
+      const have = new Set(getKeys(dict));
+      expect([...enKeys].filter((k) => !have.has(k))).toEqual([]);
+    });
+
+    it(`locale ${langCode} keeps the English {{placeholders}}`, () => {
+      const flat = (obj: Record<string, unknown>, prefix = ""): [string, string][] =>
+        Object.entries(obj).flatMap(([k, v]) =>
+          v && typeof v === "object"
+            ? flat(v as Record<string, unknown>, prefix ? `${prefix}.${k}` : k)
+            : [[prefix ? `${prefix}.${k}` : k, String(v)] as [string, string]],
+        );
+      const vars = (text: string) => (text.match(/{{\w+}}/g) ?? []).sort().join();
+      const translated = new Map(flat(dict));
+      const mismatched = flat(en as Record<string, unknown>)
+        // Singular plural forms may say "one machine" instead of "{{count}} machine".
+        .filter(([k]) => !/_(zero|one|two)$/.test(k))
+        .filter(([k, text]) => translated.has(k) && vars(text) !== vars(translated.get(k)!))
+        .map(([k]) => k);
+      expect(mismatched).toEqual([]);
+    });
+
     it(`locale ${langCode} contains all essential namespaces`, () => {
       expect(dict.common).toBeDefined();
       expect(dict.nav).toBeDefined();

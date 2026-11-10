@@ -9,13 +9,8 @@
 [dir="rtl"] code,
 [dir="rtl"] pre,
 [dir="rtl"] .copy-chip,
-[dir="rtl"] .token-box,
 [dir="rtl"] .cmd-block,
-[dir="rtl"] .dest-val,
-[dir="rtl"] .subdomain-text,
-[dir="rtl"] input[type="password"],
-[dir="rtl"] .ip-cell,
-[dir="rtl"] .host-cell {
+[dir="rtl"] input[type="password"] {
   direction: ltr !important;
   unicode-bidi: isolate;
   text-align: left;
@@ -32,14 +27,9 @@
   transform: translateX(0);
 }
 
-/* Mirror drawer close icon or back icons if needed */
+/* Modal buttons follow reading direction */
 [dir="rtl"] .modal-actions {
   justify-content: flex-start;
-}
-
-/* Input search icon position in RTL */
-[dir="rtl"] .search-box {
-  flex-direction: row-reverse;
 }
 
 /* Tooltip alignment */
@@ -54,8 +44,8 @@
   flex-direction: row-reverse;
 }
 
-/* Language selector popup positioning */
-[dir="rtl"] .lang-menu {
+/* Language menu opens toward the content side */
+[dir="rtl"] .lang-dropdown-menu {
   left: 0;
   right: auto;
 }

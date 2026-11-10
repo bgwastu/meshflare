@@ -8,7 +8,6 @@ import type { Settings } from "../../lib/api";
 type HeaderProps = {
   settings: Settings | null;
   authRequired: boolean;
-  tunnelsCount?: number;
   onLogout?: () => void;
 };
 
@@ -25,7 +24,7 @@ export function Header({
   return (
     <header className="top">
       <div className="brand">
-        <Link to="/mesh" className="brand-link" title="Mesh">
+        <Link to="/mesh" className="brand-link" title={t("nav.mesh")}>
           <img
             src="/icon-192.png"
             alt=""
@@ -55,20 +54,20 @@ export function Header({
       </div>
 
       <div className="header-actions">
-        <nav className="tabs" aria-label="Primary">
+        <nav className="tabs" aria-label={t("nav.primary")}>
           <NavLink
             to="/mesh"
             className={({ isActive }) => `tab ${isActive ? "active" : ""}`}
           >
             <Server size={14} strokeWidth={2.25} aria-hidden />
-            <span>Mesh</span>
+            <span>{t("nav.mesh")}</span>
           </NavLink>
           <NavLink
             to="/tunnels"
             className={({ isActive }) => `tab ${isActive ? "active" : ""}`}
           >
             <Globe size={14} strokeWidth={2.25} aria-hidden />
-            <span>Tunnels</span>
+            <span>{t("nav.tunnels")}</span>
           </NavLink>
           <NavLink
             to="/settings"

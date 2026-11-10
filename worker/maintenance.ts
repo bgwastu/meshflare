@@ -1,7 +1,8 @@
 import { cleanupOfflineDevices } from "./cf/cleanup";
 import { createCfClient } from "./cf/client";
 import { syncMeshDns } from "./cf/dns";
-import { getSettings, markCleanupRan, markDnsSynced, processDnsFilterTick } from "./cf/dns-filter";
+import { processDnsFilterTick } from "./cf/dns-filter";
+import { getSettings, markCleanupRan, markDnsSynced } from "./settings";
 import type { Env } from "./types";
 
 export async function runMaintenance(env: Env): Promise<void> {

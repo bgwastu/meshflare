@@ -1,22 +1,22 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { zValidator } from "@hono/zod-validator";
-import { fetchAccountInfo } from "../cf/account";
+import { getAccountOverview } from "../cf/account";
 import { cleanupOfflineDevices } from "../cf/cleanup";
+import { CloudflareApiError, createCfClient, type CloudflareClient } from "../cf/client";
 import {
-  listTunnels,
   createTunnel,
-  getTunnel,
-  updateTunnel,
   deleteTunnel,
-  getTunnelToken,
+  getTunnel,
   getTunnelConfig,
-  setTunnelConfig,
   getTunnelConnections,
+  getTunnelToken,
+  listTunnels,
+  setTunnelConfig,
+  updateTunnel,
 } from "../cf/cloudflare-tunnel";
-import type { CloudflareConnector, CloudflareTunnelConnection, Env, TunnelConfig } from "../types";
-import { createCfClient, CloudflareApiError } from "../cf/client";
-import { buildMeshInventory, getDefaultGatewayDnsLocation, serializeGatewayDnsLocation, syncMeshDns, syncMeshDnsAfterDelete, syncMeshDnsAfterRename } from "../cf/dns";
+import { processDnsFilterTick } from "../cf/dns-filter";
+import { buildMeshInventory, syncMeshDns } from "../cf/dns";
+import { regenerateMeshNode, removeMeshEntry, updateMeshEntry } from "../cf/entries";
 import { checkMaintenanceHealth, repairMaintenance } from "../cf/health";
 import {
   createMeshNodeHostnameRoute,
@@ -26,23 +26,21 @@ import {
   getMeshNodeToken,
   listMeshNodeHostnameRoutes,
   listMeshNodeRoutes,
-  recreateMeshNode,
 } from "../cf/mesh";
+import { createNodeWithUniqueName } from "../cf/rename";
 import {
-  getSettings,
-  markCleanupRan,
-  markDnsSynced,
-  processDnsFilterTick,
-  updateSettings,
-} from "../cf/dns-filter";
-import {
-  createNodeWithUniqueName,
-  deleteMeshEntry,
-  renameWithCollisionHandling,
-} from "../cf/rename";
-import { auditMeshRouting, ensureMeshRouting, getDefaultSplitTunnels, setDefaultSplitTunnels } from "../cf/split-tunnels";
+  auditMeshRouting,
+  ensureMeshRouting,
+  getDefaultSplitTunnels,
+  setDefaultSplitTunnels,
+} from "../cf/split-tunnels";
+import { getSettings, markCleanupRan, markDnsSynced, updateSettings } from "../settings";
+import type { CloudflareConnector, Env, Settings, TunnelConfig } from "../types";
 import { decodeConnectorToken } from "../wg/token";
 import {
+  createTunnelSchema,
+  meshEntryParamSchema,
+  meshEntrySchema,
   nameSchema,
   routeSchema,
   settingsSchema,
@@ -50,8 +48,9 @@ import {
   tunnelConfigSchema,
   tunnelSchema,
 } from "./schemas";
+import { validate } from "./validate";
 
-type AppEnv = { Bindings: Env };
+type AppEnv = { Bindings: Env; Variables: { cf: CloudflareClient } };
 
 export const api = new Hono<AppEnv>();
 
@@ -62,7 +61,8 @@ api.use("*", async (c, next) => {
 
 api.onError((err, c) => {
   if (err instanceof HTTPException) {
-    return err.getResponse();
+    // getResponse() is plain text; the client expects `{ error }` JSON.
+    return err.res ?? c.json({ error: err.message }, err.status);
   }
   if (err instanceof CloudflareApiError) {
     return c.json({ error: err.message, errors: err.errors }, err.status >= 400 ? (err.status as 400) : 502);
@@ -73,126 +73,125 @@ api.onError((err, c) => {
 
 api.get("/health", (c) => c.json({ ok: true, service: "meshflare" }));
 
-api.get("/settings", async (c) => {
-  const cf = createCfClient(c.env);
-  const [settings, account, dnsLocation] = await Promise.all([
-    getSettings(c.env),
-    fetchAccountInfo(cf),
-    getDefaultGatewayDnsLocation(cf),
-  ]);
-  return c.json({
-    ...settings,
-    accountName: account.name,
-    accountEmail: account.email,
-    dnsLocation: serializeGatewayDnsLocation(dnsLocation),
-  });
+// Every route below talks to Cloudflare.
+api.use("*", async (c, next) => {
+  c.set("cf", createCfClient(c.env));
+  await next();
 });
 
-api.patch("/settings", zValidator("json", settingsSchema), async (c) => {
-  const body = c.req.valid("json");
-  const before = await getSettings(c.env);
-  const settings = await updateSettings(c.env, body);
+/** Run background work past the response (Workers) or fire-and-forget (Bun). */
+function runInBackground(c: Context<AppEnv>, task: Promise<unknown>): void {
+  try {
+    c.executionCtx.waitUntil(task);
+  } catch {
+    // Bun has no Workers execution context.
+    void task;
+  }
+}
 
-  const suffixChanged =
-    body.meshSuffix !== undefined && settings.meshSuffix !== before.meshSuffix;
-  if (suffixChanged) {
-    const cf = createCfClient(c.env);
-    await syncMeshDns(cf, c.env, { purgeAllUnmatched: true });
-    await markDnsSynced(c.env);
+async function withAccountOverview(c: Context<AppEnv>, settings: Settings) {
+  return { ...settings, ...(await getAccountOverview(c.var.cf)) };
+}
+
+async function splitTunnelsResponse(cf: CloudflareClient) {
+  const config = await getDefaultSplitTunnels(cf);
+  return { ...config, audit: auditMeshRouting(config) };
+}
+
+// ── Settings & maintenance ───────────────────────────────────────────────
+
+api.get("/settings", async (c) => c.json(await withAccountOverview(c, await getSettings(c.env))));
+
+api.patch("/settings", validate("json", settingsSchema), async (c) => {
+  const body = c.req.valid("json");
+  const { before, after } = await updateSettings(c.env, body);
+
+  if (after.meshSuffix !== before.meshSuffix) {
+    await syncMeshDns(c.var.cf, c.env, { purgeAllUnmatched: true });
+    after.lastDnsSyncAt = await markDnsSynced(c.env);
   }
 
-  const filterTouched =
-    body.dnsFilterEnabled !== undefined || body.dnsFilterUrl !== undefined;
-  if (filterTouched) {
-    const cf = createCfClient(c.env);
-    const task = processDnsFilterTick(cf, c.env).catch((err) =>
-      console.error("meshflare dns filter tick", err),
+  if (body.dnsFilterEnabled !== undefined || body.dnsFilterUrl !== undefined) {
+    runInBackground(
+      c,
+      processDnsFilterTick(c.var.cf, c.env).catch((err) => console.error("meshflare dns filter tick", err)),
     );
-    try {
-      c.executionCtx.waitUntil(task);
-    } catch {
-      // Bun has no Workers execution context; keep local development fire-and-forget.
-      void task;
-    }
   }
 
-  const cf = createCfClient(c.env);
-  const [account, currentDnsLocation] = await Promise.all([
-    fetchAccountInfo(cf),
-    getDefaultGatewayDnsLocation(cf),
-  ]);
-  return c.json({
-    ...(await getSettings(c.env)),
-    accountName: account.name,
-    accountEmail: account.email,
-    dnsLocation: serializeGatewayDnsLocation(currentDnsLocation),
-  });
+  return c.json(await withAccountOverview(c, after));
 });
 
-api.get("/maintenance/health", async (c) => {
-  const cf = createCfClient(c.env);
-  const health = await checkMaintenanceHealth(cf, c.env);
-  return c.json(health);
+api.get("/maintenance/health", async (c) => c.json(await checkMaintenanceHealth(c.var.cf, c.env)));
+
+api.post("/maintenance/repair", async (c) => c.json(await repairMaintenance(c.var.cf, c.env)));
+
+api.get("/settings/split-tunnels", async (c) => c.json(await splitTunnelsResponse(c.var.cf)));
+
+api.put("/settings/split-tunnels", validate("json", splitTunnelsSchema), async (c) => {
+  const { mode, items } = c.req.valid("json");
+  await setDefaultSplitTunnels(c.var.cf, mode, items);
+  return c.json(await splitTunnelsResponse(c.var.cf));
 });
 
-api.post("/maintenance/repair", async (c) => {
-  const cf = createCfClient(c.env);
-  const health = await repairMaintenance(cf, c.env);
-  return c.json(health);
+api.post("/settings/split-tunnels/ensure-mesh", async (c) => {
+  const remediated = ensureMeshRouting(await getDefaultSplitTunnels(c.var.cf));
+  await setDefaultSplitTunnels(c.var.cf, remediated.mode, remediated[remediated.mode]);
+  return c.json(await splitTunnelsResponse(c.var.cf));
 });
 
-api.get("/mesh", async (c) => {
-  const cf = createCfClient(c.env);
-  const entries = await buildMeshInventory(cf, c.env);
-  return c.json({ entries });
+// ── Mesh ─────────────────────────────────────────────────────────────────
+
+api.get("/mesh", async (c) => c.json({ entries: await buildMeshInventory(c.var.cf, c.env) }));
+
+api.post("/mesh/sync-dns", async (c) => {
+  const dns = await syncMeshDns(c.var.cf, c.env);
+  return c.json({ dns, lastDnsSyncAt: await markDnsSynced(c.env) });
 });
 
-api.post("/mesh/nodes", zValidator("json", nameSchema), async (c) => {
-  const body = c.req.valid("json");
-  const cf = createCfClient(c.env);
-  const { node, notice } = await createNodeWithUniqueName(cf, body.name);
-  const dns = await syncMeshDns(cf, c.env);
+api.post("/mesh/cleanup", async (c) => {
+  const { offlineDays } = await getSettings(c.env);
+  const cleanup = await cleanupOfflineDevices(c.var.cf, offlineDays);
+  const dns = await syncMeshDns(c.var.cf, c.env);
+  await markDnsSynced(c.env);
+  return c.json({ cleanup, dns, lastCleanupAt: await markCleanupRan(c.env) });
+});
+
+api.post("/mesh/nodes", validate("json", nameSchema), async (c) => {
+  const { node, notice } = await createNodeWithUniqueName(c.var.cf, c.req.valid("json").name);
+  const dns = await syncMeshDns(c.var.cf, c.env);
   await markDnsSynced(c.env);
   return c.json({ node, notice, dns }, 201);
 });
 
-api.patch("/mesh/:kind/:id", zValidator("json", nameSchema), async (c) => {
-  const kind = c.req.param("kind");
-  if (kind !== "node" && kind !== "device") {
-    throw new HTTPException(400, { message: "kind must be node or device" });
-  }
-  const body = c.req.valid("json");
+api.patch(
+  "/mesh/:kind/:id",
+  validate("param", meshEntryParamSchema),
+  validate("json", meshEntrySchema),
+  async (c) => {
+    const { kind, id } = c.req.valid("param");
+    return c.json(await updateMeshEntry(c.var.cf, c.env, kind, id, c.req.valid("json")));
+  },
+);
 
-  const cf = createCfClient(c.env);
-  const result = await renameWithCollisionHandling(cf, kind, c.req.param("id"), body.name);
-  const dns = await syncMeshDnsAfterRename(cf, c.env, result);
-  await markDnsSynced(c.env);
-  return c.json({ ...result, dns });
+api.delete("/mesh/:kind/:id", validate("param", meshEntryParamSchema), async (c) => {
+  const { kind, id } = c.req.valid("param");
+  return c.json({ ok: true, dns: await removeMeshEntry(c.var.cf, c.env, kind, id) });
 });
 
-api.delete("/mesh/:kind/:id", async (c) => {
-  const kind = c.req.param("kind");
-  if (kind !== "node" && kind !== "device") {
-    throw new HTTPException(400, { message: "kind must be node or device" });
-  }
-  const cf = createCfClient(c.env);
-  const id = c.req.param("id");
-  const inventory = await buildMeshInventory(cf, c.env);
-  const entry = inventory.find((e) => e.kind === kind && e.id === id);
-  await deleteMeshEntry(cf, kind, id);
-  const dns = entry
-    ? await syncMeshDnsAfterDelete(cf, c.env, entry)
-    : await syncMeshDns(cf, c.env);
-  await markDnsSynced(c.env);
-  return c.json({ ok: true, dns });
+api.get("/mesh/nodes/:id/token", async (c) => {
+  const token = await getMeshNodeToken(c.var.cf, c.req.param("id"));
+  return c.json({ token, decoded: decodeConnectorToken(token) });
 });
+
+api.post("/mesh/nodes/:id/regenerate", async (c) =>
+  c.json(await regenerateMeshNode(c.var.cf, c.env, c.req.param("id")), 201),
+);
 
 api.get("/mesh/nodes/:id/routes", async (c) => {
-  const cf = createCfClient(c.env);
   const id = c.req.param("id");
   const [cidrRoutes, hostnameRoutes] = await Promise.all([
-    listMeshNodeRoutes(cf, id),
-    listMeshNodeHostnameRoutes(cf, id),
+    listMeshNodeRoutes(c.var.cf, id),
+    listMeshNodeHostnameRoutes(c.var.cf, id),
   ]);
   return c.json({
     routes: [
@@ -202,172 +201,68 @@ api.get("/mesh/nodes/:id/routes", async (c) => {
   });
 });
 
-api.post("/mesh/nodes/:id/routes", zValidator("json", routeSchema), async (c) => {
+api.post("/mesh/nodes/:id/routes", validate("json", routeSchema), async (c) => {
   const body = c.req.valid("json");
-  const type = body.type ?? "cidr";
-  const value = type === "hostname" ? body.hostname?.trim() : body.network?.trim();
-  const comment = body.comment?.trim();
-  if (!value) throw new HTTPException(400, { message: `${type === "hostname" ? "hostname" : "network"} is required` });
-  if (comment && comment.length > 100) {
-    throw new HTTPException(400, { message: "comment must be 100 characters or fewer" });
-  }
-  const cf = createCfClient(c.env);
-  const route = type === "hostname"
-    ? await createMeshNodeHostnameRoute(cf, c.req.param("id"), value, comment)
-    : await createMeshNodeRoute(cf, c.req.param("id"), value, comment);
-  return c.json({ route: { ...route, type } }, 201);
+  const id = c.req.param("id");
+  const comment = body.comment || undefined;
+  const route = body.type === "hostname"
+    ? await createMeshNodeHostnameRoute(c.var.cf, id, body.hostname!, comment)
+    : await createMeshNodeRoute(c.var.cf, id, body.network!, comment);
+  return c.json({ route: { ...route, type: body.type } }, 201);
 });
 
 api.delete("/mesh/nodes/:id/routes/:routeId", async (c) => {
-  const cf = createCfClient(c.env);
   const nodeId = c.req.param("id");
   const routeId = c.req.param("routeId");
   const [cidrRoutes, hostnameRoutes] = await Promise.all([
-    listMeshNodeRoutes(cf, nodeId),
-    listMeshNodeHostnameRoutes(cf, nodeId),
+    listMeshNodeRoutes(c.var.cf, nodeId),
+    listMeshNodeHostnameRoutes(c.var.cf, nodeId),
   ]);
   if (cidrRoutes.some((route) => route.id === routeId)) {
-    await deleteMeshNodeRoute(cf, routeId);
+    await deleteMeshNodeRoute(c.var.cf, routeId);
   } else if (hostnameRoutes.some((route) => route.id === routeId)) {
-    await deleteMeshNodeHostnameRoute(cf, routeId);
+    await deleteMeshNodeHostnameRoute(c.var.cf, routeId);
   } else {
     throw new HTTPException(404, { message: "Route not found for this node" });
   }
   return c.json({ ok: true });
 });
 
-api.get("/settings/split-tunnels", async (c) => {
-  const cf = createCfClient(c.env);
-  const config = await getDefaultSplitTunnels(cf);
-  const audit = auditMeshRouting(config);
-  return c.json({ ...config, audit });
-});
+// ── Cloudflare Tunnels ───────────────────────────────────────────────────
 
-api.put("/settings/split-tunnels", zValidator("json", splitTunnelsSchema), async (c) => {
+api.get("/tunnels", async (c) => c.json({ tunnels: await listTunnels(c.var.cf) }));
+
+api.post("/tunnels", validate("json", createTunnelSchema), async (c) => {
   const body = c.req.valid("json");
-  if (body.mode !== "include" && body.mode !== "exclude") {
-    throw new HTTPException(400, { message: "mode must be include or exclude" });
-  }
-  if (!Array.isArray(body.items)) {
-    throw new HTTPException(400, { message: "items is required" });
-  }
-  const items = body.items.map((item) => ({
-    ...(item.address?.trim() ? { address: item.address.trim() } : {}),
-    ...(item.host?.trim() ? { host: item.host.trim() } : {}),
-    ...(item.description?.trim() ? { description: item.description.trim() } : {}),
-  }));
-  if (items.some((item) => (!item.address && !item.host) || (item.address && item.host))) {
-    throw new HTTPException(400, { message: "each item must contain one address or host" });
-  }
-  const cf = createCfClient(c.env);
-  await setDefaultSplitTunnels(cf, body.mode, items);
-  const updated = await getDefaultSplitTunnels(cf);
-  const audit = auditMeshRouting(updated);
-  return c.json({ ...updated, audit });
+  return c.json({ tunnel: await createTunnel(c.var.cf, body.name, body.config_src) }, 201);
 });
 
-api.post("/settings/split-tunnels/ensure-mesh", async (c) => {
-  const cf = createCfClient(c.env);
-  const current = await getDefaultSplitTunnels(cf);
-  const remediated = ensureMeshRouting(current);
-  await setDefaultSplitTunnels(cf, remediated.mode, remediated[remediated.mode]);
-  const updated = await getDefaultSplitTunnels(cf);
-  const audit = auditMeshRouting(updated);
-  return c.json({ ...updated, audit });
-});
+api.get("/tunnels/:id", async (c) => c.json(await getTunnel(c.var.cf, c.req.param("id"))));
 
-api.post("/mesh/sync-dns", async (c) => {
-  const cf = createCfClient(c.env);
-  const dns = await syncMeshDns(cf, c.env);
-  await markDnsSynced(c.env);
-  return c.json({ dns, lastDnsSyncAt: new Date().toISOString() });
-});
-
-api.post("/mesh/cleanup", async (c) => {
-  const cf = createCfClient(c.env);
-  const settings = await getSettings(c.env);
-  const cleanup = await cleanupOfflineDevices(cf, settings.offlineDays);
-  const dns = await syncMeshDns(cf, c.env);
-  await markCleanupRan(c.env);
-  await markDnsSynced(c.env);
-  return c.json({ cleanup, dns, lastCleanupAt: new Date().toISOString() });
-});
-
-api.get("/mesh/nodes/:id/token", async (c) => {
-  const cf = createCfClient(c.env);
-  const token = await getMeshNodeToken(cf, c.req.param("id"));
-  const decoded = decodeConnectorToken(token);
-  return c.json({ token, decoded });
-});
-
-api.post("/mesh/nodes/:id/regenerate", async (c) => {
-  const cf = createCfClient(c.env);
-  const node = await recreateMeshNode(cf, c.req.param("id"));
-  const dns = await syncMeshDns(cf, c.env);
-  await markDnsSynced(c.env);
-  return c.json({ node, dns }, 201);
-});
-
-// ── Cloudflare Tunnel routes ──────────────────────────────────────────────
-
-api.get("/tunnels", async (c) => {
-  const cf = createCfClient(c.env);
-  const tunnels = await listTunnels(cf);
-  return c.json({ tunnels });
-});
-
-api.post("/tunnels", zValidator("json", tunnelSchema), async (c) => {
-  const body = c.req.valid("json");
-  if (!body.name?.trim()) throw new HTTPException(400, { message: "name is required" });
-  const cf = createCfClient(c.env);
-  const tunnel = await createTunnel(cf, body.name.trim(), body.config_src);
-  return c.json({ tunnel }, 201);
-});
-
-api.get("/tunnels/:id", async (c) => {
-  const cf = createCfClient(c.env);
-  const tunnel = await getTunnel(cf, c.req.param("id"));
-  return c.json(tunnel);
-});
-
-api.patch("/tunnels/:id", zValidator("json", tunnelSchema), async (c) => {
-  const body = c.req.valid("json");
-  const cf = createCfClient(c.env);
-  const tunnel = await updateTunnel(cf, c.req.param("id"), body);
-  return c.json(tunnel);
-});
+api.patch("/tunnels/:id", validate("json", tunnelSchema), async (c) =>
+  c.json(await updateTunnel(c.var.cf, c.req.param("id"), c.req.valid("json"))),
+);
 
 api.delete("/tunnels/:id", async (c) => {
-  const cf = createCfClient(c.env);
-  await deleteTunnel(cf, c.req.param("id"));
+  await deleteTunnel(c.var.cf, c.req.param("id"));
   return c.json({ ok: true });
 });
 
-api.get("/tunnels/:id/token", async (c) => {
-  const cf = createCfClient(c.env);
-  const token = await getTunnelToken(cf, c.req.param("id"));
-  return c.json({ token });
-});
+api.get("/tunnels/:id/token", async (c) =>
+  c.json({ token: await getTunnelToken(c.var.cf, c.req.param("id")) }),
+);
 
-api.get("/tunnels/:id/config", async (c) => {
-  const cf = createCfClient(c.env);
-  const config = await getTunnelConfig(cf, c.req.param("id"));
-  return c.json(config);
-});
+api.get("/tunnels/:id/config", async (c) => c.json(await getTunnelConfig(c.var.cf, c.req.param("id"))));
 
-api.put("/tunnels/:id/config", zValidator("json", tunnelConfigSchema), async (c) => {
-  const body = c.req.valid("json");
-  const cf = createCfClient(c.env);
-  const config = await setTunnelConfig(cf, c.req.param("id"), body as TunnelConfig);
-  return c.json(config);
-});
+api.put("/tunnels/:id/config", validate("json", tunnelConfigSchema), async (c) =>
+  c.json(await setTunnelConfig(c.var.cf, c.req.param("id"), c.req.valid("json") as TunnelConfig)),
+);
 
 api.get("/tunnels/:id/connections", async (c) => {
-  const cf = createCfClient(c.env);
-  const raw = await getTunnelConnections(cf, c.req.param("id"));
-  const flat: CloudflareTunnelConnection[] = raw.flatMap(
-    (client: CloudflareConnector) =>
-      (client.conns ?? []).map((conn: CloudflareTunnelConnection) => ({
+  const clients = await getTunnelConnections(c.var.cf, c.req.param("id"));
+  return c.json(
+    clients.flatMap((client: CloudflareConnector) =>
+      (client.conns ?? []).map((conn) => ({
         id: conn.id ?? conn.uuid,
         uuid: conn.uuid,
         colo_name: conn.colo_name,
@@ -377,6 +272,6 @@ api.get("/tunnels/:id/connections", async (c) => {
         opened_at: conn.opened_at,
         version: client.version,
       })),
+    ),
   );
-  return c.json(flat);
 });

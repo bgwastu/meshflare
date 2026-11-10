@@ -7,7 +7,9 @@
     "all": "すべて",
     "actions": "操作",
     "cancel": "キャンセル",
+    "clearFilters": "フィルターをクリア",
     "save": "保存",
+    "saving": "保存中…",
     "create": "作成",
     "delete": "削除",
     "edit": "編集",
@@ -16,6 +18,7 @@
     "copy": "コピー",
     "copied": "クリップボードにコピーしました",
     "loading": "読み込み中…",
+    "language": "言語",
     "unknown": "不明",
     "close": "閉じる",
     "confirm": "確認",
@@ -34,6 +37,7 @@
     "mesh": "Mesh",
     "tunnels": "Tunnels",
     "settings": "設定",
+    "primary": "メイン",
     "account": "アカウント",
     "logout": "サインアウト"
   },
@@ -75,13 +79,23 @@
       "status": "ステータス",
       "actions": "操作"
     },
+    "table": {
+      "name": "名前",
+      "status": "ステータス",
+      "domain": "ドメイン",
+      "ipv4": "IPv4",
+      "lastSeen": "最終確認"
+    },
     "empty": "ノードまたはデバイスが見つかりません。",
+    "emptyNoEntries": "Mesh エントリはまだありません。",
     "count_one": "{{count}} 台のマシン",
     "count_other": "{{count}} 台のマシン",
     "drawer": {
       "titleNode": "Mesh ノード詳細",
       "titleDevice": "デバイス詳細",
       "close": "ドロワーを閉じる",
+      "edit": "名前とホスト名を編集",
+      "customHostname": "カスタム",
       "tabs": {
         "details": "詳細",
         "routes": "ルート",
@@ -123,17 +137,26 @@
       "nodeNamePlaceholder": "例: srv-gateway-01",
       "createBtn": "ノードを作成",
       "creatingBtn": "作成中…",
-      "renameTitle": "マシン名を変更",
-      "renameDesc": "Mesh ネットワーク全体でのこのマシンの表示名を変更します。",
-      "newNameLabel": "新しいマシン名",
+      "editTitle": "マシンを編集",
+      "editDesc": "このマシンの名前を変更するか、カスタムの Mesh ホスト名を設定します。",
+      "nameLabel": "名前",
+      "hostnameLabel": "Mesh ホスト名",
+      "hostnameHint": "空欄にすると、名前から生成される {{hostname}} を使用します。",
+      "hostnameInvalid": "小文字、数字、途中のハイフンのみ使用できます（最大 63 文字）。",
       "deleteTitle": "マシンを削除",
+      "deleteTitleNode": "ノードを削除",
+      "deleteTitleDevice": "デバイスを削除",
       "deleteConfirm": "本当に {{name}} を削除しますか？この操作は取り消せません。",
       "deleteWarning": "このノードのアドバタイズ済みルートおよびアクティブな接続は直ちに終了します。",
       "confirmDeleteBtn": "マシンを削除",
+      "confirmDeleteBtnNode": "ノードを削除",
+      "confirmDeleteBtnDevice": "デバイスを削除",
       "deletingBtn": "削除中…",
       "addRouteTitle": "ネットワークルートを追加",
       "addRouteDesc": "内部 CIDR またはホスト名をこのコネクタノード経由でルーティングします。",
       "routeTypeLabel": "ルーティング種別",
+      "typeCidrShort": "CIDR",
+      "typeHostnameShort": "ホスト名",
       "typeCidr": "CIDR ネットワーク (例: 192.168.1.0/24)",
       "typeHostname": "内部ホスト名 (例: app.internal.net)",
       "networkPlaceholder": "192.168.10.0/24",
@@ -168,7 +191,19 @@
       "created": "作成日時",
       "actions": "操作"
     },
+    "table": {
+      "name": "名前",
+      "status": "ステータス",
+      "config": "設定",
+      "connections": "接続",
+      "created": "作成日"
+    },
+    "config": {
+      "cloudflare": "Cloudflare",
+      "local": "ローカル"
+    },
     "empty": "トンネルが見つかりません。",
+    "emptyNoTunnels": "トンネルはまだありません。",
     "count_one": "{{count}} 件のトンネル",
     "count_other": "{{count}} 件のトンネル",
     "drawer": {
@@ -234,11 +269,13 @@
       "serviceTip": "対応プロトコル: http://, https://, tcp://, ssh://, rdp://, unix:",
       "saveRuleBtn": "Ingress ルールを保存",
       "savingRuleBtn": "保存中…"
-    }
+    },
+    "activeConnections": "{{count}} 件アクティブ"
   },
   "settings": {
     "title": "設定",
     "subtitle": "グローバル Cloudflare Zero Trust 設定、クリーンアップ、および DNS ルール",
+    "loadFailed": "設定を読み込めませんでした。",
     "account": {
       "title": "Cloudflare アカウント",
       "nameLabel": "アカウント名",
@@ -252,7 +289,8 @@
       "suffixPlaceholder": "mesh",
       "saveBtn": "サフィックスを保存",
       "savingBtn": "保存中…",
-      "syncNotice": "このサフィックスを変更すると、自動的に完全な DNS 再同期がトリガーされます。"
+      "syncNotice": "このサフィックスを変更すると、自動的に完全な DNS 再同期がトリガーされます。",
+      "warpFallbackWarning": "警告: .{{suffix}} は Cloudflare WARP の Local Domain Fallback リストに含まれており、Gateway DNS の名前解決をバイパスします。"
     },
     "cleanup": {
       "title": "オフラインデバイスのクリーンアップ",
@@ -266,11 +304,19 @@
     "splitTunnels": {
       "title": "WARP 分割トンネル (Split Tunnels)",
       "description": "内部トラフィックを WARP クライアントから除外するか、ルーティングするかを制御します。",
+      "loadFailed": "スプリットトンネルのルールを読み込めませんでした。",
       "modeLabel": "ルーティングポリシーモード",
       "modeExclude": "除外 (Split Tunnel) — トラフィックは WARP をバイパス",
       "modeInclude": "包含 (Direct Tunnel) — 指定されたトラフィックのみ WARP を使用",
+      "modeExcludeHint": "リストにある宛先を除き、すべてのトラフィックが WARP を経由します。",
+      "modeIncludeHint": "リストにある宛先のみが WARP を経由します。",
+      "modeSwitchLabel": "スプリットトンネルモード",
       "auditWarning": "警告: Mesh ネットワークサブネット (100.64.0.0/10) が現在除外されており、Mesh ルーティングが機能しません。",
       "auditResolved": "Mesh ルーティング設定は最適化されています。",
+      "meshRoutingWarning": "Mesh IP ルーティングの警告",
+      "fixRoutingBtn": "ルーティングを修正",
+      "fixingRoutingBtn": "修正中…",
+      "meshRoutingFixed": "Mesh IP を WARP 経由でルーティングするよう、スプリットトンネルを更新しました。",
       "addEntryBtn": "ルールを追加",
       "emptyList": "分割トンネルルールは定義されていません。",
       "colAddressHost": "IP ネットワークまたはドメイン",
@@ -295,6 +341,7 @@
       "enabledBadge": "有効",
       "disabledBadge": "無効",
       "statusLabel": "フィルターエンジンステータス",
+      "lastRefresh": "最終更新 {{when}}。",
       "customUrlLabel": "ブロックリスト URL",
       "customUrlPlaceholder": "https://...",
       "resetDefaultBtn": "デフォルトに戻す (HaGeZi Light)",
@@ -308,7 +355,9 @@
       "defaultLocation": "デフォルトクライアントロケーション",
       "dohSubdomain": "DoH サブドメインエンドポイント",
       "ipv4Dest": "プライマリ IPv4 接続先",
-      "ipv4Backup": "セカンダリ IPv4 バックアップ"
+      "ipv4Backup": "セカンダリ IPv4 バックアップ",
+      "ipv6Dest": "IPv6 接続先",
+      "noLocation": "デフォルトの Gateway DNS ロケーションが見つかりません。"
     },
     "maintenance": {
       "title": "システムヘルス & メンテナンス",
@@ -316,6 +365,11 @@
       "statusLabel": "設定整合性",
       "healthyNotice": "すべての Cloudflare Zero Trust 設定は完全に同期され正常です。",
       "degradedNotice": "データベース状態と Cloudflare Gateway の間で不整合が検出されました。",
+      "outOfSync": "同期ずれ",
+      "runNow": "今すぐ実行",
+      "lastRun": "前回の実行 {{when}}。",
+      "filterDetail": "フィルター: {{detail}}。",
+      "meshDetail": "Mesh: {{detail}}。",
       "repairBtn": "システム状態を修復",
       "repairingBtn": "修復中…"
     }
@@ -359,8 +413,8 @@
     "cleanupFailed": "クリーンアップの実行に失敗しました。",
     "nodeCreated": "Mesh ノードが正常に作成されました。",
     "nodeCreateFailed": "Mesh ノードの作成に失敗しました。",
-    "machineRenamed": "マシン名が正常に変更されました。",
-    "machineRenameFailed": "マシン名の変更に失敗しました。",
+    "machineUpdated": "マシンを更新しました。",
+    "machineUpdateFailed": "マシンを更新できませんでした。",
     "tokenRegenerated": "コネクタトークンが再生成されました。",
     "tokenRegenerateFailed": "トークンの再生成に失敗しました。",
     "machineDeleted": "マシンが Mesh から削除されました。",

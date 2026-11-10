@@ -13,6 +13,7 @@ export const settings = sqliteTable("settings", {
   lastCleanupAt: text("last_cleanup_at"),
   dnsMissingSinceJson: text("dns_missing_since_json").notNull().default("{}"),
   nodeBindingsJson: text("node_bindings_json").notNull().default("{}"),
+  meshLabelsJson: text("mesh_labels_json").notNull().default("{}"),
 });
 
 export const schema = { settings };

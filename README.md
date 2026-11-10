@@ -29,29 +29,6 @@ A self-hostable control plane for Cloudflare Zero Trust — manage mesh nodes, d
 - Offline-device cleanup
 - WARP connector setup commands
 
-## Screenshots
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/demo-mesh-dark.png">
-    <img alt="meshflare Mesh nodes" src="docs/screenshots/demo-mesh-light.png" width="800">
-  </picture>
-</p>
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/demo-tunnels-dark.png">
-    <img alt="meshflare Cloudflare Tunnels" src="docs/screenshots/demo-tunnels-light.png" width="800">
-  </picture>
-</p>
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/demo-settings-dark.png">
-    <img alt="meshflare settings" src="docs/screenshots/demo-settings-light.png" width="800">
-  </picture>
-</p>
-
 ## Cloudflare
 
 The Deploy button creates an independent Worker and D1 database in your Cloudflare account.

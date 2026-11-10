@@ -7,7 +7,9 @@
     "all": "全部",
     "actions": "操作",
     "cancel": "取消",
+    "clearFilters": "清除筛选",
     "save": "保存",
+    "saving": "保存中…",
     "create": "创建",
     "delete": "删除",
     "edit": "编辑",
@@ -16,6 +18,7 @@
     "copy": "复制",
     "copied": "已复制到剪贴板",
     "loading": "加载中…",
+    "language": "语言",
     "unknown": "未知",
     "close": "关闭",
     "confirm": "确认",
@@ -34,6 +37,7 @@
     "mesh": "Mesh",
     "tunnels": "Tunnels",
     "settings": "设置",
+    "primary": "主导航",
     "account": "账户",
     "logout": "退出登录"
   },
@@ -75,13 +79,23 @@
       "status": "状态",
       "actions": "操作"
     },
+    "table": {
+      "name": "名称",
+      "status": "状态",
+      "domain": "域名",
+      "ipv4": "IPv4",
+      "lastSeen": "最后在线"
+    },
     "empty": "未找到任何节点或设备。",
+    "emptyNoEntries": "还没有 Mesh 条目。",
     "count_one": "{{count}} 台机器",
     "count_other": "{{count}} 台机器",
     "drawer": {
       "titleNode": "Mesh 节点详情",
       "titleDevice": "设备详情",
       "close": "关闭抽屉",
+      "edit": "编辑名称和主机名",
+      "customHostname": "自定义",
       "tabs": {
         "details": "详情",
         "routes": "路由",
@@ -123,17 +137,26 @@
       "nodeNamePlaceholder": "例如: srv-gateway-01",
       "createBtn": "创建节点",
       "creatingBtn": "创建中…",
-      "renameTitle": "重命名机器",
-      "renameDesc": "修改此机器在整个 Mesh 网络中的显示名称。",
-      "newNameLabel": "新机器名称",
+      "editTitle": "编辑设备",
+      "editDesc": "重命名此设备，或为其设置自定义 Mesh 主机名。",
+      "nameLabel": "名称",
+      "hostnameLabel": "Mesh 主机名",
+      "hostnameHint": "留空则使用基于名称的 {{hostname}}。",
+      "hostnameInvalid": "只能使用小写字母、数字和中间的连字符（最多 63 个字符）。",
       "deleteTitle": "删除机器",
+      "deleteTitleNode": "删除节点",
+      "deleteTitleDevice": "删除设备",
       "deleteConfirm": "确定要删除 {{name}} 吗？此操作无法撤销。",
       "deleteWarning": "此节点的所有宣告路由和活跃连接将被立即终止。",
       "confirmDeleteBtn": "删除机器",
+      "confirmDeleteBtnNode": "删除节点",
+      "confirmDeleteBtnDevice": "删除设备",
       "deletingBtn": "正在删除…",
       "addRouteTitle": "添加网络路由",
       "addRouteDesc": "通过此连接器节点路由内部网段 CIDR 或主机名。",
       "routeTypeLabel": "路由目标类型",
+      "typeCidrShort": "CIDR",
+      "typeHostnameShort": "主机名",
       "typeCidr": "CIDR 网段 (例如: 192.168.1.0/24)",
       "typeHostname": "内部主机名 (例如: app.internal.net)",
       "networkPlaceholder": "192.168.10.0/24",
@@ -168,7 +191,19 @@
       "created": "创建时间",
       "actions": "操作"
     },
+    "table": {
+      "name": "名称",
+      "status": "状态",
+      "config": "配置",
+      "connections": "连接",
+      "created": "创建时间"
+    },
+    "config": {
+      "cloudflare": "Cloudflare",
+      "local": "本地"
+    },
     "empty": "未找到任何隧道。",
+    "emptyNoTunnels": "还没有隧道。",
     "count_one": "{{count}} 条隧道",
     "count_other": "{{count}} 条隧道",
     "drawer": {
@@ -234,11 +269,13 @@
       "serviceTip": "支持协议: http://, https://, tcp://, ssh://, rdp://, unix:",
       "saveRuleBtn": "保存入站规则",
       "savingRuleBtn": "保存中…"
-    }
+    },
+    "activeConnections": "{{count}} 个活动"
   },
   "settings": {
     "title": "设置",
     "subtitle": "全局 Cloudflare Zero Trust 配置、离线清理和 DNS 规则",
+    "loadFailed": "无法加载设置。",
     "account": {
       "title": "Cloudflare 账户",
       "nameLabel": "账户名称",
@@ -252,7 +289,8 @@
       "suffixPlaceholder": "mesh",
       "saveBtn": "保存后缀",
       "savingBtn": "保存中…",
-      "syncNotice": "修改此后缀将自动触发全量 DNS 重新同步。"
+      "syncNotice": "修改此后缀将自动触发全量 DNS 重新同步。",
+      "warpFallbackWarning": "警告: .{{suffix}} 位于 Cloudflare WARP 的本地域名回退（Local Domain Fallback）列表中，将绕过 Gateway DNS 解析。"
     },
     "cleanup": {
       "title": "离线设备清理",
@@ -266,11 +304,19 @@
     "splitTunnels": {
       "title": "WARP 分流隧道",
       "description": "控制内部流量是绕过还是经由 Cloudflare Zero Trust WARP 客户端路由。",
+      "loadFailed": "无法加载拆分隧道规则。",
       "modeLabel": "路由策略模式",
       "modeExclude": "排除模式 (Split Tunnel) — 流量绕过 WARP",
       "modeInclude": "包含模式 (Direct Tunnel) — 仅指定流量通过 WARP",
+      "modeExcludeHint": "除所列目标外，所有流量都经过 WARP。",
+      "modeIncludeHint": "只有所列目标的流量经过 WARP。",
+      "modeSwitchLabel": "分流隧道模式",
       "auditWarning": "警告: Mesh 网络网段 (100.64.0.0/10) 当前被排除，这将阻止 Mesh 路由生效。",
       "auditResolved": "Mesh 路由配置正常且处于最佳状态。",
+      "meshRoutingWarning": "Mesh IP 路由警告",
+      "fixRoutingBtn": "修复路由",
+      "fixingRoutingBtn": "正在修复…",
+      "meshRoutingFixed": "已更新分流隧道，Mesh IP 现在将通过 WARP 路由。",
       "addEntryBtn": "添加规则",
       "emptyList": "未定义分流规则。",
       "colAddressHost": "IP 网段或域名",
@@ -295,6 +341,7 @@
       "enabledBadge": "生效中",
       "disabledBadge": "已停用",
       "statusLabel": "过滤引擎状态",
+      "lastRefresh": "上次刷新 {{when}}。",
       "customUrlLabel": "黑名单源 URL",
       "customUrlPlaceholder": "https://...",
       "resetDefaultBtn": "重置为默认源 (HaGeZi Light)",
@@ -308,7 +355,9 @@
       "defaultLocation": "默认客户端位置",
       "dohSubdomain": "DoH 子域终结点",
       "ipv4Dest": "主 IPv4 终结点",
-      "ipv4Backup": "备用 IPv4 终结点"
+      "ipv4Backup": "备用 IPv4 终结点",
+      "ipv6Dest": "IPv6 终结点",
+      "noLocation": "未找到默认的 Gateway DNS 位置。"
     },
     "maintenance": {
       "title": "系统健康与维护",
@@ -316,6 +365,11 @@
       "statusLabel": "配置一致性",
       "healthyNotice": "所有 Cloudflare Zero Trust 配置完全同步且运行良好。",
       "degradedNotice": "检测到数据库状态与 Cloudflare Gateway 之间存在不同步。",
+      "outOfSync": "未同步",
+      "runNow": "立即运行",
+      "lastRun": "上次运行 {{when}}。",
+      "filterDetail": "筛选器: {{detail}}。",
+      "meshDetail": "Mesh: {{detail}}。",
       "repairBtn": "修复系统配置",
       "repairingBtn": "正在修复…"
     }
@@ -359,8 +413,8 @@
     "cleanupFailed": "执行清理操作失败。",
     "nodeCreated": "Mesh 节点创建成功。",
     "nodeCreateFailed": "创建 Mesh 节点失败。",
-    "machineRenamed": "机器已成功重命名。",
-    "machineRenameFailed": "重命名机器失败。",
+    "machineUpdated": "设备已更新。",
+    "machineUpdateFailed": "更新设备失败。",
     "tokenRegenerated": "连接器 Token 已重新生成。",
     "tokenRegenerateFailed": "重新生成 Token 失败。",
     "machineDeleted": "机器已从 Mesh 网络中删除。",

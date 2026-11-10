@@ -1,5 +1,7 @@
 import type { CfApiResult, Env } from "../types";
 
+const REQUEST_TIMEOUT_MS = 15_000;
+
 export class CloudflareApiError extends Error {
   constructor(
     message: string,
@@ -9,6 +11,14 @@ export class CloudflareApiError extends Error {
     super(message);
     this.name = "CloudflareApiError";
   }
+}
+
+function transportError(error: unknown): CloudflareApiError {
+  const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+  return new CloudflareApiError(
+    timedOut ? "Cloudflare API request timed out" : `Cloudflare API unreachable: ${String(error)}`,
+    504,
+  );
 }
 
 export class CloudflareClient {
@@ -50,11 +60,20 @@ export class CloudflareClient {
     let attempts = 0;
     for (;;) {
       attempts += 1;
-      const res = await fetch(url, {
-        method,
-        headers: this.headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
+      let res: Response;
+      try {
+        res = await fetch(url, {
+          method,
+          headers: this.headers,
+          body: body === undefined ? undefined : JSON.stringify(body),
+          // A hung upstream call must not leave API requests (and the UI) pending forever.
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+      } catch (error) {
+        // Reads are safe to retry; writes may already have been applied.
+        if (method === "GET" && attempts < 2) continue;
+        throw transportError(error);
+      }
 
       if (res.status === 429 && attempts < 3) {
         const retrySec = Number(res.headers.get("Retry-After")) || 1;
@@ -68,7 +87,12 @@ export class CloudflareClient {
         continue;
       }
 
-      const text = await res.text();
+      let text: string;
+      try {
+        text = await res.text();
+      } catch (error) {
+        throw transportError(error);
+      }
       let json: CfApiResult<T> | null = null;
       try {
         json = JSON.parse(text) as CfApiResult<T>;

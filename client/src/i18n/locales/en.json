@@ -7,6 +7,7 @@
     "all": "All",
     "actions": "Actions",
     "cancel": "Cancel",
+    "clearFilters": "Clear filters",
     "save": "Save",
     "saving": "Saving…",
     "create": "Create",
@@ -36,6 +37,7 @@
     "mesh": "Mesh",
     "tunnels": "Tunnels",
     "settings": "Settings",
+    "primary": "Primary",
     "account": "Account",
     "logout": "Sign out"
   },
@@ -77,13 +79,23 @@
       "status": "Status",
       "actions": "Actions"
     },
+    "table": {
+      "name": "Name",
+      "status": "Status",
+      "domain": "Domain",
+      "ipv4": "IPv4",
+      "lastSeen": "Last seen"
+    },
     "empty": "No nodes or devices found.",
+    "emptyNoEntries": "No mesh entries yet.",
     "count_one": "{{count}} machine",
     "count_other": "{{count}} machines",
     "drawer": {
       "titleNode": "Mesh Node Details",
       "titleDevice": "Device Details",
       "close": "Close drawer",
+      "edit": "Edit name and hostname",
+      "customHostname": "Custom",
       "tabs": {
         "details": "Details",
         "routes": "Routes",
@@ -125,9 +137,12 @@
       "nodeNamePlaceholder": "e.g., srv-gateway-01",
       "createBtn": "Create Node",
       "creatingBtn": "Creating…",
-      "renameTitle": "Rename Machine",
-      "renameDesc": "Change the display name of this machine across your mesh network.",
-      "newNameLabel": "New Machine Name",
+      "editTitle": "Edit machine",
+      "editDesc": "Rename this machine or give it a custom mesh hostname.",
+      "nameLabel": "Name",
+      "hostnameLabel": "Mesh hostname",
+      "hostnameHint": "Leave empty to use {{hostname}}, based on the name.",
+      "hostnameInvalid": "Use lowercase letters, numbers and inner hyphens (max 63 characters).",
       "deleteTitle": "Delete Machine",
       "deleteTitleNode": "Delete Node",
       "deleteTitleDevice": "Delete Device",
@@ -176,7 +191,19 @@
       "created": "Created",
       "actions": "Actions"
     },
+    "table": {
+      "name": "Name",
+      "status": "Status",
+      "config": "Config",
+      "connections": "Connections",
+      "created": "Created"
+    },
+    "config": {
+      "cloudflare": "Cloudflare",
+      "local": "Local"
+    },
     "empty": "No tunnels found.",
+    "emptyNoTunnels": "No tunnels yet.",
     "count_one": "{{count}} tunnel",
     "count_other": "{{count}} tunnels",
     "drawer": {
@@ -242,11 +269,13 @@
       "serviceTip": "Protocols supported: http://, https://, tcp://, ssh://, rdp://, unix:",
       "saveRuleBtn": "Save Ingress Rule",
       "savingRuleBtn": "Saving…"
-    }
+    },
+    "activeConnections": "{{count}} active"
   },
   "settings": {
     "title": "Settings",
     "subtitle": "Mesh DNS, Gateway filtering, maintenance, and WARP split tunnels.",
+    "loadFailed": "Could not load settings.",
     "account": {
       "title": "Cloudflare Account",
       "nameLabel": "Account Name",
@@ -275,6 +304,7 @@
     "splitTunnels": {
       "title": "WARP Split Tunnels",
       "description": "Control whether internal traffic is excluded from or routed through Cloudflare Zero Trust WARP client.",
+      "loadFailed": "Could not load split tunnel rules.",
       "modeLabel": "Routing Policy Mode",
       "modeExclude": "Exclude",
       "modeInclude": "Include",
@@ -308,10 +338,6 @@
       "title": "DNS Filtering",
       "description": "Block malware, phishing, and ad trackers at the Cloudflare Gateway DNS layer.",
       "toggleLabel": "Enable Gateway DNS Filtering",
-      "enableBtn": "Enable filtering",
-      "disableBtn": "Disable filtering",
-      "enablingBtn": "Enabling…",
-      "disablingBtn": "Disabling…",
       "enabledBadge": "Active",
       "disabledBadge": "Disabled",
       "statusLabel": "Filter Engine Status",
@@ -387,8 +413,8 @@
     "cleanupFailed": "Failed to execute cleanup.",
     "nodeCreated": "Mesh node created successfully.",
     "nodeCreateFailed": "Failed to create mesh node.",
-    "machineRenamed": "Machine renamed successfully.",
-    "machineRenameFailed": "Failed to rename machine.",
+    "machineUpdated": "Machine updated.",
+    "machineUpdateFailed": "Failed to update machine.",
     "tokenRegenerated": "Connector token regenerated.",
     "tokenRegenerateFailed": "Failed to regenerate token.",
     "machineDeleted": "Machine deleted from mesh.",

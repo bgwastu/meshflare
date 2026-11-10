@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Server, Smartphone, Plus, Trash2, Info, Route, Terminal } from "lucide-react";
+import { X, Server, Smartphone, Plus, Trash2, Info, Route, Terminal, Pencil } from "lucide-react";
 import { Drawer } from "../ui/Drawer";
 import { CopyValue } from "../ui/CopyValue";
 import { KindBadge, StatusChip } from "../ui/Badge";
@@ -19,6 +19,7 @@ type MeshDrawerProps = {
   nodeToken: string | null;
   tokenLoading: boolean;
   onRegenerateToken: () => Promise<void>;
+  onOpenEdit: (entry: MeshEntry) => void;
   onOpenDelete: (entry: MeshEntry) => void;
   locked: boolean;
   onToast: (msg: string) => void;
@@ -35,6 +36,7 @@ export function MeshDrawer({
   nodeToken,
   tokenLoading,
   onRegenerateToken,
+  onOpenEdit,
   onOpenDelete,
   locked,
   onToast,
@@ -65,15 +67,27 @@ export function MeshDrawer({
           {isNode ? <Server size={18} aria-hidden /> : <Smartphone size={18} aria-hidden />}
           <span className="drawer-title-text">{entry.name}</span>
         </h3>
-        <button
-          type="button"
-          className="icon-btn drawer-close"
-          onClick={onClose}
-          title={t("mesh.drawer.close")}
-          aria-label={t("mesh.drawer.close")}
-        >
-          <X size={16} aria-hidden />
-        </button>
+        <div className="drawer-head-actions">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => onOpenEdit(entry)}
+            disabled={locked}
+            title={t("mesh.drawer.edit")}
+            aria-label={t("mesh.drawer.edit")}
+          >
+            <Pencil size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="icon-btn drawer-close"
+            onClick={onClose}
+            title={t("mesh.drawer.close")}
+            aria-label={t("mesh.drawer.close")}
+          >
+            <X size={16} aria-hidden />
+          </button>
+        </div>
       </div>
 
       <div className="meta">
@@ -124,6 +138,9 @@ export function MeshDrawer({
             <div>
               <span className="field-label">
                 {t("mesh.drawer.properties.meshHostname")}
+                {entry.meshLabel && (
+                  <span className="field-tag">{t("mesh.drawer.customHostname")}</span>
+                )}
               </span>
               <div>
                 <CopyValue value={entry.meshHostname} onCopied={() => onToast(t("common.copied"))} />

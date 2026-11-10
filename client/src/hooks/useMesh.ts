@@ -1,77 +1,76 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type MeshEntry } from "../lib/api";
+import { api, type MeshEntry, type MeshEntryPatch } from "../lib/api";
+
+type EntryRef = { kind: MeshEntry["kind"]; id: string };
 
 export function useMesh(options?: { enabled?: boolean; selectedNodeId?: string | null }) {
   const queryClient = useQueryClient();
   const enabled = options?.enabled !== false;
   const selectedNodeId = options?.selectedNodeId ?? null;
+  const nodeQueriesEnabled = enabled && Boolean(selectedNodeId);
 
   const meshQuery = useQuery({
     queryKey: ["mesh"],
-    queryFn: () => api.listMesh(),
+    queryFn: api.listMesh,
     enabled,
   });
-
-  const entries = meshQuery.data?.entries ?? [];
 
   const routesQuery = useQuery({
     queryKey: ["node-routes", selectedNodeId],
     queryFn: () => api.listNodeRoutes(selectedNodeId!),
-    enabled: Boolean(selectedNodeId && enabled),
+    enabled: nodeQueriesEnabled,
   });
 
   const installQuery = useQuery({
     queryKey: ["node-token", selectedNodeId],
     queryFn: () => api.getNodeToken(selectedNodeId!),
-    enabled: Boolean(selectedNodeId && enabled),
+    enabled: nodeQueriesEnabled,
   });
+
+  /** Mesh changes also move DNS rules, so refresh the health check too. */
+  const invalidateMesh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["mesh"] });
+    void queryClient.invalidateQueries({ queryKey: ["maintenance-health"] });
+  };
 
   const syncDnsMutation = useMutation({
     mutationFn: api.syncDns,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["mesh"] });
-      void queryClient.invalidateQueries({ queryKey: ["settings"] });
-    },
-  });
-
-  const cleanupMutation = useMutation({
-    mutationFn: api.cleanup,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["mesh"] });
+      invalidateMesh();
       void queryClient.invalidateQueries({ queryKey: ["settings"] });
     },
   });
 
   const createNodeMutation = useMutation({
     mutationFn: (name: string) => api.createNode(name),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["mesh"] });
-    },
+    onSuccess: invalidateMesh,
   });
 
-  const renameMachineMutation = useMutation({
-    mutationFn: ({ kind, id, name }: { kind: "node" | "device"; id: string; name: string }) =>
-      api.rename(kind, id, name),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["mesh"] });
-    },
+  const updateEntryMutation = useMutation({
+    mutationFn: ({ kind, id, patch }: EntryRef & { patch: MeshEntryPatch }) =>
+      api.updateEntry(kind, id, patch),
+    onSuccess: invalidateMesh,
   });
 
-  const deleteMachineMutation = useMutation({
-    mutationFn: ({ kind, id }: { kind: "node" | "device"; id: string }) =>
-      api.remove(kind, id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["mesh"] });
-    },
+  const deleteEntryMutation = useMutation({
+    mutationFn: ({ kind, id }: EntryRef) => api.remove(kind, id),
+    onSuccess: invalidateMesh,
   });
 
   const recreateNodeMutation = useMutation({
     mutationFn: (id: string) => api.recreateNode(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["mesh"] });
-      if (selectedNodeId) {
-        void queryClient.invalidateQueries({ queryKey: ["node-token", selectedNodeId] });
-      }
+    onSuccess: ({ node }, id) => {
+      // The node is replaced; point the cached entry at the new id right away.
+      queryClient.setQueryData<{ entries: MeshEntry[] }>(["mesh"], (data) =>
+        data && {
+          entries: data.entries.map((e) =>
+            e.kind === "node" && e.id === id ? { ...e, id: node.id } : e,
+          ),
+        },
+      );
+      invalidateMesh();
+      queryClient.removeQueries({ queryKey: ["node-token", id] });
+      queryClient.removeQueries({ queryKey: ["node-routes", id] });
     },
   });
 
@@ -102,36 +101,19 @@ export function useMesh(options?: { enabled?: boolean; selectedNodeId?: string |
 
   return {
     meshQuery,
-    entries,
-    routesQuery,
+    entries: meshQuery.data?.entries ?? [],
     routes: routesQuery.data?.routes ?? [],
-    routesLoading: routesQuery.isFetching,
-    installQuery,
+    routesLoading: routesQuery.isPending && nodeQueriesEnabled,
     nodeToken: installQuery.data?.token ?? null,
-    installLoading: installQuery.isFetching,
+    installLoading: installQuery.isPending && nodeQueriesEnabled,
 
     syncDns: syncDnsMutation.mutateAsync,
     isSyncingDns: syncDnsMutation.isPending,
-
-    cleanup: cleanupMutation.mutateAsync,
-    isCleaning: cleanupMutation.isPending,
-
     createNode: createNodeMutation.mutateAsync,
-    isCreatingNode: createNodeMutation.isPending,
-
-    renameMachine: renameMachineMutation.mutateAsync,
-    isRenamingMachine: renameMachineMutation.isPending,
-
-    deleteMachine: deleteMachineMutation.mutateAsync,
-    isDeletingMachine: deleteMachineMutation.isPending,
-
+    updateEntry: updateEntryMutation.mutateAsync,
+    deleteEntry: deleteEntryMutation.mutateAsync,
     recreateNode: recreateNodeMutation.mutateAsync,
-    isRecreatingNode: recreateNodeMutation.isPending,
-
     addRoute: addRouteMutation.mutateAsync,
-    isAddingRoute: addRouteMutation.isPending,
-
     deleteRoute: deleteRouteMutation.mutateAsync,
-    isDeletingRoute: deleteRouteMutation.isPending,
   };
 }

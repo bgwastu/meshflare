@@ -7,7 +7,6 @@ import type { Settings } from "../../lib/api";
 type LayoutProps = {
   settings: Settings | null;
   authRequired: boolean;
-  tunnelsCount?: number;
   toasts: ToastItem[];
   onDismissToast: (id: number) => void;
   onLogout?: () => void;
@@ -17,7 +16,6 @@ type LayoutProps = {
 export function Layout({
   settings,
   authRequired,
-  tunnelsCount,
   toasts,
   onDismissToast,
   onLogout,
@@ -30,7 +28,6 @@ export function Layout({
       <Header
         settings={settings}
         authRequired={authRequired}
-        tunnelsCount={tunnelsCount}
         onLogout={onLogout}
       />
 

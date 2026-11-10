@@ -7,7 +7,9 @@
     "all": "الكل",
     "actions": "إجراءات",
     "cancel": "إلغاء",
+    "clearFilters": "مسح عوامل التصفية",
     "save": "حفظ",
+    "saving": "جارٍ الحفظ…",
     "create": "إنشاء",
     "delete": "حذف",
     "edit": "تعديل",
@@ -16,6 +18,7 @@
     "copy": "نسخ",
     "copied": "تم النسخ إلى الحافظة",
     "loading": "جاري التحميل…",
+    "language": "اللغة",
     "unknown": "غير معروف",
     "close": "إغلاق",
     "confirm": "تأكيد",
@@ -34,6 +37,7 @@
     "mesh": "Mesh",
     "tunnels": "Tunnels",
     "settings": "الإعدادات",
+    "primary": "الرئيسية",
     "account": "الحساب",
     "logout": "تسجيل الخروج"
   },
@@ -75,7 +79,15 @@
       "status": "الحالة",
       "actions": "إجراءات"
     },
+    "table": {
+      "name": "الاسم",
+      "status": "الحالة",
+      "domain": "النطاق",
+      "ipv4": "IPv4",
+      "lastSeen": "آخر ظهور"
+    },
     "empty": "لم يتم العثور على عقد أو أجهزة.",
+    "emptyNoEntries": "لا توجد إدخالات Mesh بعد.",
     "count_zero": "لا توجد أجهزة",
     "count_one": "جهاز واحد",
     "count_two": "جهازان",
@@ -86,6 +98,8 @@
       "titleNode": "تفاصيل عقدة Mesh",
       "titleDevice": "تفاصيل الجهاز",
       "close": "إغلاق اللوحة",
+      "edit": "تعديل الاسم واسم المضيف",
+      "customHostname": "مخصص",
       "tabs": {
         "details": "التفاصيل",
         "routes": "المسارات",
@@ -127,17 +141,26 @@
       "nodeNamePlaceholder": "مثال: srv-gateway-01",
       "createBtn": "إنشاء عقدة",
       "creatingBtn": "جاري الإنشاء…",
-      "renameTitle": "إعادة تسمية الجهاز",
-      "renameDesc": "تغيير اسم العرض لهذا الجهاز عبر شبكة Mesh الخاصة بك.",
-      "newNameLabel": "اسم الجهاز الجديد",
+      "editTitle": "تعديل الجهاز",
+      "editDesc": "أعد تسمية هذا الجهاز أو امنحه اسم مضيف Mesh مخصصًا.",
+      "nameLabel": "الاسم",
+      "hostnameLabel": "اسم مضيف Mesh",
+      "hostnameHint": "اتركه فارغًا لاستخدام {{hostname}} المشتق من الاسم.",
+      "hostnameInvalid": "استخدم أحرفًا صغيرة وأرقامًا وشرطات داخلية (63 حرفًا كحد أقصى).",
       "deleteTitle": "حذف الجهاز",
+      "deleteTitleNode": "حذف العقدة",
+      "deleteTitleDevice": "حذف الجهاز",
       "deleteConfirm": "هل أنت متأكد من حذف {{name}}؟ لا يمكن التراجع عن هذا الإجراء.",
       "deleteWarning": "سيتم إنهاء جميع المسارات المعلنة والاتصالات النشطة لهذه العقدة فوراً.",
       "confirmDeleteBtn": "حذف الجهاز",
+      "confirmDeleteBtnNode": "حذف العقدة",
+      "confirmDeleteBtnDevice": "حذف الجهاز",
       "deletingBtn": "جاري الحذف…",
       "addRouteTitle": "إضافة مسار شبكة",
       "addRouteDesc": "توجيه نطاقات CIDR أو أسماء المضيفين الداخلية عبر عقدة الموصل هذه.",
       "routeTypeLabel": "نوع الهدف للمسار",
+      "typeCidrShort": "CIDR",
+      "typeHostnameShort": "اسم المضيف",
       "typeCidr": "شبكة CIDR (مثال: 192.168.1.0/24)",
       "typeHostname": "اسم مضيف داخلي (مثال: app.internal.net)",
       "networkPlaceholder": "192.168.10.0/24",
@@ -172,7 +195,19 @@
       "created": "تاريخ الإنشاء",
       "actions": "إجراءات"
     },
+    "table": {
+      "name": "الاسم",
+      "status": "الحالة",
+      "config": "الإعداد",
+      "connections": "الاتصالات",
+      "created": "تاريخ الإنشاء"
+    },
+    "config": {
+      "cloudflare": "Cloudflare",
+      "local": "محلي"
+    },
     "empty": "لم يتم العثور على أنفاق.",
+    "emptyNoTunnels": "لا توجد أنفاق بعد.",
     "count_zero": "لا توجد أنفاق",
     "count_one": "نفق واحد",
     "count_two": "نفقان",
@@ -242,11 +277,13 @@
       "serviceTip": "البروتوكولات المدعومة: http://, https://, tcp://, ssh://, rdp://, unix:",
       "saveRuleBtn": "حفظ قاعدة الدخول",
       "savingRuleBtn": "جاري الحفظ…"
-    }
+    },
+    "activeConnections": "{{count}} نشطة"
   },
   "settings": {
     "title": "الإعدادات",
     "subtitle": "تكوينات Cloudflare Zero Trust العامة، التنظيف، وقواعد DNS",
+    "loadFailed": "تعذّر تحميل الإعدادات.",
     "account": {
       "title": "حساب Cloudflare",
       "nameLabel": "اسم الحساب",
@@ -260,7 +297,8 @@
       "suffixPlaceholder": "mesh",
       "saveBtn": "حفظ اللاحقة",
       "savingBtn": "جاري الحفظ…",
-      "syncNotice": "يؤدي تغيير هذه اللاحقة تلقائياً إلى بدء إعادة مزامنة شاملة لـ DNS."
+      "syncNotice": "يؤدي تغيير هذه اللاحقة تلقائياً إلى بدء إعادة مزامنة شاملة لـ DNS.",
+      "warpFallbackWarning": "تحذير: اللاحقة ‎.{{suffix}}‎ موجودة في قائمة Local Domain Fallback الخاصة بـ Cloudflare WARP وستتجاوز تحليل DNS عبر Gateway."
     },
     "cleanup": {
       "title": "تنظيف الأجهزة غير المتصلة",
@@ -274,11 +312,19 @@
     "splitTunnels": {
       "title": "أنفاق WARP المقسمة (Split Tunnels)",
       "description": "التحكم في توجيه أو استبعاد حركة المرور الداخلية عبر عميل Cloudflare Zero Trust WARP.",
+      "loadFailed": "تعذّر تحميل قواعد النفق المقسّم.",
       "modeLabel": "وضع سياسة التوجيه",
       "modeExclude": "استبعاد (Split Tunnel) — تتجاوز حركة المرور عميل WARP",
       "modeInclude": "تضمين (Direct Tunnel) — تستخدم حركة المرور المحددة فقط عميل WARP",
+      "modeExcludeHint": "تمر كل حركة المرور عبر WARP باستثناء الوجهات المدرجة.",
+      "modeIncludeHint": "تمر الوجهات المدرجة فقط عبر WARP.",
+      "modeSwitchLabel": "وضع النفق المقسّم",
       "auditWarning": "تحذير: الشبكة الفرعية لـ Mesh (100.64.0.0/10) مستبعدة حالياً، مما يمنع توجيه Mesh.",
       "auditResolved": "تكوين توجيه Mesh في أفضل حالاته ومثالي.",
+      "meshRoutingWarning": "تحذير توجيه عناوين IP في Mesh",
+      "fixRoutingBtn": "إصلاح التوجيه",
+      "fixingRoutingBtn": "جارٍ الإصلاح…",
+      "meshRoutingFixed": "تم تحديث الأنفاق المقسّمة لتوجيه عناوين IP في Mesh عبر WARP.",
       "addEntryBtn": "إضافة قاعدة",
       "emptyList": "لم يتم تعريف قواعد للنفق المقسم.",
       "colAddressHost": "شبكة IP أو النطاق",
@@ -303,6 +349,7 @@
       "enabledBadge": "مفعل",
       "disabledBadge": "معطل",
       "statusLabel": "حالة محرك التصفية",
+      "lastRefresh": "آخر تحديث {{when}}.",
       "customUrlLabel": "رابط قائمة الحظر المخصصة",
       "customUrlPlaceholder": "https://...",
       "resetDefaultBtn": "إعادة التعيين للافتراضي (HaGeZi Light)",
@@ -316,7 +363,9 @@
       "defaultLocation": "موقع العميل الافتراضي",
       "dohSubdomain": "نقطة نهاية النطاق الفرعي لـ DoH",
       "ipv4Dest": "وجهة IPv4 الأساسية",
-      "ipv4Backup": "وجهة IPv4 الاحتياطية"
+      "ipv4Backup": "وجهة IPv4 الاحتياطية",
+      "ipv6Dest": "وجهة IPv6",
+      "noLocation": "لم يُعثر على موقع Gateway DNS افتراضي."
     },
     "maintenance": {
       "title": "سلامة النظام والصيانة",
@@ -324,6 +373,11 @@
       "statusLabel": "سلامة التكوين",
       "healthyNotice": "جميع تكوينات Cloudflare Zero Trust متزامنة تماماً وسليمة.",
       "degradedNotice": "تم اكتشاف عدم تطابق بين حالة قاعدة البيانات وسياسات Cloudflare Gateway.",
+      "outOfSync": "غير متزامن",
+      "runNow": "شغّل الآن",
+      "lastRun": "آخر تشغيل {{when}}.",
+      "filterDetail": "عامل التصفية: {{detail}}.",
+      "meshDetail": "Mesh: {{detail}}.",
       "repairBtn": "إصلاح حالة النظام",
       "repairingBtn": "جاري الإصلاح…"
     }
@@ -367,8 +421,8 @@
     "cleanupFailed": "فشل في تنفيذ عملية التنظيف.",
     "nodeCreated": "تم إنشاء عقدة Mesh بنجاح.",
     "nodeCreateFailed": "فشل في إنشاء عقدة Mesh.",
-    "machineRenamed": "تمت إعادة تسمية الجهاز بنجاح.",
-    "machineRenameFailed": "فشلت إعادة تسمية الجهاز.",
+    "machineUpdated": "تم تحديث الجهاز.",
+    "machineUpdateFailed": "فشل تحديث الجهاز.",
     "tokenRegenerated": "تمت إعادة إنشاء رمز الموصل بنجاح.",
     "tokenRegenerateFailed": "فشلت إعادة إنشاء الرمز.",
     "machineDeleted": "تم حذف الجهاز من الشبكة.",

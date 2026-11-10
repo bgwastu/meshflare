@@ -14,6 +14,8 @@ type TunnelsTableProps = {
   onClearFilters: () => void;
 };
 
+const COLUMN_KEYS = ["name", "status", "config", "connections", "created"] as const;
+
 export function TunnelsTable({
   tunnels,
   loading,
@@ -24,22 +26,26 @@ export function TunnelsTable({
 }: TunnelsTableProps) {
   const { t, formatSeen } = useLanguage();
 
+  const head = (
+    <thead>
+      <tr>
+        {COLUMN_KEYS.map((key) => (
+          <th key={key}>{t(`tunnels.table.${key}`)}</th>
+        ))}
+      </tr>
+    </thead>
+  );
+
   if (loading) {
     return (
-      <div className="table-wrap" aria-label="Loading tunnels">
+      <div className="table-wrap" aria-busy="true" aria-label={t("common.loading")}>
         <table>
-          <thead>
-            <tr>
-              {["Name", "Status", "Config", "Connections", "Created"].map((label) => (
-                <th key={label}>{label}</th>
-              ))}
-            </tr>
-          </thead>
+          {head}
           <tbody>
             {Array.from({ length: 3 }, (_, i) => (
               <tr key={i} className="skeleton-row-tr">
-                {Array.from({ length: 5 }, (_, j) => (
-                  <td key={j}>
+                {COLUMN_KEYS.map((key) => (
+                  <td key={key}>
                     <SkeletonBlock className="skeleton-cell" />
                   </td>
                 ))}
@@ -55,11 +61,11 @@ export function TunnelsTable({
     return (
       <div className="empty">
         <p className="empty-title">
-          {hasFilters ? t("tunnels.empty") : "No tunnels yet."}
+          {hasFilters ? t("tunnels.empty") : t("tunnels.emptyNoTunnels")}
         </p>
         {hasFilters ? (
-          <button type="button" className="btn" onClick={onClearFilters}>
-            {t("common.cancel")}
+          <button type="button" className="btn btn-sm" onClick={onClearFilters}>
+            {t("common.clearFilters")}
           </button>
         ) : (
           <button type="button" className="btn btn-primary" onClick={onOpenCreate}>
@@ -73,27 +79,19 @@ export function TunnelsTable({
   return (
     <div className="table-wrap">
       <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Status</th>
-            <th>Config</th>
-            <th>Connections</th>
-            <th>Created</th>
-          </tr>
-        </thead>
+        {head}
         <tbody>
           {tunnels.map((tunnel) => {
             const meta = tunnelStatusMeta(tunnel.status);
             return (
               <tr
                 key={tunnel.id}
-                style={{ cursor: "pointer" }}
+                className="row-clickable"
                 onClick={() => onSelectTunnel(tunnel)}
               >
                 <td>
                   <strong className="name-cell">
-                    <Globe size={16} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0 }} />
+                    <Globe size={16} strokeWidth={2.25} aria-hidden />
                     {tunnel.name}
                   </strong>
                 </td>
@@ -109,12 +107,12 @@ export function TunnelsTable({
                 </td>
                 <td>
                   <span className={`badge ${tunnel.config_src}`}>
-                    {tunnel.config_src === "cloudflare" ? "Cloudflare" : "Local"}
+                    {t(`tunnels.config.${tunnel.config_src}`)}
                   </span>
                 </td>
                 <td>
                   <span className="badge">
-                    {tunnel.connections?.length ?? 0} active
+                    {t("tunnels.activeConnections", { count: tunnel.connections?.length ?? 0 })}
                   </span>
                 </td>
                 <td>{formatSeen(tunnel.created_at)}</td>

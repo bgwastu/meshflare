@@ -7,10 +7,10 @@ import {
   listGatewayRules,
   upsertGatewayRule,
 } from "./gateway";
-import type { Env, Settings, SettingsPatch } from "../types";
-import { patchSettings as patchStoredSettings, readAppData, updateAppData } from "../db/settings";
+import type { Env } from "../types";
+import { readAppData, updateAppData } from "../db/settings";
+import { settingsFromData } from "../settings";
 
-const DEFAULT_FILTER_URL = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt";
 export const FILTER_LIST_PREFIX = "meshflare-dns-filter";
 export const FILTER_RULE_NAME = "meshflare DNS filter";
 const LIST_CHUNK = 1000;
@@ -38,83 +38,6 @@ function normalizeDomain(line: string): string | null {
     return null;
   }
   return s;
-}
-
-function normalizeMeshSuffix(raw: string, fallback = "mesh"): string {
-  const s = raw
-    .trim()
-    .toLowerCase()
-    .replace(/^\.+/, "")
-    .replace(/[^a-z0-9.-]+/g, "")
-    .replace(/\.+/g, ".")
-    .replace(/^\.+|\.+$/g, "");
-  if (!s || s.length > 63 || !/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(s)) {
-    return fallback;
-  }
-  return s;
-}
-
-function normalizeFilterUrl(raw: string, fallback = DEFAULT_FILTER_URL): string {
-  const trimmed = raw.trim();
-  if (!trimmed) return fallback;
-  try {
-    const u = new URL(trimmed);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return fallback;
-    return u.toString();
-  } catch {
-    return fallback;
-  }
-}
-
-export async function getMeshSuffix(env: Env): Promise<string> {
-  const data = await readAppData(env.DB);
-  return normalizeMeshSuffix(data.meshSuffix || "mesh");
-}
-
-export async function getSettings(env: Env): Promise<Settings> {
-  const d = await readAppData(env.DB);
-  const offlineDays = Number(d.offlineDays);
-  return {
-    offlineDays: Number.isFinite(offlineDays) && offlineDays > 0 ? offlineDays : 7,
-    dnsFilterEnabled: Boolean(d.dnsFilterEnabled),
-    dnsFilterStatus: d.dnsFilterStatus || "idle",
-    dnsFilterUrl: normalizeFilterUrl(d.dnsFilterUrl || DEFAULT_FILTER_URL),
-    dnsFilterLastSyncedAt: d.dnsFilterLastSyncedAt || null,
-    meshSuffix: await getMeshSuffix(env),
-    lastDnsSyncAt: d.lastDnsSyncAt || null,
-    lastCleanupAt: d.lastCleanupAt || null,
-  };
-}
-
-export async function updateSettings(env: Env, patch: SettingsPatch): Promise<Settings> {
-  const current = await getSettings(env);
-  const nextUrl = patch.dnsFilterUrl === undefined
-    ? current.dnsFilterUrl
-    : normalizeFilterUrl(patch.dnsFilterUrl);
-  const filterUrlChanged = nextUrl !== current.dnsFilterUrl;
-  const filterStatus = patch.dnsFilterEnabled !== undefined
-    ? patch.dnsFilterEnabled ? "pending_enable" : "pending_disable"
-    : filterUrlChanged && (current.dnsFilterEnabled ||
-      ["pending_enable", "syncing", "pending_refresh", "enabled"].includes(current.dnsFilterStatus))
-      ? "pending_refresh"
-      : current.dnsFilterStatus;
-
-  await patchStoredSettings(env.DB, {
-    ...patch,
-    dnsFilterUrl: nextUrl,
-    meshSuffix: patch.meshSuffix === undefined ? current.meshSuffix : normalizeMeshSuffix(patch.meshSuffix),
-  });
-  await updateAppData(env.DB, { dnsFilterStatus: filterStatus });
-
-  return getSettings(env);
-}
-
-export async function markDnsSynced(env: Env): Promise<void> {
-  await updateAppData(env.DB, { lastDnsSyncAt: new Date().toISOString() });
-}
-
-export async function markCleanupRan(env: Env): Promise<void> {
-  await updateAppData(env.DB, { lastCleanupAt: new Date().toISOString() });
 }
 
 function managedLists(lists: GatewayList[], prefix: string): GatewayList[] {
@@ -213,7 +136,8 @@ async function processDnsFilterTickInternal(
   cf: CloudflareClient,
   env: Env,
 ): Promise<string> {
-  const settings = await getSettings(env);
+  const data = await readAppData(env.DB);
+  const settings = settingsFromData(data);
   let status = settings.dnsFilterStatus;
 
   if (status === "error") {
@@ -256,7 +180,7 @@ async function processDnsFilterTickInternal(
     // thousands of domains just to resume Gateway list creation.
     const domains = await downloadFilterDomains(settings.dnsFilterUrl);
 
-    const cursor = (await readAppData(env.DB)).dnsFilterCursor || 0;
+    const cursor = data.dnsFilterCursor || 0;
     const existing = managedLists(await listGatewayLists(cf), FILTER_LIST_PREFIX);
     const existingChunkIndexes = new Set(
       existing.map((l) => {

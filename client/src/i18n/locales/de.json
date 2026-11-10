@@ -7,7 +7,9 @@
     "all": "Alle",
     "actions": "Aktionen",
     "cancel": "Abbrechen",
+    "clearFilters": "Filter zurücksetzen",
     "save": "Speichern",
+    "saving": "Wird gespeichert…",
     "create": "Erstellen",
     "delete": "Löschen",
     "edit": "Bearbeiten",
@@ -16,6 +18,7 @@
     "copy": "Kopieren",
     "copied": "In die Zwischenablage kopiert",
     "loading": "Wird geladen…",
+    "language": "Sprache",
     "unknown": "Unbekannt",
     "close": "Schließen",
     "confirm": "Bestätigen",
@@ -34,6 +37,7 @@
     "mesh": "Mesh",
     "tunnels": "Tunnels",
     "settings": "Einstellungen",
+    "primary": "Hauptnavigation",
     "account": "Konto",
     "logout": "Abmelden"
   },
@@ -75,13 +79,23 @@
       "status": "Status",
       "actions": "Aktionen"
     },
+    "table": {
+      "name": "Name",
+      "status": "Status",
+      "domain": "Domain",
+      "ipv4": "IPv4",
+      "lastSeen": "Zuletzt gesehen"
+    },
     "empty": "Keine Knoten oder Geräte gefunden.",
+    "emptyNoEntries": "Noch keine Mesh-Einträge.",
     "count_one": "{{count}} Maschine",
     "count_other": "{{count}} Maschinen",
     "drawer": {
       "titleNode": "Mesh-Knotendetails",
       "titleDevice": "Gerätedetails",
       "close": "Seitenleiste schließen",
+      "edit": "Name und Hostname bearbeiten",
+      "customHostname": "Benutzerdefiniert",
       "tabs": {
         "details": "Details",
         "routes": "Routen",
@@ -123,17 +137,26 @@
       "nodeNamePlaceholder": "z. B. srv-gateway-01",
       "createBtn": "Knoten erstellen",
       "creatingBtn": "Wird erstellt…",
-      "renameTitle": "Maschine umbenennen",
-      "renameDesc": "Anzeigename dieser Maschine im Mesh-Netzwerk ändern.",
-      "newNameLabel": "Neuer Maschinenname",
+      "editTitle": "Gerät bearbeiten",
+      "editDesc": "Benenne dieses Gerät um oder gib ihm einen eigenen Mesh-Hostnamen.",
+      "nameLabel": "Name",
+      "hostnameLabel": "Mesh-Hostname",
+      "hostnameHint": "Leer lassen, um {{hostname}} (aus dem Namen abgeleitet) zu verwenden.",
+      "hostnameInvalid": "Nur Kleinbuchstaben, Ziffern und innere Bindestriche (max. 63 Zeichen).",
       "deleteTitle": "Maschine löschen",
+      "deleteTitleNode": "Knoten löschen",
+      "deleteTitleDevice": "Gerät löschen",
       "deleteConfirm": "Sind Sie sicher, dass Sie {{name}} löschen möchten? Dies kann nicht rückgängig gemacht werden.",
       "deleteWarning": "Alle angekündigten Routen und aktiven Verbindungen dieses Knotens werden beendet.",
       "confirmDeleteBtn": "Maschine löschen",
+      "confirmDeleteBtnNode": "Knoten löschen",
+      "confirmDeleteBtnDevice": "Gerät löschen",
       "deletingBtn": "Wird gelöscht…",
       "addRouteTitle": "Netzwerkroute hinzufügen",
       "addRouteDesc": "Interne CIDR-Netzwerke oder Hostnames über diesen Connector leiten.",
       "routeTypeLabel": "Zieltyp",
+      "typeCidrShort": "CIDR",
+      "typeHostnameShort": "Hostname",
       "typeCidr": "CIDR-Netzwerk (z. B. 192.168.1.0/24)",
       "typeHostname": "Interner Hostname (z. B. app.internal.net)",
       "networkPlaceholder": "192.168.10.0/24",
@@ -168,7 +191,19 @@
       "created": "Erstellt am",
       "actions": "Aktionen"
     },
+    "table": {
+      "name": "Name",
+      "status": "Status",
+      "config": "Konfiguration",
+      "connections": "Verbindungen",
+      "created": "Erstellt"
+    },
+    "config": {
+      "cloudflare": "Cloudflare",
+      "local": "Lokal"
+    },
     "empty": "Keine Tunnel gefunden.",
+    "emptyNoTunnels": "Noch keine Tunnel.",
     "count_one": "{{count}} Tunnel",
     "count_other": "{{count}} Tunnel",
     "drawer": {
@@ -234,11 +269,13 @@
       "serviceTip": "Unterstützte Protokolle: http://, https://, tcp://, ssh://, rdp://, unix:",
       "saveRuleBtn": "Ingress-Regel speichern",
       "savingRuleBtn": "Wird gespeichert…"
-    }
+    },
+    "activeConnections": "{{count}} aktiv"
   },
   "settings": {
     "title": "Einstellungen",
     "subtitle": "Globale Cloudflare Zero Trust-Konfigurationen, Bereinigung und DNS-Regeln",
+    "loadFailed": "Einstellungen konnten nicht geladen werden.",
     "account": {
       "title": "Cloudflare-Konto",
       "nameLabel": "Kontoname",
@@ -252,7 +289,8 @@
       "suffixPlaceholder": "mesh",
       "saveBtn": "Suffix speichern",
       "savingBtn": "Wird gespeichert…",
-      "syncNotice": "Das Ändern dieses Suffixes löst automatisch eine vollständige DNS-Neusynchronisation aus."
+      "syncNotice": "Das Ändern dieses Suffixes löst automatisch eine vollständige DNS-Neusynchronisation aus.",
+      "warpFallbackWarning": "Warnung: .{{suffix}} steht auf der Local-Domain-Fallback-Liste von Cloudflare WARP und umgeht die Gateway-DNS-Auflösung."
     },
     "cleanup": {
       "title": "Bereinigung inaktiver Geräte",
@@ -266,11 +304,19 @@
     "splitTunnels": {
       "title": "WARP Split Tunnels",
       "description": "Steuern, ob interner Traffic vom WARP-Client ausgeschlossen oder über ihn geroutet wird.",
+      "loadFailed": "Split-Tunnel-Regeln konnten nicht geladen werden.",
       "modeLabel": "Routing-Richtlinienmodus",
       "modeExclude": "Ausschließen (Split Tunnel) — Traffic umgeht WARP",
       "modeInclude": "Einschließen (Direct Tunnel) — Nur angegebener Traffic nutzt WARP",
+      "modeExcludeHint": "Der gesamte Traffic läuft über WARP, außer zu den aufgeführten Zielen.",
+      "modeIncludeHint": "Nur die aufgeführten Ziele laufen über WARP.",
+      "modeSwitchLabel": "Split-Tunnel-Modus",
       "auditWarning": "Warnung: Das Mesh-Subnetz (100.64.0.0/10) ist derzeit ausgeschlossen, was das Mesh-Routing blockiert.",
       "auditResolved": "Mesh-Routing-Konfiguration ist optimal.",
+      "meshRoutingWarning": "Warnung zum Mesh-IP-Routing",
+      "fixRoutingBtn": "Routing korrigieren",
+      "fixingRoutingBtn": "Wird korrigiert…",
+      "meshRoutingFixed": "Split Tunnels aktualisiert: Mesh-IPs werden jetzt über WARP geleitet.",
       "addEntryBtn": "Regel hinzufügen",
       "emptyList": "Keine Split-Tunnel-Regeln definiert.",
       "colAddressHost": "IP-Netzwerk oder Domäne",
@@ -295,6 +341,7 @@
       "enabledBadge": "Aktiv",
       "disabledBadge": "Deaktiviert",
       "statusLabel": "Status der Filter-Engine",
+      "lastRefresh": "Zuletzt aktualisiert {{when}}.",
       "customUrlLabel": "Blocklist-Quell-URL",
       "customUrlPlaceholder": "https://...",
       "resetDefaultBtn": "Auf Standard zurücksetzen (HaGeZi Light)",
@@ -308,7 +355,9 @@
       "defaultLocation": "Standard-Client-Standort",
       "dohSubdomain": "DoH-Subdomain-Endpunkt",
       "ipv4Dest": "Primärer IPv4-Endpunkt",
-      "ipv4Backup": "Sekundärer IPv4-Backup-Endpunkt"
+      "ipv4Backup": "Sekundärer IPv4-Backup-Endpunkt",
+      "ipv6Dest": "IPv6-Endpunkt",
+      "noLocation": "Kein Standard-Gateway-DNS-Standort gefunden."
     },
     "maintenance": {
       "title": "Systemintegrität & Wartung",
@@ -316,6 +365,11 @@
       "statusLabel": "Konfigurationsintegrität",
       "healthyNotice": "Alle Cloudflare Zero Trust-Konfigurationen sind vollständig synchronisiert und fehlerfrei.",
       "degradedNotice": "Diskrepanz zwischen Datenbankstatus und Cloudflare Gateway festgestellt.",
+      "outOfSync": "Nicht synchron",
+      "runNow": "Jetzt ausführen",
+      "lastRun": "Letzte Ausführung {{when}}.",
+      "filterDetail": "Filter: {{detail}}.",
+      "meshDetail": "Mesh: {{detail}}.",
       "repairBtn": "Systemstatus reparieren",
       "repairingBtn": "Wird repariert…"
     }
@@ -359,8 +413,8 @@
     "cleanupFailed": "Fehler bei der Bereinigungsausführung.",
     "nodeCreated": "Mesh-Knoten erfolgreich erstellt.",
     "nodeCreateFailed": "Fehler beim Erstellen des Mesh-Knotens.",
-    "machineRenamed": "Maschine erfolgreich umbenannt.",
-    "machineRenameFailed": "Fehler beim Umbenennen der Maschine.",
+    "machineUpdated": "Gerät aktualisiert.",
+    "machineUpdateFailed": "Gerät konnte nicht aktualisiert werden.",
     "tokenRegenerated": "Connector-Token neu generiert.",
     "tokenRegenerateFailed": "Fehler beim Neugenerieren des Tokens.",
     "machineDeleted": "Maschine aus Mesh entfernt.",

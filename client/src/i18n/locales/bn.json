@@ -7,7 +7,9 @@
     "all": "সকল",
     "actions": "ক্রিয়াকলাপ",
     "cancel": "বাতিল",
+    "clearFilters": "ফিল্টার মুছুন",
     "save": "সংরক্ষণ",
+    "saving": "সংরক্ষণ হচ্ছে…",
     "create": "তৈরি করুন",
     "delete": "মুছে ফেলুন",
     "edit": "সম্পাদনা",
@@ -16,6 +18,7 @@
     "copy": "কপি",
     "copied": "ক্লিপবোর্ডে কপি করা হয়েছে",
     "loading": "লোড হচ্ছে…",
+    "language": "ভাষা",
     "unknown": "অজানা",
     "close": "বন্ধ করুন",
     "confirm": "নিশ্চিত করুন",
@@ -34,6 +37,7 @@
     "mesh": "Mesh",
     "tunnels": "Tunnels",
     "settings": "সেটিংস",
+    "primary": "প্রধান",
     "account": "অ্যাকাউন্ট",
     "logout": "সাইন আউট"
   },
@@ -75,13 +79,23 @@
       "status": "অবস্থা",
       "actions": "ক্রিয়াকলাপ"
     },
+    "table": {
+      "name": "নাম",
+      "status": "অবস্থা",
+      "domain": "ডোমেইন",
+      "ipv4": "IPv4",
+      "lastSeen": "সর্বশেষ দেখা"
+    },
     "empty": "কোনো নোড বা ডিভাইস পাওয়া যায়নি।",
+    "emptyNoEntries": "এখনও কোনো মেশ এন্ট্রি নেই।",
     "count_one": "{{count}}টি মেশিন",
     "count_other": "{{count}}টি মেশিন",
     "drawer": {
       "titleNode": "মেশ নোড বিবরণ",
       "titleDevice": "ডিভাইস বিবরণ",
       "close": "প্যানেল বন্ধ করুন",
+      "edit": "নাম ও হোস্টনেম সম্পাদনা করুন",
+      "customHostname": "কাস্টম",
       "tabs": {
         "details": "বিবরণ",
         "routes": "রুট",
@@ -123,17 +137,26 @@
       "nodeNamePlaceholder": "যেমন: srv-gateway-01",
       "createBtn": "নোড তৈরি করুন",
       "creatingBtn": "তৈরি হচ্ছে…",
-      "renameTitle": "মেশিনের নাম পরিবর্তন করুন",
-      "renameDesc": "আপনার মেশ নেটওয়ার্কে এই মেশিনের প্রদর্শন নাম পরিবর্তন করুন।",
-      "newNameLabel": "নতুন মেশিনের নাম",
+      "editTitle": "মেশিন সম্পাদনা করুন",
+      "editDesc": "এই মেশিনের নাম বদলান বা একটি কাস্টম মেশ হোস্টনেম দিন।",
+      "nameLabel": "নাম",
+      "hostnameLabel": "মেশ হোস্টনেম",
+      "hostnameHint": "নামের ভিত্তিতে {{hostname}} ব্যবহার করতে খালি রাখুন।",
+      "hostnameInvalid": "ছোট হাতের অক্ষর, সংখ্যা ও মাঝের হাইফেন ব্যবহার করুন (সর্বোচ্চ ৬৩ অক্ষর)।",
       "deleteTitle": "মেশিন মুছুন",
+      "deleteTitleNode": "নোড মুছুন",
+      "deleteTitleDevice": "ডিভাইস মুছুন",
       "deleteConfirm": "আপনি কি নিশ্চিতভাবে {{name}} মুছতে চান? এটি পূর্বাবস্থায় ফেরানো যাবে না।",
       "deleteWarning": "এই নোডের সমস্ত বিজ্ঞাপিত রুট এবং সক্রিয় সংযোগ অবিলম্বে বন্ধ হয়ে যাবে।",
       "confirmDeleteBtn": "মেশিন মুছুন",
+      "confirmDeleteBtnNode": "নোড মুছুন",
+      "confirmDeleteBtnDevice": "ডিভাইস মুছুন",
       "deletingBtn": "মুছে ফেলা হচ্ছে…",
       "addRouteTitle": "নেটওয়ার্ক রুট যোগ করুন",
       "addRouteDesc": "এই কানেক্টর নোডের মাধ্যমে অভ্যন্তরীণ নেটওয়ার্ক CIDR বা হোস্টনাম রুট করুন।",
       "routeTypeLabel": "রুট লক্ষ্যের ধরন",
+      "typeCidrShort": "CIDR",
+      "typeHostnameShort": "হোস্টনেম",
       "typeCidr": "CIDR নেটওয়ার্ক (যেমন: 192.168.1.0/24)",
       "typeHostname": "অভ্যন্তরীণ হোস্টনাম (যেমন: app.internal.net)",
       "networkPlaceholder": "192.168.10.0/24",
@@ -168,7 +191,19 @@
       "created": "তৈরি হয়েছে",
       "actions": "ক্রিয়াকলাপ"
     },
+    "table": {
+      "name": "নাম",
+      "status": "অবস্থা",
+      "config": "কনফিগ",
+      "connections": "সংযোগ",
+      "created": "তৈরি"
+    },
+    "config": {
+      "cloudflare": "Cloudflare",
+      "local": "লোকাল"
+    },
     "empty": "কোনো টানেল পাওয়া যায়নি।",
+    "emptyNoTunnels": "এখনও কোনো টানেল নেই।",
     "count_one": "{{count}}টি টানেল",
     "count_other": "{{count}}টি টানেল",
     "drawer": {
@@ -234,11 +269,13 @@
       "serviceTip": "সমর্থিত প্রোটোকল: http://, https://, tcp://, ssh://, rdp://, unix:",
       "saveRuleBtn": "ইনগ্রেস নিয়ম সংরক্ষণ করুন",
       "savingRuleBtn": "সংরক্ষণ হচ্ছে…"
-    }
+    },
+    "activeConnections": "{{count}}টি সক্রিয়"
   },
   "settings": {
     "title": "সেটিংস",
     "subtitle": "গ্লোবাল Cloudflare Zero Trust কনফিগারেশন, ক্লিনআপ এবং DNS নিয়ম",
+    "loadFailed": "সেটিংস লোড করা যায়নি।",
     "account": {
       "title": "Cloudflare অ্যাকাউন্ট",
       "nameLabel": "অ্যাকাউন্টের নাম",
@@ -252,7 +289,8 @@
       "suffixPlaceholder": "mesh",
       "saveBtn": "প্রত্যয় সংরক্ষণ করুন",
       "savingBtn": "সংরক্ষণ হচ্ছে…",
-      "syncNotice": "এই প্রত্যয় পরিবর্তন করলে স্বয়ংক্রিয়ভাবে সম্পূর্ণ DNS পুনর্সমন্বয় শুরু হবে।"
+      "syncNotice": "এই প্রত্যয় পরিবর্তন করলে স্বয়ংক্রিয়ভাবে সম্পূর্ণ DNS পুনর্সমন্বয় শুরু হবে।",
+      "warpFallbackWarning": "সতর্কতা: .{{suffix}} Cloudflare WARP-এর Local Domain Fallback তালিকায় আছে এবং Gateway DNS রেজোলিউশন বাইপাস করবে।"
     },
     "cleanup": {
       "title": "অফলাইন ডিভাইস ক্লিনআপ",
@@ -266,11 +304,19 @@
     "splitTunnels": {
       "title": "WARP স্প্লিট টানেল",
       "description": "অভ্যন্তরীণ ট্র্যাফিক WARP ক্লায়েন্ট থেকে বাদ দেওয়া হবে নাকি এর মাধ্যমে রুট করা হবে তা নিয়ন্ত্রণ করুন।",
+      "loadFailed": "স্প্লিট টানেল নিয়ম লোড করা যায়নি।",
       "modeLabel": "রাউটিং নীতি মোড",
       "modeExclude": "বাদ দিন (Split Tunnel) — ট্র্যাফিক WARP বাইপাস করে",
       "modeInclude": "অন্তর্ভুক্ত করুন (Direct Tunnel) — শুধুমাত্র নির্দিষ্ট ট্র্যাফিক WARP ব্যবহার করে",
+      "modeExcludeHint": "তালিকাভুক্ত গন্তব্য ছাড়া সব ট্র্যাফিক WARP-এর মাধ্যমে যায়।",
+      "modeIncludeHint": "শুধু তালিকাভুক্ত গন্তব্য WARP-এর মাধ্যমে যায়।",
+      "modeSwitchLabel": "স্প্লিট টানেল মোড",
       "auditWarning": "সতর্কতা: মেশ নেটওয়ার্ক সাবনেট (100.64.0.0/10) বর্তমানে বাদ দেওয়া হয়েছে, যা মেশ রাউটিং ব্যাহত করে।",
       "auditResolved": "মেশ রাউটিং কনফিগারেশন উপযুক্ত ও সর্বোত্তম অবস্থায় আছে।",
+      "meshRoutingWarning": "মেশ IP রাউটিং সতর্কতা",
+      "fixRoutingBtn": "রাউটিং ঠিক করুন",
+      "fixingRoutingBtn": "ঠিক করা হচ্ছে…",
+      "meshRoutingFixed": "মেশ IP WARP-এর মাধ্যমে রাউট করতে স্প্লিট টানেল আপডেট করা হয়েছে।",
       "addEntryBtn": "নিয়ম যোগ করুন",
       "emptyList": "কোনো স্প্লিট টানেল নিয়ম নির্ধারিত নেই।",
       "colAddressHost": "IP নেটওয়ার্ক বা ডোমেন",
@@ -295,6 +341,7 @@
       "enabledBadge": "সক্রিয়",
       "disabledBadge": "নিষ্ক্রিয়",
       "statusLabel": "ফিল্টার ইঞ্জিন অবস্থা",
+      "lastRefresh": "সর্বশেষ রিফ্রেশ {{when}}।",
       "customUrlLabel": "ব্লকলিস্ট উৎস URL",
       "customUrlPlaceholder": "https://...",
       "resetDefaultBtn": "ডিফল্ট তালিকায় রিসেট করুন (HaGeZi Light)",
@@ -308,7 +355,9 @@
       "defaultLocation": "ডিফল্ট ক্লায়েন্ট অবস্থান",
       "dohSubdomain": "DoH সাবডোমেন এন্ডপয়েন্ট",
       "ipv4Dest": "প্রাথমিক IPv4 গন্তব্য",
-      "ipv4Backup": "সেকেন্ডারি IPv4 ব্যাকআপ"
+      "ipv4Backup": "সেকেন্ডারি IPv4 ব্যাকআপ",
+      "ipv6Dest": "IPv6 গন্তব্য",
+      "noLocation": "কোনো ডিফল্ট Gateway DNS লোকেশন পাওয়া যায়নি।"
     },
     "maintenance": {
       "title": "সিস্টেম স্বাস্থ্য ও রক্ষণাবেক্ষণ",
@@ -316,6 +365,11 @@
       "statusLabel": "কনফিগারেশন অখণ্ডতা",
       "healthyNotice": "সমস্ত Cloudflare Zero Trust কনফিগারেশন সম্পূর্ণরূপে সিঙ্ক করা এবং সুস্থ।",
       "degradedNotice": "ডেটাবেস অবস্থা এবং Cloudflare Gateway এর মধ্যে অসামঞ্জস্য সনাক্ত হয়েছে।",
+      "outOfSync": "সিঙ্কের বাইরে",
+      "runNow": "এখনই চালান",
+      "lastRun": "সর্বশেষ চালানো {{when}}।",
+      "filterDetail": "ফিল্টার: {{detail}}।",
+      "meshDetail": "মেশ: {{detail}}।",
       "repairBtn": "সিস্টেম অবস্থা মেরামত করুন",
       "repairingBtn": "মেরামত হচ্ছে…"
     }
@@ -359,8 +413,8 @@
     "cleanupFailed": "পরিষ্কার কার্যকর করতে ব্যর্থ হয়েছে।",
     "nodeCreated": "মেশ নোড সফলভাবে তৈরি হয়েছে।",
     "nodeCreateFailed": "মেশ নোড তৈরি করতে ব্যর্থ হয়েছে।",
-    "machineRenamed": "মেশিনের নাম সফলভাবে পরিবর্তন করা হয়েছে।",
-    "machineRenameFailed": "মেশিনের নাম পরিবর্তন করতে ব্যর্থ হয়েছে।",
+    "machineUpdated": "মেশিন আপডেট হয়েছে।",
+    "machineUpdateFailed": "মেশিন আপডেট করা যায়নি।",
     "tokenRegenerated": "কানেক্টর টোকেন পুনর্জন্ম সম্পন্ন হয়েছে।",
     "tokenRegenerateFailed": "টোকেন পুনরায় তৈরি করতে ব্যর্থ হয়েছে।",
     "machineDeleted": "মেশিন মেশ থেকে মুছে ফেলা হয়েছে।",

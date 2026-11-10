@@ -4,7 +4,7 @@ import { SkeletonBlock } from "../ui/Skeleton";
 import { useLanguage } from "../../hooks/useLanguage";
 import type { MeshEntry } from "../../lib/api";
 
-export type SortKey = "name" | "status" | "meshHostname" | "ipv4" | "lastSeenAt";
+export type SortKey = "name" | "status" | "meshHostname" | "ipv4" | "lastSeenAt" | "createdAt";
 
 type MeshTableProps = {
   entries: MeshEntry[];
@@ -18,6 +18,8 @@ type MeshTableProps = {
   onClearFilters: () => void;
   onToast: (msg: string) => void;
 };
+
+const COLUMN_KEYS = ["name", "status", "meshHostname", "ipv4", "lastSeenAt"] as const;
 
 export function MeshTable({
   entries,
@@ -33,22 +35,30 @@ export function MeshTable({
 }: MeshTableProps) {
   const { t, formatSeen } = useLanguage();
 
+  const columnLabels: Record<(typeof COLUMN_KEYS)[number], string> = {
+    name: t("mesh.table.name"),
+    status: t("mesh.table.status"),
+    meshHostname: t("mesh.table.domain"),
+    ipv4: t("mesh.table.ipv4"),
+    lastSeenAt: t("mesh.table.lastSeen"),
+  };
+
   if (loading) {
     return (
-      <div className="table-wrap" aria-label="Loading mesh entries">
+      <div className="table-wrap" aria-busy="true" aria-label={t("common.loading")}>
         <table>
           <thead>
             <tr>
-              {["Name", "Status", "Domain", "IPv4", "Last seen"].map((label) => (
-                <th key={label}>{label}</th>
+              {COLUMN_KEYS.map((key) => (
+                <th key={key}>{columnLabels[key]}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {Array.from({ length: 5 }, (_, i) => (
               <tr key={i} className="skeleton-row-tr">
-                {Array.from({ length: 5 }, (_, j) => (
-                  <td key={j}>
+                {COLUMN_KEYS.map((key) => (
+                  <td key={key}>
                     <SkeletonBlock className="skeleton-cell" />
                   </td>
                 ))}
@@ -64,11 +74,11 @@ export function MeshTable({
     return (
       <div className="empty">
         <p className="empty-title">
-          {hasFilters ? t("mesh.empty") : "No mesh entries yet."}
+          {hasFilters ? t("mesh.empty") : t("mesh.emptyNoEntries")}
         </p>
         {hasFilters ? (
-          <button type="button" className="btn" onClick={onClearFilters}>
-            {t("common.cancel")}
+          <button type="button" className="btn btn-sm" onClick={onClearFilters}>
+            {t("common.clearFilters")}
           </button>
         ) : (
           <button type="button" className="btn btn-primary" onClick={onOpenCreate}>
@@ -79,26 +89,19 @@ export function MeshTable({
     );
   }
 
-  const columns: [SortKey, string][] = [
-    ["name", t("mesh.sort.name")],
-    ["status", t("mesh.columns.status")],
-    ["meshHostname", "Domain"],
-    ["ipv4", "IPv4"],
-    ["lastSeenAt", t("mesh.sort.lastSeenAt")],
-  ];
-
   return (
     <div className="table-wrap">
       <table>
         <thead>
           <tr>
-            {columns.map(([key, label]) => (
+            {COLUMN_KEYS.map((key) => (
               <th
                 key={key}
                 className={`sortable ${sortKey === key ? "sorted" : ""}`}
+                aria-sort={sortKey === key ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
                 onClick={() => onSort(key)}
               >
-                {label}
+                {columnLabels[key]}
                 {sortKey === key ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
               </th>
             ))}
@@ -108,7 +111,7 @@ export function MeshTable({
           {entries.map((entry) => (
             <tr
               key={`${entry.kind}-${entry.id}`}
-              style={{ cursor: "pointer" }}
+              className="row-clickable"
               onClick={() => onSelectEntry(entry)}
             >
               <td>
@@ -131,7 +134,7 @@ export function MeshTable({
                   onCopied={() => onToast(t("common.copied"))}
                 />
               </td>
-              <td style={{ color: "var(--muted)", whiteSpace: "nowrap" }}>
+              <td className="cell-muted">
                 {formatSeen(entry.lastSeenAt)}
               </td>
             </tr>

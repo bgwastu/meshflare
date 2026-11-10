@@ -1,10 +1,10 @@
 import type { CloudflareClient } from "./client";
 
-const MESH_RULE_PREFIX = "meshflare DNS";
+export const MESH_RULE_PREFIX = "meshflare DNS";
 
 const DNS_MISSING_GRACE_MS = 5 * 60_000;
 
-type GatewayRule = {
+export type GatewayRule = {
   id: string;
   name: string;
   description?: string;
@@ -23,42 +23,24 @@ type GatewayList = {
 
 type GatewayRuleFilters = "dns" | "http" | "network" | "resolve";
 
-export async function listGatewayRules(
-  cf: CloudflareClient,
-): Promise<GatewayRule[]> {
-  const all: GatewayRule[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await cf.request<GatewayRule[]>(
-      "GET",
-      cf.accountPath(`/gateway/rules?per_page=100&page=${page}`),
-    );
+async function listAllPages<T>(cf: CloudflareClient, path: string): Promise<T[]> {
+  const PER_PAGE = 100;
+  const all: T[] = [];
+  for (let page = 1; page <= 50; page += 1) {
+    const res = await cf.request<T[]>("GET", cf.accountPath(`${path}?per_page=${PER_PAGE}&page=${page}`));
     const batch = res.result ?? [];
     all.push(...batch);
-    if (batch.length < 100) break;
-    page += 1;
-    if (page > 50) break;
+    if (batch.length < PER_PAGE) break;
   }
   return all;
 }
 
-export async function listGatewayLists(
-  cf: CloudflareClient,
-): Promise<GatewayList[]> {
-  const all: GatewayList[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await cf.request<GatewayList[]>(
-      "GET",
-      cf.accountPath(`/gateway/lists?per_page=100&page=${page}`),
-    );
-    const batch = res.result ?? [];
-    all.push(...batch);
-    if (batch.length < 100) break;
-    page += 1;
-    if (page > 50) break;
-  }
-  return all;
+export function listGatewayRules(cf: CloudflareClient): Promise<GatewayRule[]> {
+  return listAllPages<GatewayRule>(cf, "/gateway/rules");
+}
+
+export function listGatewayLists(cf: CloudflareClient): Promise<GatewayList[]> {
+  return listAllPages<GatewayList>(cf, "/gateway/lists");
 }
 
 export async function upsertGatewayRule(
@@ -120,7 +102,7 @@ export async function createGatewayDomainList(
   });
 }
 
-function parseManagedHostKey(rule: GatewayRule): string | null {
+export function parseManagedHostKey(rule: GatewayRule): string | null {
   const prefix = `${MESH_RULE_PREFIX}: `;
   if (rule.name?.startsWith(prefix)) {
     return rule.name.slice(prefix.length).trim() || null;
@@ -129,7 +111,7 @@ function parseManagedHostKey(rule: GatewayRule): string | null {
   return m?.[1] || null;
 }
 
-function isManagedMeshRule(rule: GatewayRule): boolean {
+export function isManagedMeshRule(rule: GatewayRule): boolean {
   return Boolean(
     rule.action === "override" &&
       rule.filters?.includes("dns") &&
@@ -146,10 +128,32 @@ export type DnsSyncStats = {
 };
 
 export type MeshDnsOptions = {
-  purgeHosts?: string[];
-  forceDesired?: Map<string, string[]>;
+  /** Managed hosts to delete right away instead of after the missing-grace period. */
+  purgeHosts?: Iterable<string>;
+  /** Delete every unmatched managed rule immediately (e.g. after a suffix change). */
   purgeAllUnmatched?: boolean;
 };
+
+export function sameIps(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sortedB = b.slice().sort();
+  return a.slice().sort().every((ip, idx) => ip === sortedB[idx]);
+}
+
+export function meshRuleTraffic(host: string): string {
+  return `any(dns.domains[*] == "${host}")`;
+}
+
+/** Managed mesh override rules keyed by the host they resolve. */
+export function managedMeshRulesByHost(rules: GatewayRule[]): Map<string, GatewayRule> {
+  const managed = new Map<string, GatewayRule>();
+  for (const rule of rules) {
+    if (!isManagedMeshRule(rule)) continue;
+    const host = parseManagedHostKey(rule);
+    if (host) managed.set(host, rule);
+  }
+  return managed;
+}
 
 export async function syncMeshDnsRules(
   cf: CloudflareClient,
@@ -157,13 +161,7 @@ export async function syncMeshDnsRules(
   appData: { dnsMissingSince: Record<string, string> },
   options?: MeshDnsOptions,
 ): Promise<{ stats: DnsSyncStats; nextMissingSince: Record<string, string> }> {
-  const rules = await listGatewayRules(cf);
-  const managed = new Map<string, GatewayRule>();
-  for (const rule of rules) {
-    if (!isManagedMeshRule(rule)) continue;
-    const fqdn = parseManagedHostKey(rule);
-    if (fqdn) managed.set(fqdn, rule);
-  }
+  const managed = managedMeshRulesByHost(await listGatewayRules(cf));
 
   let created = 0;
   let updated = 0;
@@ -180,13 +178,8 @@ export async function syncMeshDnsRules(
   for (const [host, ips] of desired) {
     delete missingSince[host];
     const existing = managed.get(host);
-    const currentIps = (existing?.rule_settings?.override_ips ?? []).slice().sort();
-    const targetIps = ips.slice().sort();
-    const targetTraffic = `any(dns.domains[*] == "${host}")`;
-    const ipsMatch =
-      currentIps.length === targetIps.length &&
-      currentIps.every((ip, idx) => ip === targetIps[idx]);
-    const trafficMatch = existing?.traffic === targetTraffic;
+    const ipsMatch = sameIps(existing?.rule_settings?.override_ips ?? [], ips);
+    const trafficMatch = existing?.traffic === meshRuleTraffic(host);
 
     if (existing && ipsMatch && trafficMatch) {
       skipped += 1;
@@ -227,7 +220,7 @@ export async function syncMeshDnsRules(
             enabled: true,
             action: "override",
             filters: ["dns"],
-            traffic: `any(dns.domains[*] == "${host}")`,
+            traffic: meshRuleTraffic(host),
             rule_settings: { override_ips: ips },
             ...(existing?.precedence !== undefined ? { precedence: existing.precedence } : {}),
           },

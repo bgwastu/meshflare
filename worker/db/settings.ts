@@ -1,12 +1,15 @@
 import { eq } from "drizzle-orm";
 import { settings } from "./schema";
-import type { AppData, AppDatabase, SettingsPatch } from "../types";
+import type { AppData, AppDatabase } from "../types";
+
+export const DEFAULT_FILTER_URL =
+  "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt";
 
 const DEFAULT_APP_DATA: AppData = {
   offlineDays: 7,
   dnsFilterEnabled: false,
   dnsFilterStatus: "idle",
-  dnsFilterUrl: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/light.txt",
+  dnsFilterUrl: DEFAULT_FILTER_URL,
   dnsFilterLastSyncedAt: null,
   dnsFilterCursor: 0,
   meshSuffix: "mesh",
@@ -14,23 +17,21 @@ const DEFAULT_APP_DATA: AppData = {
   lastCleanupAt: null,
   dnsMissingSince: {},
   nodeBindings: {},
+  meshLabels: {},
 };
 
-function rowToData(row: typeof settings.$inferSelect): AppData {
-  let dnsMissingSince: Record<string, string> = {};
-  try {
-    dnsMissingSince = JSON.parse(row.dnsMissingSinceJson) as Record<string, string>;
-  } catch {
-    dnsMissingSince = {};
-  }
+type Row = typeof settings.$inferSelect;
 
-  let nodeBindings: Record<string, { deviceId?: string; ipv4?: string | null; ipv6?: string | null }> = {};
+function parseJsonObject<T extends object>(raw: string | null | undefined): T {
   try {
-    nodeBindings = JSON.parse(row.nodeBindingsJson ?? "{}") as Record<string, { deviceId?: string; ipv4?: string | null; ipv6?: string | null }>;
+    const value: unknown = JSON.parse(raw || "{}");
+    return (value && typeof value === "object" && !Array.isArray(value) ? value : {}) as T;
   } catch {
-    nodeBindings = {};
+    return {} as T;
   }
+}
 
+function rowToData(row: Row): AppData {
   return {
     offlineDays: row.offlineDays,
     dnsFilterEnabled: row.dnsFilterEnabled,
@@ -41,69 +42,56 @@ function rowToData(row: typeof settings.$inferSelect): AppData {
     meshSuffix: row.meshSuffix,
     lastDnsSyncAt: row.lastDnsSyncAt,
     lastCleanupAt: row.lastCleanupAt,
-    dnsMissingSince,
-    nodeBindings,
+    dnsMissingSince: parseJsonObject(row.dnsMissingSinceJson),
+    nodeBindings: parseJsonObject(row.nodeBindingsJson),
+    meshLabels: parseJsonObject(row.meshLabelsJson),
   };
 }
+
+/** AppData keys stored as JSON text, mapped to their column. */
+const JSON_COLUMNS = {
+  dnsMissingSince: "dnsMissingSinceJson",
+  nodeBindings: "nodeBindingsJson",
+  meshLabels: "meshLabelsJson",
+} as const satisfies Partial<Record<keyof AppData, keyof Row>>;
 
 let settingsEnsured = false;
 
 async function ensureSettings(db: AppDatabase): Promise<void> {
   if (settingsEnsured) return;
-  await db.insert(settings).values({
-    id: 1,
-    offlineDays: DEFAULT_APP_DATA.offlineDays,
-    dnsFilterEnabled: DEFAULT_APP_DATA.dnsFilterEnabled,
-    dnsFilterStatus: DEFAULT_APP_DATA.dnsFilterStatus,
-    dnsFilterUrl: DEFAULT_APP_DATA.dnsFilterUrl,
-    dnsFilterCursor: DEFAULT_APP_DATA.dnsFilterCursor,
-    meshSuffix: DEFAULT_APP_DATA.meshSuffix,
-    dnsMissingSinceJson: "{}",
-    nodeBindingsJson: "{}",
-  }).onConflictDoNothing();
+  await db
+    .insert(settings)
+    .values({
+      id: 1,
+      offlineDays: DEFAULT_APP_DATA.offlineDays,
+      dnsFilterEnabled: DEFAULT_APP_DATA.dnsFilterEnabled,
+      dnsFilterStatus: DEFAULT_APP_DATA.dnsFilterStatus,
+      dnsFilterUrl: DEFAULT_APP_DATA.dnsFilterUrl,
+      dnsFilterCursor: DEFAULT_APP_DATA.dnsFilterCursor,
+      meshSuffix: DEFAULT_APP_DATA.meshSuffix,
+    })
+    .onConflictDoNothing();
   settingsEnsured = true;
 }
 
 export async function readAppData(db: AppDatabase): Promise<AppData> {
   await ensureSettings(db);
   const row = await db.select().from(settings).where(eq(settings.id, 1)).get();
-  return row ? rowToData(row) : DEFAULT_APP_DATA;
+  return row ? rowToData(row) : { ...DEFAULT_APP_DATA };
 }
 
-export async function updateAppData(
-  db: AppDatabase,
-  patch: Partial<AppData>,
-): Promise<AppData> {
-  await ensureSettings(db);
+export async function updateAppData(db: AppDatabase, patch: Partial<AppData>): Promise<void> {
   const values: Partial<typeof settings.$inferInsert> = {};
-  if (patch.offlineDays !== undefined) values.offlineDays = patch.offlineDays;
-  if (patch.dnsFilterEnabled !== undefined) values.dnsFilterEnabled = patch.dnsFilterEnabled;
-  if (patch.dnsFilterStatus !== undefined) values.dnsFilterStatus = patch.dnsFilterStatus;
-  if (patch.dnsFilterUrl !== undefined) values.dnsFilterUrl = patch.dnsFilterUrl;
-  if (patch.dnsFilterLastSyncedAt !== undefined) values.dnsFilterLastSyncedAt = patch.dnsFilterLastSyncedAt;
-  if (patch.dnsFilterCursor !== undefined) values.dnsFilterCursor = patch.dnsFilterCursor;
-  if (patch.meshSuffix !== undefined) values.meshSuffix = patch.meshSuffix;
-  if (patch.lastDnsSyncAt !== undefined) values.lastDnsSyncAt = patch.lastDnsSyncAt;
-  if (patch.lastCleanupAt !== undefined) values.lastCleanupAt = patch.lastCleanupAt;
-  if (patch.dnsMissingSince !== undefined) values.dnsMissingSinceJson = JSON.stringify(patch.dnsMissingSince);
-  if (patch.nodeBindings !== undefined) values.nodeBindingsJson = JSON.stringify(patch.nodeBindings);
-  if (Object.keys(values).length > 0) {
-    await db.update(settings).set(values).where(eq(settings.id, 1));
+  for (const [key, value] of Object.entries(patch) as Array<[keyof AppData, unknown]>) {
+    if (value === undefined || !(key in DEFAULT_APP_DATA)) continue;
+    const jsonColumn = JSON_COLUMNS[key as keyof typeof JSON_COLUMNS];
+    if (jsonColumn) {
+      values[jsonColumn] = JSON.stringify(value);
+    } else {
+      (values as Record<string, unknown>)[key] = value;
+    }
   }
-  return readAppData(db);
-}
-
-export async function patchSettings(
-  db: AppDatabase,
-  patch: SettingsPatch,
-): Promise<AppData> {
-  const current = await readAppData(db);
-  return updateAppData(db, {
-    offlineDays: patch.offlineDays === undefined
-      ? current.offlineDays
-      : Math.max(1, Math.min(365, Math.floor(patch.offlineDays))),
-    meshSuffix: patch.meshSuffix ?? current.meshSuffix,
-    dnsFilterUrl: patch.dnsFilterUrl ?? current.dnsFilterUrl,
-    dnsFilterEnabled: patch.dnsFilterEnabled ?? current.dnsFilterEnabled,
-  });
+  if (Object.keys(values).length === 0) return;
+  await ensureSettings(db);
+  await db.update(settings).set(values).where(eq(settings.id, 1));
 }

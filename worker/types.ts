@@ -12,8 +12,14 @@ export type AppData = {
   lastDnsSyncAt: string | null;
   lastCleanupAt: string | null;
   dnsMissingSince: Record<string, string>;
-  nodeBindings?: Record<string, { deviceId?: string; ipv4?: string | null; ipv6?: string | null }>;
+  nodeBindings: Record<string, NodeBinding>;
+  /** Custom mesh hostname labels keyed by `${kind}:${id}`. */
+  meshLabels: Record<string, string>;
 };
+
+export type NodeBinding = { deviceId?: string; ipv4?: string | null; ipv6?: string | null };
+
+export type MeshKind = "node" | "device";
 
 export type SettingsPatch = Partial<{
   offlineDays: number;
@@ -84,11 +90,13 @@ export type DeviceRegistration = {
 };
 
 export type MeshEntry = {
-  kind: "node" | "device";
+  kind: MeshKind;
   id: string;
   deviceId?: string;
   name: string;
   meshHostname: string | null;
+  /** Custom hostname label; null when the hostname is derived from the name. */
+  meshLabel: string | null;
   ipv4: string | null;
   ipv6: string | null;
   status: string;
@@ -98,9 +106,11 @@ export type MeshEntry = {
   isConnector: boolean;
 };
 
+export type RenameChange = { id: string; kind: MeshKind; from: string; to: string };
+
 export type RenameResult = {
-  renamed: { id: string; kind: "node" | "device"; from: string; to: string };
-  displaced?: { id: string; kind: "node" | "device"; from: string; to: string };
+  renamed: RenameChange;
+  displaced?: RenameChange;
   notice?: string;
 };
 

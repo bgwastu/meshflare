@@ -4,6 +4,8 @@ export type MeshEntry = {
   deviceId?: string;
   name: string;
   meshHostname: string | null;
+  /** Custom hostname label; null when the hostname is derived from the name. */
+  meshLabel: string | null;
   ipv4: string | null;
   ipv6: string | null;
   status: string;
@@ -77,6 +79,14 @@ export type DnsSyncStats = {
   deleted: number;
   skipped: number;
   desired: number;
+};
+
+export type MeshEntryPatch = { name?: string; meshLabel?: string | null };
+
+export type MeshEntryUpdate = {
+  entry: MeshEntry;
+  notice?: string;
+  dns?: DnsSyncStats;
 };
 
 export type Settings = {
@@ -206,13 +216,15 @@ export const api = {
     request<{ ok: boolean }>(`/api/mesh/nodes/${nodeId}/routes/${routeId}`, {
       method: "DELETE",
     }),
-  rename: (kind: "node" | "device", id: string, name: string) =>
-    request<{ notice?: string; renamed: unknown; displaced?: unknown }>(
-      `/api/mesh/${kind}/${id}`,
-      { method: "PATCH", body: JSON.stringify({ name }) },
-    ),
-  remove: (kind: "node" | "device", id: string) =>
-    request<{ ok: boolean }>(`/api/mesh/${kind}/${id}`, { method: "DELETE" }),
+  updateEntry: (kind: MeshEntry["kind"], id: string, patch: MeshEntryPatch) =>
+    request<MeshEntryUpdate>(`/api/mesh/${kind}/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  remove: (kind: MeshEntry["kind"], id: string) =>
+    request<{ ok: boolean; dns?: DnsSyncStats }>(`/api/mesh/${kind}/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
   splitTunnels: () => request<SplitTunnelConfig>("/api/settings/split-tunnels"),
   saveSplitTunnels: (mode: "include" | "exclude", items: SplitTunnelItem[]) =>
     request<SplitTunnelConfig>("/api/settings/split-tunnels", {

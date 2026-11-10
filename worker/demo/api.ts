@@ -15,7 +15,7 @@ type DemoEnv = { DEMO_MODE?: string | boolean };
 export const demoApi = new Hono<{ Bindings: DemoEnv }>();
 
 demoApi.onError((err, c) => {
-  if (err instanceof HTTPException) return err.getResponse();
+  if (err instanceof HTTPException) return c.json({ error: err.message }, err.status);
   console.error(err);
   return c.json({ error: err instanceof Error ? err.message : "Internal error" }, 500);
 });

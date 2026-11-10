@@ -52,39 +52,34 @@ export type SplitTunnelAudit = {
   warning?: string;
 };
 
-export function auditMeshRouting(config: SplitTunnelConfig): SplitTunnelAudit {
-  const meshSubnet = "100.96.0.0/12";
-  const cgnatSubnet = "100.64.0.0/10";
+const MESH_SUBNET = "100.96.0.0/12";
+const CGNAT_SUBNET = "100.64.0.0/10";
 
+/** Include mode: an entry that sends Mesh IPs through WARP. */
+const routesMesh = (item: SplitTunnelItem) =>
+  item.address === MESH_SUBNET || item.address === CGNAT_SUBNET || item.address === "0.0.0.0/0";
+
+/** Exclude mode: an entry that makes Mesh IPs bypass WARP. */
+const bypassesMesh = (item: SplitTunnelItem) =>
+  item.address === MESH_SUBNET || item.address === CGNAT_SUBNET;
+
+export function auditMeshRouting(config: SplitTunnelConfig): SplitTunnelAudit {
   if (config.mode === "include") {
-    const included = config.include.some(
-      (item) =>
-        item.address === meshSubnet ||
-        item.address === cgnatSubnet ||
-        item.address === "0.0.0.0/0",
-    );
-    if (!included) {
-      return {
+    return config.include.some(routesMesh)
+      ? { meshIpsRouted: true }
+      : {
+          meshIpsRouted: false,
+          warning:
+            `Split Tunnels is in Include mode, but the Mesh IP range (${MESH_SUBNET}) is not included. Devices cannot reach each other by .mesh hostname until ${MESH_SUBNET} is added.`,
+        };
+  }
+  return config.exclude.some(bypassesMesh)
+    ? {
         meshIpsRouted: false,
         warning:
-          "Split Tunnels is in Include mode, but the Mesh IP range (100.96.0.0/12) is not included. Devices cannot reach each other by .mesh hostname until 100.96.0.0/12 is added.",
-      };
-    }
-    return { meshIpsRouted: true };
-  }
-
-  const excluded = config.exclude.some(
-    (item) => item.address === meshSubnet || item.address === cgnatSubnet,
-  );
-  if (excluded) {
-    return {
-      meshIpsRouted: false,
-      warning:
-        "Split Tunnels is in Exclude mode and contains 100.64.0.0/10 or 100.96.0.0/12. Traffic to .mesh IPs will bypass WARP. Remove this exclusion for .mesh connectivity.",
-    };
-  }
-
-  return { meshIpsRouted: true };
+          `Split Tunnels is in Exclude mode and contains ${CGNAT_SUBNET} or ${MESH_SUBNET}. Traffic to .mesh IPs will bypass WARP. Remove this exclusion for .mesh connectivity.`,
+      }
+    : { meshIpsRouted: true };
 }
 
 /**
@@ -92,33 +87,12 @@ export function auditMeshRouting(config: SplitTunnelConfig): SplitTunnelAudit {
  * IP space (100.96.0.0/12) is routed through WARP.
  */
 export function ensureMeshRouting(config: SplitTunnelConfig): SplitTunnelConfig {
-  const meshSubnet = "100.96.0.0/12";
-  const cgnatSubnet = "100.64.0.0/10";
-
   if (config.mode === "include") {
-    const included = config.include.some(
-      (item) =>
-        item.address === meshSubnet ||
-        item.address === cgnatSubnet ||
-        item.address === "0.0.0.0/0",
-    );
-    if (!included) {
-      return {
-        ...config,
-        include: [
-          ...config.include,
-          { address: meshSubnet, description: "Cloudflare Mesh (WARP Connector)" },
-        ],
-      };
-    }
-    return config;
+    if (config.include.some(routesMesh)) return config;
+    return {
+      ...config,
+      include: [...config.include, { address: MESH_SUBNET, description: "Cloudflare Mesh (WARP Connector)" }],
+    };
   }
-
-  const nextExclude = config.exclude.filter(
-    (item) => item.address !== meshSubnet && item.address !== cgnatSubnet,
-  );
-  return {
-    ...config,
-    exclude: nextExclude,
-  };
+  return { ...config, exclude: config.exclude.filter((item) => !bypassesMesh(item)) };
 }

@@ -7,7 +7,9 @@
     "all": "Все",
     "actions": "Действия",
     "cancel": "Отмена",
+    "clearFilters": "Сбросить фильтры",
     "save": "Сохранить",
+    "saving": "Сохранение…",
     "create": "Создать",
     "delete": "Удалить",
     "edit": "Редактировать",
@@ -16,6 +18,7 @@
     "copy": "Копировать",
     "copied": "Скопировано в буфер обмена",
     "loading": "Загрузка…",
+    "language": "Язык",
     "unknown": "Неизвестно",
     "close": "Закрыть",
     "confirm": "Подтвердить",
@@ -34,6 +37,7 @@
     "mesh": "Mesh",
     "tunnels": "Tunnels",
     "settings": "Настройки",
+    "primary": "Основная",
     "account": "Аккаунт",
     "logout": "Выйти"
   },
@@ -75,7 +79,15 @@
       "status": "Статус",
       "actions": "Действия"
     },
+    "table": {
+      "name": "Имя",
+      "status": "Статус",
+      "domain": "Домен",
+      "ipv4": "IPv4",
+      "lastSeen": "Последняя активность"
+    },
     "empty": "Узлы или устройства не найдены.",
+    "emptyNoEntries": "Записей Mesh пока нет.",
     "count_one": "{{count}} устройство",
     "count_few": "{{count}} устройства",
     "count_many": "{{count}} устройств",
@@ -84,6 +96,8 @@
       "titleNode": "Сведения об узле Mesh",
       "titleDevice": "Сведения об устройстве",
       "close": "Закрыть панель",
+      "edit": "Изменить имя и хост",
+      "customHostname": "Свой",
       "tabs": {
         "details": "Сведения",
         "routes": "Маршруты",
@@ -125,17 +139,26 @@
       "nodeNamePlaceholder": "напр., srv-gateway-01",
       "createBtn": "Создать узел",
       "creatingBtn": "Создание…",
-      "renameTitle": "Переименовать устройство",
-      "renameDesc": "Измените отображаемое имя этого устройства в сети Mesh.",
-      "newNameLabel": "Новое имя",
+      "editTitle": "Изменить машину",
+      "editDesc": "Переименуйте машину или задайте ей собственное имя хоста в Mesh.",
+      "nameLabel": "Имя",
+      "hostnameLabel": "Имя хоста в Mesh",
+      "hostnameHint": "Оставьте пустым, чтобы использовать {{hostname}} на основе имени.",
+      "hostnameInvalid": "Используйте строчные буквы, цифры и дефисы внутри (не более 63 символов).",
       "deleteTitle": "Удалить устройство",
+      "deleteTitleNode": "Удалить узел",
+      "deleteTitleDevice": "Удалить устройство",
       "deleteConfirm": "Вы уверены, что хотите удалить {{name}}? Это действие необратимо.",
       "deleteWarning": "Все анонсированные маршруты и активные подключения этого узла будут прерваны.",
       "confirmDeleteBtn": "Удалить устройство",
+      "confirmDeleteBtnNode": "Удалить узел",
+      "confirmDeleteBtnDevice": "Удалить устройство",
       "deletingBtn": "Удаление…",
       "addRouteTitle": "Добавить сетевой маршрут",
       "addRouteDesc": "Маршрутизируйте внутренние подсети CIDR или хосты через этот узел.",
       "routeTypeLabel": "Тип маршрута",
+      "typeCidrShort": "CIDR",
+      "typeHostnameShort": "Имя хоста",
       "typeCidr": "Сеть CIDR (напр., 192.168.1.0/24)",
       "typeHostname": "Внутренний хост (напр., app.internal.net)",
       "networkPlaceholder": "192.168.10.0/24",
@@ -170,7 +193,19 @@
       "created": "Создан",
       "actions": "Действия"
     },
+    "table": {
+      "name": "Имя",
+      "status": "Статус",
+      "config": "Конфигурация",
+      "connections": "Подключения",
+      "created": "Создан"
+    },
+    "config": {
+      "cloudflare": "Cloudflare",
+      "local": "Локально"
+    },
     "empty": "Туннели не найдены.",
+    "emptyNoTunnels": "Туннелей пока нет.",
     "count_one": "{{count}} туннель",
     "count_few": "{{count}} туннеля",
     "count_many": "{{count}} туннелей",
@@ -238,11 +273,13 @@
       "serviceTip": "Поддерживаемые протоколы: http://, https://, tcp://, ssh://, rdp://, unix:",
       "saveRuleBtn": "Сохранить правило Ingress",
       "savingRuleBtn": "Сохранение…"
-    }
+    },
+    "activeConnections": "Активно: {{count}}"
   },
   "settings": {
     "title": "Настройки",
     "subtitle": "Глобальные настройки Cloudflare Zero Trust, очистка и правила DNS",
+    "loadFailed": "Не удалось загрузить настройки.",
     "account": {
       "title": "Аккаунт Cloudflare",
       "nameLabel": "Имя аккаунта",
@@ -256,7 +293,8 @@
       "suffixPlaceholder": "mesh",
       "saveBtn": "Сохранить суффикс",
       "savingBtn": "Сохранение…",
-      "syncNotice": "Изменение суффикса автоматически запускает полную повторную синхронизацию DNS."
+      "syncNotice": "Изменение суффикса автоматически запускает полную повторную синхронизацию DNS.",
+      "warpFallbackWarning": "Предупреждение: .{{suffix}} входит в список Local Domain Fallback Cloudflare WARP и будет обходить DNS-разрешение Gateway."
     },
     "cleanup": {
       "title": "Очистка неактивных устройств",
@@ -270,11 +308,19 @@
     "splitTunnels": {
       "title": "Раздельные туннели WARP (Split Tunnels)",
       "description": "Управление тем, исключается ли внутренний трафик или маршрутизируется через клиент WARP.",
+      "loadFailed": "Не удалось загрузить правила раздельного туннелирования.",
       "modeLabel": "Режим политики маршрутизации",
       "modeExclude": "Исключение (Split Tunnel) — Трафик обходит WARP",
       "modeInclude": "Включение (Direct Tunnel) — Только указанный трафик использует WARP",
+      "modeExcludeHint": "Весь трафик идёт через WARP, кроме указанных адресов назначения.",
+      "modeIncludeHint": "Через WARP идёт только трафик к указанным адресам назначения.",
+      "modeSwitchLabel": "Режим раздельного туннелирования",
       "auditWarning": "Предупреждение: Подсеть сети Mesh (100.64.0.0/10) в настоящее время исключена, что блокирует маршрутизацию Mesh.",
       "auditResolved": "Конфигурация маршрутизации Mesh оптимальна.",
+      "meshRoutingWarning": "Предупреждение о маршрутизации IP Mesh",
+      "fixRoutingBtn": "Исправить маршрутизацию",
+      "fixingRoutingBtn": "Исправление…",
+      "meshRoutingFixed": "Раздельные туннели обновлены: IP-адреса Mesh теперь маршрутизируются через WARP.",
       "addEntryBtn": "Добавить правило",
       "emptyList": "Правила раздельного туннелирования не заданы.",
       "colAddressHost": "IP-сеть или домен",
@@ -299,6 +345,7 @@
       "enabledBadge": "Активен",
       "disabledBadge": "Отключен",
       "statusLabel": "Статус механизма фильтрации",
+      "lastRefresh": "Последнее обновление {{when}}.",
       "customUrlLabel": "URL-адрес черного списка",
       "customUrlPlaceholder": "https://...",
       "resetDefaultBtn": "Сбросить по умолчанию (HaGeZi Light)",
@@ -312,7 +359,9 @@
       "defaultLocation": "Локация клиента по умолчанию",
       "dohSubdomain": "Эндпоинт поддомена DoH",
       "ipv4Dest": "Основной адрес IPv4",
-      "ipv4Backup": "Резервный адрес IPv4"
+      "ipv4Backup": "Резервный адрес IPv4",
+      "ipv6Dest": "Адрес IPv6",
+      "noLocation": "Расположение Gateway DNS по умолчанию не найдено."
     },
     "maintenance": {
       "title": "Здоровье системы и обслуживание",
@@ -320,6 +369,11 @@
       "statusLabel": "Целостность конфигурации",
       "healthyNotice": "Все конфигурации Cloudflare Zero Trust полностью синхронизированы и исправны.",
       "degradedNotice": "Обнаружена рассинхронизация между базой данных и Cloudflare Gateway.",
+      "outOfSync": "Не синхронизировано",
+      "runNow": "Запустить сейчас",
+      "lastRun": "Последний запуск {{when}}.",
+      "filterDetail": "Фильтр: {{detail}}.",
+      "meshDetail": "Mesh: {{detail}}.",
       "repairBtn": "Исправить состояние системы",
       "repairingBtn": "Восстановление…"
     }
@@ -363,8 +417,8 @@
     "cleanupFailed": "Не удалось выполнить очистку.",
     "nodeCreated": "Узел Mesh успешно создан.",
     "nodeCreateFailed": "Не удалось создать узел Mesh.",
-    "machineRenamed": "Устройство успешно переименовано.",
-    "machineRenameFailed": "Не удалось переименовать устройство.",
+    "machineUpdated": "Машина обновлена.",
+    "machineUpdateFailed": "Не удалось обновить машину.",
     "tokenRegenerated": "Токен коннектора перевыпущен.",
     "tokenRegenerateFailed": "Не удалось перевыпустить токен.",
     "machineDeleted": "Устройство удалено из Mesh.",

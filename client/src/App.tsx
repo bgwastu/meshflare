@@ -5,8 +5,7 @@ import { TunnelsView } from "./components/tunnels/TunnelsView";
 import { SettingsView } from "./components/settings/SettingsView";
 import { LoginForm } from "./components/auth/LoginForm";
 import { useAuth } from "./hooks/useAuth";
-import { useSettings } from "./hooks/useSettings";
-import { useTunnels } from "./hooks/useTunnels";
+import { useSettingsQuery } from "./hooks/useSettings";
 import { useToasts } from "./lib/toasts";
 
 export function App() {
@@ -20,13 +19,7 @@ export function App() {
     logout,
   } = useAuth();
 
-  const { settings } = useSettings({
-    enabled: !authRequired,
-  });
-
-  const { tunnels } = useTunnels({
-    enabled: !authRequired,
-  });
+  const settings = useSettingsQuery({ enabled: !authRequired }).data ?? null;
 
   const handleToast = (msg: string, tone?: "success" | "error" | "warn") => {
     push(msg, tone === "error" ? "error" : tone === "success" ? "success" : "info");
@@ -54,7 +47,6 @@ export function App() {
     <Layout
       settings={settings}
       authRequired={isConfigured}
-      tunnelsCount={tunnels.length}
       toasts={toasts}
       onDismissToast={dismiss}
       onLogout={async () => {

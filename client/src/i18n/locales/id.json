@@ -7,7 +7,9 @@
     "all": "Semua",
     "actions": "Aksi",
     "cancel": "Batal",
+    "clearFilters": "Hapus filter",
     "save": "Simpan",
+    "saving": "Menyimpan…",
     "create": "Buat",
     "delete": "Hapus",
     "edit": "Edit",
@@ -16,6 +18,7 @@
     "copy": "Salin",
     "copied": "Tersalin ke papan klip",
     "loading": "Memuat…",
+    "language": "Bahasa",
     "unknown": "Tidak Diketahui",
     "close": "Tutup",
     "confirm": "Konfirmasi",
@@ -34,6 +37,7 @@
     "mesh": "Mesh",
     "tunnels": "Tunnels",
     "settings": "Pengaturan",
+    "primary": "Utama",
     "account": "Akun",
     "logout": "Keluar"
   },
@@ -75,13 +79,23 @@
       "status": "Status",
       "actions": "Aksi"
     },
+    "table": {
+      "name": "Nama",
+      "status": "Status",
+      "domain": "Domain",
+      "ipv4": "IPv4",
+      "lastSeen": "Terakhir terlihat"
+    },
     "empty": "Tidak ada node atau perangkat yang ditemukan.",
+    "emptyNoEntries": "Belum ada entri mesh.",
     "count_one": "{{count}} mesin",
     "count_other": "{{count}} mesin",
     "drawer": {
       "titleNode": "Detail Mesh Node",
       "titleDevice": "Detail Perangkat",
       "close": "Tutup panel",
+      "edit": "Ubah nama dan hostname",
+      "customHostname": "Kustom",
       "tabs": {
         "details": "Detail",
         "routes": "Routes",
@@ -123,17 +137,26 @@
       "nodeNamePlaceholder": "cth., srv-gateway-01",
       "createBtn": "Buat Node",
       "creatingBtn": "Membuat…",
-      "renameTitle": "Ubah Nama Mesin",
-      "renameDesc": "Ubah nama tampilan mesin ini di seluruh jaringan mesh Anda.",
-      "newNameLabel": "Nama Mesin Baru",
+      "editTitle": "Ubah mesin",
+      "editDesc": "Ganti nama mesin ini atau beri hostname mesh kustom.",
+      "nameLabel": "Nama",
+      "hostnameLabel": "Hostname mesh",
+      "hostnameHint": "Biarkan kosong untuk memakai {{hostname}}, berdasarkan nama.",
+      "hostnameInvalid": "Gunakan huruf kecil, angka, dan tanda hubung di tengah (maks. 63 karakter).",
       "deleteTitle": "Hapus Mesin",
+      "deleteTitleNode": "Hapus Node",
+      "deleteTitleDevice": "Hapus Perangkat",
       "deleteConfirm": "Apakah Anda yakin ingin menghapus {{name}}? Tindakan ini tidak dapat dibatalkan.",
       "deleteWarning": "Semua routes yang diumumkan dan koneksi aktif untuk node ini akan diputus.",
       "confirmDeleteBtn": "Hapus Mesin",
+      "confirmDeleteBtnNode": "Hapus Node",
+      "confirmDeleteBtnDevice": "Hapus Perangkat",
       "deletingBtn": "Menghapus…",
       "addRouteTitle": "Tambah Route Jaringan",
       "addRouteDesc": "Rute CIDR jaringan internal atau hostname melalui node connector ini.",
       "routeTypeLabel": "Jenis Target Route",
+      "typeCidrShort": "CIDR",
+      "typeHostnameShort": "Hostname",
       "typeCidr": "Jaringan CIDR (cth., 192.168.1.0/24)",
       "typeHostname": "Hostname Internal (cth., app.internal.net)",
       "networkPlaceholder": "192.168.10.0/24",
@@ -168,7 +191,19 @@
       "created": "Dibuat",
       "actions": "Aksi"
     },
+    "table": {
+      "name": "Nama",
+      "status": "Status",
+      "config": "Konfigurasi",
+      "connections": "Koneksi",
+      "created": "Dibuat"
+    },
+    "config": {
+      "cloudflare": "Cloudflare",
+      "local": "Lokal"
+    },
     "empty": "Tidak ada tunnel yang ditemukan.",
+    "emptyNoTunnels": "Belum ada tunnel.",
     "count_one": "{{count}} tunnel",
     "count_other": "{{count}} tunnels",
     "drawer": {
@@ -234,11 +269,13 @@
       "serviceTip": "Protokol yang didukung: http://, https://, tcp://, ssh://, rdp://, unix:",
       "saveRuleBtn": "Simpan Aturan Ingress",
       "savingRuleBtn": "Menyimpan…"
-    }
+    },
+    "activeConnections": "{{count}} aktif"
   },
   "settings": {
     "title": "Pengaturan",
     "subtitle": "Konfigurasi global Cloudflare Zero Trust, pembersihan, dan aturan DNS",
+    "loadFailed": "Gagal memuat pengaturan.",
     "account": {
       "title": "Akun Cloudflare",
       "nameLabel": "Nama Akun",
@@ -252,7 +289,8 @@
       "suffixPlaceholder": "mesh",
       "saveBtn": "Simpan Akhiran",
       "savingBtn": "Menyimpan…",
-      "syncNotice": "Mengubah akhiran ini otomatis memicu sinkronisasi ulang DNS menyeluruh."
+      "syncNotice": "Mengubah akhiran ini otomatis memicu sinkronisasi ulang DNS menyeluruh.",
+      "warpFallbackWarning": "Peringatan: .{{suffix}} ada dalam daftar Local Domain Fallback Cloudflare WARP dan akan melewati resolusi DNS Gateway."
     },
     "cleanup": {
       "title": "Pembersihan Perangkat Offline",
@@ -266,11 +304,19 @@
     "splitTunnels": {
       "title": "WARP Split Tunnels",
       "description": "Kontrol apakah lalu lintas internal dikecualikan dari atau dirutekan melalui klien Cloudflare Zero Trust WARP.",
+      "loadFailed": "Gagal memuat aturan split tunnel.",
       "modeLabel": "Mode Kebijakan Perutean",
       "modeExclude": "Kecualikan (Split Tunnel) — Lalu lintas melewati WARP",
       "modeInclude": "Sertakan (Direct Tunnel) — Hanya lalu lintas tertentu yang menggunakan WARP",
+      "modeExcludeHint": "Semua lalu lintas melewati WARP kecuali tujuan yang terdaftar.",
+      "modeIncludeHint": "Hanya tujuan yang terdaftar yang melewati WARP.",
+      "modeSwitchLabel": "Mode split tunnel",
       "auditWarning": "Peringatan: Subnet jaringan mesh (100.64.0.0/10) saat ini dikecualikan, yang mencegah perutean mesh.",
       "auditResolved": "Konfigurasi perutean mesh sudah optimal.",
+      "meshRoutingWarning": "Peringatan perutean IP Mesh",
+      "fixRoutingBtn": "Perbaiki perutean",
+      "fixingRoutingBtn": "Memperbaiki…",
+      "meshRoutingFixed": "Split Tunnels diperbarui agar IP Mesh dirutekan melalui WARP.",
       "addEntryBtn": "Tambah Aturan",
       "emptyList": "Belum ada aturan split tunnel yang ditentukan.",
       "colAddressHost": "Jaringan IP atau Domain",
@@ -295,6 +341,7 @@
       "enabledBadge": "Aktif",
       "disabledBadge": "Nonaktif",
       "statusLabel": "Status Mesin Filter",
+      "lastRefresh": "Terakhir disegarkan {{when}}.",
       "customUrlLabel": "URL Sumber Daftar Blokir",
       "customUrlPlaceholder": "https://...",
       "resetDefaultBtn": "Reset ke Standar (HaGeZi Light)",
@@ -308,7 +355,9 @@
       "defaultLocation": "Lokasi Klien Standar",
       "dohSubdomain": "Titik Akhir Subdomain DoH",
       "ipv4Dest": "Tujuan IPv4 Utama",
-      "ipv4Backup": "Cadangan IPv4 Sekunder"
+      "ipv4Backup": "Cadangan IPv4 Sekunder",
+      "ipv6Dest": "Tujuan IPv6",
+      "noLocation": "Lokasi DNS Gateway default tidak ditemukan."
     },
     "maintenance": {
       "title": "Kesehatan Sistem & Pemeliharaan",
@@ -316,6 +365,11 @@
       "statusLabel": "Integritas Konfigurasi",
       "healthyNotice": "Semua konfigurasi Cloudflare Zero Trust tersinkronisasi penuh dan sehat.",
       "degradedNotice": "Terdeteksi desinkronisasi antara status database dan Cloudflare Gateway.",
+      "outOfSync": "Tidak sinkron",
+      "runNow": "Jalankan sekarang",
+      "lastRun": "Terakhir dijalankan {{when}}.",
+      "filterDetail": "Filter: {{detail}}.",
+      "meshDetail": "Mesh: {{detail}}.",
       "repairBtn": "Perbaiki Status Sistem",
       "repairingBtn": "Memperbaiki…"
     }
@@ -359,8 +413,8 @@
     "cleanupFailed": "Gagal menjalankan pembersihan.",
     "nodeCreated": "Mesh node berhasil dibuat.",
     "nodeCreateFailed": "Gagal membuat mesh node.",
-    "machineRenamed": "Nama mesin berhasil diubah.",
-    "machineRenameFailed": "Gagal mengubah nama mesin.",
+    "machineUpdated": "Mesin diperbarui.",
+    "machineUpdateFailed": "Gagal memperbarui mesin.",
     "tokenRegenerated": "Token connector berhasil dibuat ulang.",
     "tokenRegenerateFailed": "Gagal membuat ulang token.",
     "machineDeleted": "Mesin dihapus dari mesh.",

@@ -1,63 +1,67 @@
-import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type SettingsPatch, type SplitTunnelItem } from "../lib/api";
+import { api, type Settings, type SettingsPatch, type SplitTunnelItem } from "../lib/api";
 
-export function useSettings(options?: { enabled?: boolean }) {
-  const queryClient = useQueryClient();
-  const enabled = options?.enabled !== false;
+/** DNS filter states where the server is still working in the background. */
+export const DNS_FILTER_BUSY_STATUSES = [
+  "pending_enable",
+  "syncing",
+  "pending_refresh",
+  "pending_disable",
+];
 
-  const settingsQuery = useQuery({
+export const isDnsFilterBusy = (settings: Settings | null | undefined) =>
+  DNS_FILTER_BUSY_STATUSES.includes(settings?.dnsFilterStatus ?? "");
+
+/**
+ * The settings row alone. Used by the app shell (account line, demo lock);
+ * polls only while a DNS filter operation is running.
+ */
+export function useSettingsQuery(options?: { enabled?: boolean }) {
+  return useQuery({
     queryKey: ["settings"],
     queryFn: api.settings,
-    enabled,
+    enabled: options?.enabled !== false,
+    refetchInterval: (query) => (isDnsFilterBusy(query.state.data) ? 1500 : false),
   });
+}
 
-  const settings = settingsQuery.data ?? null;
+/** Everything the Settings page needs. */
+export function useSettings() {
+  const queryClient = useQueryClient();
+  const settingsQuery = useSettingsQuery();
 
   const splitTunnelsQuery = useQuery({
     queryKey: ["split-tunnels"],
     queryFn: api.splitTunnels,
-    enabled,
   });
 
   const maintenanceHealthQuery = useQuery({
     queryKey: ["maintenance-health"],
     queryFn: api.maintenanceHealth,
-    enabled,
     staleTime: 60_000,
-    refetchInterval: (query) =>
-      query.state.data?.ok ? false : 15_000,
+    refetchInterval: (query) => (query.state.data && !query.state.data.ok ? 15_000 : false),
   });
-
-  // Poll settings when DNS filter is undergoing a background operation
-  useEffect(() => {
-    const status = settings?.dnsFilterStatus;
-    if (
-      !status ||
-      !["pending_enable", "syncing", "pending_refresh", "pending_disable"].includes(status)
-    ) {
-      return;
-    }
-    const id = window.setInterval(() => {
-      void queryClient.invalidateQueries({ queryKey: ["settings"] });
-    }, 1500);
-    return () => window.clearInterval(id);
-  }, [settings?.dnsFilterStatus, queryClient]);
 
   const patchSettingsMutation = useMutation({
     mutationFn: (patch: SettingsPatch) => api.patchSettings(patch),
-    onSuccess: (newSettings) => {
-      queryClient.setQueryData(["settings"], newSettings);
-      void queryClient.invalidateQueries({ queryKey: ["mesh"] });
+    onSuccess: (next, patch) => {
+      queryClient.setQueryData(["settings"], next);
+      if (patch.meshSuffix !== undefined) {
+        void queryClient.invalidateQueries({ queryKey: ["mesh"] });
+      }
+      void queryClient.invalidateQueries({ queryKey: ["maintenance-health"] });
     },
   });
 
   const saveSplitTunnelsMutation = useMutation({
     mutationFn: ({ mode, items }: { mode: "include" | "exclude"; items: SplitTunnelItem[] }) =>
       api.saveSplitTunnels(mode, items),
-    onSuccess: (newConfig) => {
-      queryClient.setQueryData(["split-tunnels"], newConfig);
-    },
+    onSuccess: (config) => queryClient.setQueryData(["split-tunnels"], config),
+  });
+
+  const ensureMeshRoutingMutation = useMutation({
+    mutationFn: api.ensureMeshRouting,
+    onSuccess: (config) => queryClient.setQueryData(["split-tunnels"], config),
   });
 
   const repairMaintenanceMutation = useMutation({
@@ -68,30 +72,41 @@ export function useSettings(options?: { enabled?: boolean }) {
     },
   });
 
+  const syncDnsMutation = useMutation({
+    mutationFn: api.syncDns,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["settings"] });
+      void queryClient.invalidateQueries({ queryKey: ["mesh"] });
+      void queryClient.invalidateQueries({ queryKey: ["maintenance-health"] });
+    },
+  });
+
+  const cleanupMutation = useMutation({
+    mutationFn: api.cleanup,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["settings"] });
+      void queryClient.invalidateQueries({ queryKey: ["mesh"] });
+    },
+  });
+
   return {
     settingsQuery,
-    settings,
-    isSettingsLoading: settingsQuery.isFetching,
+    settings: settingsQuery.data ?? null,
 
-    splitTunnelsQuery,
     splitTunnels: splitTunnelsQuery.data ?? null,
-    splitTunnelsLoading: splitTunnelsQuery.isFetching,
-    splitTunnelsError:
-      splitTunnelsQuery.error instanceof Error
-        ? splitTunnelsQuery.error.message
-        : null,
+    // First load only; background refetches keep the current list on screen.
+    splitTunnelsLoading: splitTunnelsQuery.isPending,
+    splitTunnelsError: splitTunnelsQuery.error?.message ?? null,
+    refetchSplitTunnels: splitTunnelsQuery.refetch,
 
-    maintenanceHealthQuery,
     maintenanceHealth: maintenanceHealthQuery.data ?? null,
-    maintenanceLoading: maintenanceHealthQuery.isFetching,
 
     patchSettings: patchSettingsMutation.mutateAsync,
-    isPatchingSettings: patchSettingsMutation.isPending,
-
     saveSplitTunnels: saveSplitTunnelsMutation.mutateAsync,
-    isSavingSplitTunnels: saveSplitTunnelsMutation.isPending,
-
+    ensureMeshRouting: ensureMeshRoutingMutation.mutateAsync,
     repairMaintenance: repairMaintenanceMutation.mutateAsync,
     isRepairingMaintenance: repairMaintenanceMutation.isPending,
+    syncDns: syncDnsMutation.mutateAsync,
+    cleanup: cleanupMutation.mutateAsync,
   };
 }

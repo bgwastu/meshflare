@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `mesh_labels_json` text DEFAULT '{}' NOT NULL;

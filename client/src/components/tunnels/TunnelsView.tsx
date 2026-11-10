@@ -28,7 +28,7 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [renameTunnel, setRenameTunnel] = useState<TunnelEntry | null>(null);
   const [deleteTunnelTarget, setDeleteTunnelTarget] = useState<TunnelEntry | null>(null);
-  const [selectedTunnel, setSelectedTunnel] = useState<TunnelEntry | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Ingress editor state
   const [ingressEditorRule, setIngressEditorRule] = useState<{
@@ -52,8 +52,11 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
     deleteTunnel: doDelete,
     updateConfig,
   } = useTunnels({
-    selectedTunnelId: selectedTunnel?.id ?? null,
+    selectedTunnelId: selectedId,
   });
+
+  // Derive from the list so the drawer reflects renames and status refreshes.
+  const selectedTunnel = tunnels.find((tunnel) => tunnel.id === selectedId) ?? null;
 
   const ready = tunnelsQuery.isSuccess;
 
@@ -98,8 +101,8 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
     try {
       await doDelete(id);
       onToast(t("toasts.tunnelDeleted"), "success");
-      if (selectedTunnel?.id === id) {
-        setSelectedTunnel(null);
+      if (selectedId === id) {
+        setSelectedId(null);
       }
     } catch (e) {
       onToast(e instanceof Error ? e.message : t("toasts.tunnelDeleteFailed"), "error");
@@ -152,7 +155,7 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
     <section className="panel" aria-busy={!ready}>
       <div className="panel-head">
         <h2>
-          Tunnels{" "}
+          {t("nav.tunnels")}{" "}
           {ready ? (
             <span className="hint">({filteredTunnels.length})</span>
           ) : (
@@ -238,13 +241,13 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
 
           <button
             type="button"
-            className="btn filter-clear-all"
+            className="filter-clear-all"
             onClick={() => {
               setStatusFilter("all");
               setSearch("");
             }}
           >
-            {t("common.cancel")}
+            {t("common.clearFilters")}
           </button>
         </div>
       )}
@@ -252,7 +255,7 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
       <TunnelsTable
         tunnels={filteredTunnels}
         loading={!ready}
-        onSelectTunnel={(tunnel) => setSelectedTunnel(tunnel)}
+        onSelectTunnel={(tunnel) => setSelectedId(tunnel.id)}
         onOpenCreate={() => setCreateOpen(true)}
         hasFilters={hasFilters}
         onClearFilters={() => {
@@ -264,7 +267,7 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
       <TunnelDrawer
         tunnel={selectedTunnel}
         isOpen={Boolean(selectedTunnel)}
-        onClose={() => setSelectedTunnel(null)}
+        onClose={() => setSelectedId(null)}
         connections={connections}
         connectionsLoading={connectionsLoading}
         ingressRules={ingressRules}
@@ -283,9 +286,10 @@ export function TunnelsView({ locked, onToast }: TunnelsViewProps) {
         onDeleteIngress={(index) => void handleDeleteIngressRule(index)}
         token={token}
         tokenLoading={tokenLoading}
+        onOpenRename={(tunnel) => setRenameTunnel(tunnel)}
         onOpenDelete={(tunnel) => setDeleteTunnelTarget(tunnel)}
         locked={locked}
-        onToast={(msg) => onToast(msg)}
+        onToast={onToast}
       />
 
       <CreateTunnelModal

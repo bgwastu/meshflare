@@ -7,7 +7,9 @@
     "all": "Todos",
     "actions": "Acciones",
     "cancel": "Cancelar",
+    "clearFilters": "Borrar filtros",
     "save": "Guardar",
+    "saving": "Guardando…",
     "create": "Crear",
     "delete": "Eliminar",
     "edit": "Editar",
@@ -16,6 +18,7 @@
     "copy": "Copiar",
     "copied": "Copiado al portapapeles",
     "loading": "Cargando…",
+    "language": "Idioma",
     "unknown": "Desconocido",
     "close": "Cerrar",
     "confirm": "Confirmar",
@@ -34,6 +37,7 @@
     "mesh": "Mesh",
     "tunnels": "Tunnels",
     "settings": "Configuración",
+    "primary": "Principal",
     "account": "Cuenta",
     "logout": "Cerrar sesión"
   },
@@ -75,13 +79,23 @@
       "status": "Estado",
       "actions": "Acciones"
     },
+    "table": {
+      "name": "Nombre",
+      "status": "Estado",
+      "domain": "Dominio",
+      "ipv4": "IPv4",
+      "lastSeen": "Última conexión"
+    },
     "empty": "No se encontraron nodos ni dispositivos.",
+    "emptyNoEntries": "Aún no hay entradas de mesh.",
     "count_one": "{{count}} máquina",
     "count_other": "{{count}} máquinas",
     "drawer": {
       "titleNode": "Detalles del Nodo Mesh",
       "titleDevice": "Detalles del Dispositivo",
       "close": "Cerrar panel",
+      "edit": "Editar nombre y hostname",
+      "customHostname": "Personalizado",
       "tabs": {
         "details": "Detalles",
         "routes": "Rutas",
@@ -123,17 +137,26 @@
       "nodeNamePlaceholder": "ej., srv-gateway-01",
       "createBtn": "Crear Nodo",
       "creatingBtn": "Creando…",
-      "renameTitle": "Renombrar Máquina",
-      "renameDesc": "Modifique el nombre visible de esta máquina en su red mesh.",
-      "newNameLabel": "Nuevo Nombre de Máquina",
+      "editTitle": "Editar máquina",
+      "editDesc": "Cambia el nombre de esta máquina o asígnale un hostname de mesh personalizado.",
+      "nameLabel": "Nombre",
+      "hostnameLabel": "Hostname de mesh",
+      "hostnameHint": "Déjalo vacío para usar {{hostname}}, basado en el nombre.",
+      "hostnameInvalid": "Usa minúsculas, números y guiones internos (máx. 63 caracteres).",
       "deleteTitle": "Eliminar Máquina",
+      "deleteTitleNode": "Eliminar Nodo",
+      "deleteTitleDevice": "Eliminar Dispositivo",
       "deleteConfirm": "¿Está seguro de eliminar {{name}}? Esta acción no se puede deshacer.",
       "deleteWarning": "Se cancelarán todas las rutas anunciadas y conexiones activas de este nodo.",
       "confirmDeleteBtn": "Eliminar Máquina",
+      "confirmDeleteBtnNode": "Eliminar Nodo",
+      "confirmDeleteBtnDevice": "Eliminar Dispositivo",
       "deletingBtn": "Eliminando…",
       "addRouteTitle": "Añadir Ruta de Red",
       "addRouteDesc": "Enrute rangos CIDR de red interna o nombres de host a través de este conector.",
       "routeTypeLabel": "Tipo de Destino",
+      "typeCidrShort": "CIDR",
+      "typeHostnameShort": "Hostname",
       "typeCidr": "Red CIDR (ej., 192.168.1.0/24)",
       "typeHostname": "Hostname Interno (ej., app.internal.net)",
       "networkPlaceholder": "192.168.10.0/24",
@@ -168,7 +191,19 @@
       "created": "Fecha de Creación",
       "actions": "Acciones"
     },
+    "table": {
+      "name": "Nombre",
+      "status": "Estado",
+      "config": "Configuración",
+      "connections": "Conexiones",
+      "created": "Creado"
+    },
+    "config": {
+      "cloudflare": "Cloudflare",
+      "local": "Local"
+    },
     "empty": "No se encontraron túneles.",
+    "emptyNoTunnels": "Aún no hay túneles.",
     "count_one": "{{count}} túnel",
     "count_other": "{{count}} túneles",
     "drawer": {
@@ -234,11 +269,13 @@
       "serviceTip": "Protocolos admitidos: http://, https://, tcp://, ssh://, rdp://, unix:",
       "saveRuleBtn": "Guardar Regla Ingress",
       "savingRuleBtn": "Guardando…"
-    }
+    },
+    "activeConnections": "{{count}} activas"
   },
   "settings": {
     "title": "Configuración",
     "subtitle": "Configuraciones globales de Cloudflare Zero Trust, limpieza y DNS",
+    "loadFailed": "No se pudo cargar la configuración.",
     "account": {
       "title": "Cuenta de Cloudflare",
       "nameLabel": "Nombre de Cuenta",
@@ -252,7 +289,8 @@
       "suffixPlaceholder": "mesh",
       "saveBtn": "Guardar Sufijo",
       "savingBtn": "Guardando…",
-      "syncNotice": "Cambiar este sufijo desencadena una resincronización completa de DNS."
+      "syncNotice": "Cambiar este sufijo desencadena una resincronización completa de DNS.",
+      "warpFallbackWarning": "Advertencia: .{{suffix}} está en la lista de Local Domain Fallback de Cloudflare WARP y omitirá la resolución DNS de Gateway."
     },
     "cleanup": {
       "title": "Limpieza de Dispositivos Inactivos",
@@ -266,11 +304,19 @@
     "splitTunnels": {
       "title": "WARP Split Tunnels",
       "description": "Controle si el tráfico interno se excluye o se enruta a través del cliente WARP.",
+      "loadFailed": "No se pudieron cargar las reglas de túnel dividido.",
       "modeLabel": "Modo de Política",
       "modeExclude": "Excluir (Split Tunnel) — El tráfico elude WARP",
       "modeInclude": "Incluir (Direct Tunnel) — Solo el tráfico especificado usa WARP",
+      "modeExcludeHint": "Todo el tráfico pasa por WARP excepto los destinos indicados.",
+      "modeIncludeHint": "Solo los destinos indicados pasan por WARP.",
+      "modeSwitchLabel": "Modo de Split Tunnel",
       "auditWarning": "Advertencia: La subred de mesh (100.64.0.0/10) está excluida, impidiendo el enrutamiento de mesh.",
       "auditResolved": "La configuración de enrutamiento mesh es óptima.",
+      "meshRoutingWarning": "Advertencia de enrutamiento de IP de Mesh",
+      "fixRoutingBtn": "Corregir enrutamiento",
+      "fixingRoutingBtn": "Corrigiendo…",
+      "meshRoutingFixed": "Split Tunnels actualizados: las IP de Mesh ahora se enrutan a través de WARP.",
       "addEntryBtn": "Añadir Regla",
       "emptyList": "No hay reglas de split tunnel definidas.",
       "colAddressHost": "Red IP o Dominio",
@@ -295,6 +341,7 @@
       "enabledBadge": "Activo",
       "disabledBadge": "Desactivado",
       "statusLabel": "Estado del Motor",
+      "lastRefresh": "Última actualización {{when}}.",
       "customUrlLabel": "URL de Lista de Bloqueo",
       "customUrlPlaceholder": "https://...",
       "resetDefaultBtn": "Restablecer por Defecto (HaGeZi Light)",
@@ -308,7 +355,9 @@
       "defaultLocation": "Ubicación Predeterminada",
       "dohSubdomain": "Endpoint Subdominio DoH",
       "ipv4Dest": "Destino IPv4 Principal",
-      "ipv4Backup": "Destino IPv4 Secundario"
+      "ipv4Backup": "Destino IPv4 Secundario",
+      "ipv6Dest": "Destino IPv6",
+      "noLocation": "No se encontró ninguna ubicación DNS de Gateway predeterminada."
     },
     "maintenance": {
       "title": "Salud y Mantenimiento del Sistema",
@@ -316,6 +365,11 @@
       "statusLabel": "Integridad de Configuración",
       "healthyNotice": "Todas las configuraciones están completamente sincronizadas y saludables.",
       "degradedNotice": "Se detectaron diferencias entre la base de datos y Cloudflare Gateway.",
+      "outOfSync": "Desincronizado",
+      "runNow": "Ejecutar ahora",
+      "lastRun": "Última ejecución {{when}}.",
+      "filterDetail": "Filtro: {{detail}}.",
+      "meshDetail": "Mesh: {{detail}}.",
       "repairBtn": "Reparar Estado del Sistema",
       "repairingBtn": "Reparando…"
     }
@@ -359,8 +413,8 @@
     "cleanupFailed": "Error al ejecutar la limpieza.",
     "nodeCreated": "Nodo mesh creado con éxito.",
     "nodeCreateFailed": "Error al crear nodo mesh.",
-    "machineRenamed": "Máquina renombrada correctamente.",
-    "machineRenameFailed": "Error al renombrar la máquina.",
+    "machineUpdated": "Máquina actualizada.",
+    "machineUpdateFailed": "No se pudo actualizar la máquina.",
     "tokenRegenerated": "Token del conector regenerado.",
     "tokenRegenerateFailed": "Error al regenerar token.",
     "machineDeleted": "Máquina eliminada del mesh.",

@@ -7,7 +7,9 @@
     "all": "Tous",
     "actions": "Actions",
     "cancel": "Annuler",
+    "clearFilters": "Effacer les filtres",
     "save": "Enregistrer",
+    "saving": "Enregistrement…",
     "create": "Créer",
     "delete": "Supprimer",
     "edit": "Modifier",
@@ -16,6 +18,7 @@
     "copy": "Copier",
     "copied": "Copié dans le presse-papiers",
     "loading": "Chargement…",
+    "language": "Langue",
     "unknown": "Inconnu",
     "close": "Fermer",
     "confirm": "Confirmer",
@@ -34,6 +37,7 @@
     "mesh": "Mesh",
     "tunnels": "Tunnels",
     "settings": "Paramètres",
+    "primary": "Principale",
     "account": "Compte",
     "logout": "Déconnexion"
   },
@@ -75,13 +79,23 @@
       "status": "Statut",
       "actions": "Actions"
     },
+    "table": {
+      "name": "Nom",
+      "status": "Statut",
+      "domain": "Domaine",
+      "ipv4": "IPv4",
+      "lastSeen": "Vu pour la dernière fois"
+    },
     "empty": "Aucun nœud ou appareil trouvé.",
+    "emptyNoEntries": "Aucune entrée mesh pour le moment.",
     "count_one": "{{count}} machine",
     "count_other": "{{count}} machines",
     "drawer": {
       "titleNode": "Détails du nœud Mesh",
       "titleDevice": "Détails de l'appareil",
       "close": "Fermer le volet",
+      "edit": "Modifier le nom et le nom d'hôte",
+      "customHostname": "Personnalisé",
       "tabs": {
         "details": "Détails",
         "routes": "Routes",
@@ -123,17 +137,26 @@
       "nodeNamePlaceholder": "ex. srv-gateway-01",
       "createBtn": "Créer le nœud",
       "creatingBtn": "Création…",
-      "renameTitle": "Renommer la machine",
-      "renameDesc": "Modifier le nom d'affichage de cette machine sur le réseau mesh.",
-      "newNameLabel": "Nouveau nom",
+      "editTitle": "Modifier la machine",
+      "editDesc": "Renommez cette machine ou attribuez-lui un nom d'hôte mesh personnalisé.",
+      "nameLabel": "Nom",
+      "hostnameLabel": "Nom d'hôte mesh",
+      "hostnameHint": "Laissez vide pour utiliser {{hostname}}, dérivé du nom.",
+      "hostnameInvalid": "Utilisez des minuscules, des chiffres et des tirets internes (63 caractères max.).",
       "deleteTitle": "Supprimer la machine",
+      "deleteTitleNode": "Supprimer le nœud",
+      "deleteTitleDevice": "Supprimer l'appareil",
       "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{name}} ? Cette action est irréversible.",
       "deleteWarning": "Toutes les routes annoncées et connexions actives de ce nœud seront interrompues.",
       "confirmDeleteBtn": "Supprimer la machine",
+      "confirmDeleteBtnNode": "Supprimer le nœud",
+      "confirmDeleteBtnDevice": "Supprimer l'appareil",
       "deletingBtn": "Suppression…",
       "addRouteTitle": "Ajouter une route réseau",
       "addRouteDesc": "Acheminez des plages CIDR ou des noms d'hôtes via ce nœud connecteur.",
       "routeTypeLabel": "Type de destination",
+      "typeCidrShort": "CIDR",
+      "typeHostnameShort": "Nom d'hôte",
       "typeCidr": "Réseau CIDR (ex. 192.168.1.0/24)",
       "typeHostname": "Nom d'hôte interne (ex. app.internal.net)",
       "networkPlaceholder": "192.168.10.0/24",
@@ -168,7 +191,19 @@
       "created": "Créé le",
       "actions": "Actions"
     },
+    "table": {
+      "name": "Nom",
+      "status": "Statut",
+      "config": "Configuration",
+      "connections": "Connexions",
+      "created": "Créé"
+    },
+    "config": {
+      "cloudflare": "Cloudflare",
+      "local": "Local"
+    },
     "empty": "Aucun tunnel trouvé.",
+    "emptyNoTunnels": "Aucun tunnel pour le moment.",
     "count_one": "{{count}} tunnel",
     "count_other": "{{count}} tunnels",
     "drawer": {
@@ -234,11 +269,13 @@
       "serviceTip": "Protocoles supportés : http://, https://, tcp://, ssh://, rdp://, unix:",
       "saveRuleBtn": "Enregistrer la règle",
       "savingRuleBtn": "Enregistrement…"
-    }
+    },
+    "activeConnections": "{{count}} actives"
   },
   "settings": {
     "title": "Paramètres",
     "subtitle": "Configurations globales Cloudflare Zero Trust, nettoyage et règles DNS",
+    "loadFailed": "Impossible de charger les paramètres.",
     "account": {
       "title": "Compte Cloudflare",
       "nameLabel": "Nom du compte",
@@ -252,7 +289,8 @@
       "suffixPlaceholder": "mesh",
       "saveBtn": "Enregistrer le suffixe",
       "savingBtn": "Enregistrement…",
-      "syncNotice": "La modification de ce suffixe déclenche automatiquement une resynchronisation complète du DNS."
+      "syncNotice": "La modification de ce suffixe déclenche automatiquement une resynchronisation complète du DNS.",
+      "warpFallbackWarning": "Avertissement : .{{suffix}} figure dans la liste Local Domain Fallback de Cloudflare WARP et contournera la résolution DNS de Gateway."
     },
     "cleanup": {
       "title": "Nettoyage des appareils hors ligne",
@@ -266,11 +304,19 @@
     "splitTunnels": {
       "title": "WARP Split Tunnels",
       "description": "Contrôlez si le trafic interne est exclu ou acheminé via le client WARP Cloudflare Zero Trust.",
+      "loadFailed": "Impossible de charger les règles de tunnel fractionné.",
       "modeLabel": "Mode de politique de routage",
       "modeExclude": "Exclure (Split Tunnel) — Le trafic contourne WARP",
       "modeInclude": "Inclure (Direct Tunnel) — Seul le trafic spécifié utilise WARP",
+      "modeExcludeHint": "Tout le trafic passe par WARP, sauf vers les destinations listées.",
+      "modeIncludeHint": "Seules les destinations listées passent par WARP.",
+      "modeSwitchLabel": "Mode Split Tunnel",
       "auditWarning": "Avertissement : Le sous-réseau mesh (100.64.0.0/10) est actuellement exclu, ce qui empêche le routage mesh.",
       "auditResolved": "La configuration du routage mesh est optimale.",
+      "meshRoutingWarning": "Avertissement de routage des IP Mesh",
+      "fixRoutingBtn": "Corriger le routage",
+      "fixingRoutingBtn": "Correction…",
+      "meshRoutingFixed": "Split Tunnels mis à jour : les IP Mesh passent désormais par WARP.",
       "addEntryBtn": "Ajouter une règle",
       "emptyList": "Aucune règle de split tunnel définie.",
       "colAddressHost": "Réseau IP ou Domaine",
@@ -295,6 +341,7 @@
       "enabledBadge": "Actif",
       "disabledBadge": "Désactivé",
       "statusLabel": "Statut du moteur de filtre",
+      "lastRefresh": "Dernière actualisation {{when}}.",
       "customUrlLabel": "URL de la liste de blocage",
       "customUrlPlaceholder": "https://...",
       "resetDefaultBtn": "Rétablir la liste par défaut (HaGeZi Light)",
@@ -308,7 +355,9 @@
       "defaultLocation": "Emplacement client par défaut",
       "dohSubdomain": "Point de terminaison sous-domaine DoH",
       "ipv4Dest": "Destination IPv4 principale",
-      "ipv4Backup": "Destination IPv4 secondaire"
+      "ipv4Backup": "Destination IPv4 secondaire",
+      "ipv6Dest": "Destination IPv6",
+      "noLocation": "Aucun emplacement DNS Gateway par défaut trouvé."
     },
     "maintenance": {
       "title": "Santé du système & Maintenance",
@@ -316,6 +365,11 @@
       "statusLabel": "Intégrité de la configuration",
       "healthyNotice": "Toutes les configurations Cloudflare Zero Trust sont parfaitement synchronisées et saines.",
       "degradedNotice": "Une désynchronisation a été détectée entre la base de données et Cloudflare Gateway.",
+      "outOfSync": "Désynchronisé",
+      "runNow": "Exécuter maintenant",
+      "lastRun": "Dernière exécution {{when}}.",
+      "filterDetail": "Filtre : {{detail}}.",
+      "meshDetail": "Mesh : {{detail}}.",
       "repairBtn": "Réparer l'état du système",
       "repairingBtn": "Réparation…"
     }
@@ -359,8 +413,8 @@
     "cleanupFailed": "Échec de l'exécution du nettoyage.",
     "nodeCreated": "Nœud mesh créé avec succès.",
     "nodeCreateFailed": "Échec de la création du nœud mesh.",
-    "machineRenamed": "Machine renommée avec succès.",
-    "machineRenameFailed": "Échec du renommage de la machine.",
+    "machineUpdated": "Machine mise à jour.",
+    "machineUpdateFailed": "Échec de la mise à jour de la machine.",
     "tokenRegenerated": "Jeton du connecteur régénéré.",
     "tokenRegenerateFailed": "Échec de la régénération du jeton.",
     "machineDeleted": "Machine supprimée du réseau mesh.",
