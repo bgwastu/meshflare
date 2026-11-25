@@ -140,6 +140,59 @@ export type MaintenanceHealth = {
   };
 };
 
+export type RoutingIssue = {
+  code:
+    | "mesh_not_routed"
+    | "mesh_bypassed"
+    | "resolved_ip_bypassed"
+    | "resolved_ip_not_included"
+    | "route_bypassed";
+  severity: "error" | "warn";
+  subject?: string;
+  fix?: "ensure_mesh" | "ensure_resolved_ip";
+};
+
+export type RoutingProfile = SplitTunnelConfig & {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  enabled: boolean;
+  match: string | null;
+  precedence: number | null;
+  issues: RoutingIssue[];
+};
+
+export type RoutingRoute = {
+  id: string;
+  type: "cidr" | "hostname";
+  value: string;
+  comment: string;
+  connectorId: string;
+  createdAt: string | null;
+};
+
+export type RoutingConnector = {
+  id: string;
+  name: string;
+  kind: "node" | "tunnel";
+  status: string;
+};
+
+export type RoutingSnapshot = {
+  profiles: RoutingProfile[];
+  routes: RoutingRoute[];
+  connectors: RoutingConnector[];
+  /** Zero Trust dashboard page for device profiles; null in demo mode. */
+  profilesDashUrl: string | null;
+};
+
+export type ProfileInput = { name: string; match: string; enabled: boolean };
+
+export type CreateRoutesResult = {
+  created: number;
+  failed: Array<{ value: string; error: string }>;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
@@ -225,6 +278,37 @@ export const api = {
     request<{ ok: boolean; dns?: DnsSyncStats }>(`/api/mesh/${kind}/${encodeURIComponent(id)}`, {
       method: "DELETE",
     }),
+  routing: () => request<RoutingSnapshot>("/api/routing"),
+  createProfile: (body: ProfileInput) =>
+    request<{ id: string | null }>("/api/profiles", { method: "POST", body: JSON.stringify(body) }),
+  updateProfile: (id: string, body: ProfileInput) =>
+    request<void>(`/api/profiles/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  deleteProfile: (id: string) =>
+    request<void>(`/api/profiles/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  saveProfileSplitTunnels: (profileId: string, mode: "include" | "exclude", items: SplitTunnelItem[]) =>
+    request<void>(`/api/profiles/${encodeURIComponent(profileId)}/split-tunnels`, {
+      method: "PUT",
+      body: JSON.stringify({ mode, items }),
+    }),
+  fixProfile: (profileId: string, fix: NonNullable<RoutingIssue["fix"]>) =>
+    request<void>(`/api/profiles/${encodeURIComponent(profileId)}/fix`, {
+      method: "POST",
+      body: JSON.stringify({ fix }),
+    }),
+  createRoutes: (body: { connectorId: string; values: string[]; comment?: string }) =>
+    request<CreateRoutesResult>("/api/routes", { method: "POST", body: JSON.stringify(body) }),
+  updateRouteComment: (type: RoutingRoute["type"], id: string, comment: string) =>
+    request<{ ok: boolean }>(`/api/routes/${type}/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ comment }),
+    }),
+  deleteRoute: (type: RoutingRoute["type"], id: string) =>
+    request<{ ok: boolean }>(`/api/routes/${type}/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  listTunnelRoutes: (id: string) =>
+    request<{ routes: RoutingRoute[] }>(`/api/tunnels/${encodeURIComponent(id)}/routes`),
   splitTunnels: () => request<SplitTunnelConfig>("/api/settings/split-tunnels"),
   saveSplitTunnels: (mode: "include" | "exclude", items: SplitTunnelItem[]) =>
     request<SplitTunnelConfig>("/api/settings/split-tunnels", {

@@ -30,6 +30,7 @@ const env = {
 } satisfies Env;
 
 const app = new Hono<{ Bindings: Env }>();
+app.get("/healthz", (c) => c.json({ ok: true, service: "meshflare" }));
 if (env.DEMO_MODE === "true" || env.DEMO_MODE === "1") {
   app.route("/api", demoApi as unknown as typeof app);
 } else {
@@ -44,7 +45,7 @@ Bun.serve({
   fetch: (request) => app.fetch(request, env),
 });
 
-if (env.DEMO_MODE !== "true" && env.DEMO_MODE !== "1") {
+if (env.DEMO_MODE !== "true" && env.DEMO_MODE !== "1" && process.env.MAINTENANCE_ENABLED !== "false") {
   const run = () => runMaintenance(env).catch((error) => console.error("meshflare maintenance", error));
   const cron = new Cron("*/15 * * * *", run);
   void cron;

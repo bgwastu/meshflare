@@ -26,7 +26,6 @@ export function Layout({
       <DemoBanner show={Boolean(settings?.demo)} />
 
       <Header
-        settings={settings}
         authRequired={authRequired}
         onLogout={onLogout}
       />

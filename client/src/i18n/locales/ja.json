@@ -8,6 +8,7 @@
     "actions": "操作",
     "cancel": "キャンセル",
     "clearFilters": "フィルターをクリア",
+    "clearSearch": "検索をクリア",
     "save": "保存",
     "saving": "保存中…",
     "create": "作成",
@@ -39,7 +40,8 @@
     "settings": "設定",
     "primary": "メイン",
     "account": "アカウント",
-    "logout": "サインアウト"
+    "logout": "サインアウト",
+    "routing": "ルーティング"
   },
   "mesh": {
     "title": "Mesh デバイス一覧",
@@ -214,7 +216,8 @@
         "overview": "概要",
         "connections": "接続",
         "ingress": "Ingress ルール",
-        "setup": "セットアップ"
+        "setup": "セットアップ",
+        "routes": "ルート"
       },
       "properties": {
         "id": "トンネル ID",
@@ -336,7 +339,9 @@
       "addressHostLabel": "CIDR またはホスト名",
       "addressHostPlaceholder": "100.64.0.0/10 または *.internal.corp",
       "descriptionLabel": "説明",
-      "descriptionPlaceholder": "例: Meshflare 内部オーバーレイネットワーク"
+      "descriptionPlaceholder": "例: Meshflare 内部オーバーレイネットワーク",
+      "movedHint": "Split tunnels とルートはルーティングページに移動しました。",
+      "movedLink": "ルーティングを開く"
     },
     "dnsFilter": {
       "title": "DNS フィルタリング",
@@ -450,5 +455,131 @@
     "justNow": "たった今",
     "hoursAgo": "{{count}}時間前",
     "daysAgo": "{{count}}日前"
+  },
+  "routing": {
+    "title": "ルーティング",
+    "loadFailed": "ルーティングを読み込めませんでした。",
+    "noProfiles": "デバイスプロファイルが見つかりません。",
+    "profilesLabel": "デバイスプロファイル",
+    "issuesCount": "問題: {{count}}",
+    "destination": "宛先",
+    "add": "追加",
+    "addCount": "追加（{{count}}）",
+    "bulkCount": "エントリ: {{count}}。改行、スペース、カンマで区切ります。",
+    "saved": "ルーティングを保存しました。",
+    "removed": "削除しました。",
+    "fixed": "プロファイルを更新しました。",
+    "fix": "修正",
+    "confirmDelete": "削除しますか？",
+    "unknownExit": "不明なコネクタ",
+    "switchWarning": "{{profile}} を {{mode}} モードに切り替えると現在のリストが置き換わります。Cloudflare はモードごとに 1 つのリストしか保持しないためです。このプロファイルのデバイスには 1 分以内に反映されます。",
+    "kind": {
+      "tunnel": "トンネル",
+      "node": "Mesh ノード"
+    },
+    "check": {
+      "label": "宛先を確認",
+      "placeholder": "reddit.com, https://example.com/path, 10.10.0.5",
+      "idle": "ホスト名、URL、IP を入力すると、このプロファイルでの行き先を確認できます。",
+      "bypass": "直接接続（Cloudflare を経由しない）",
+      "matchedEntry": "{{entry}} に一致",
+      "notIncluded": "このプロファイルの Include リストにありません",
+      "mesh": "WARP 経由で Mesh へ",
+      "warp": "Cloudflare WARP 経由",
+      "route": "{{exit}} から出ます",
+      "matchedRoute": "ルート {{route}}",
+      "blocked": "{{exit}} にルーティングされていますが到達しません",
+      "blockedDetail": "このプロファイルは 172.64.128.0/20 を WARP に送っていません。ホスト名ルートにはこの範囲が必要です。",
+      "against": "{{profile}} を使うデバイスとして確認しました。"
+    },
+    "split": {
+      "titleExclude": "Cloudflare をバイパス",
+      "titleInclude": "Cloudflare 経由",
+      "hintExclude": "これらはローカルネットワークから直接出ます。それ以外は WARP を通ります。",
+      "hintInclude": "これらだけが WARP を通ります。それ以外はローカルネットワークから直接出ます。",
+      "empty": "登録なし。",
+      "addTitleExclude": "Cloudflare をバイパス",
+      "addTitleInclude": "Cloudflare 経由で送信",
+      "addDesc": "{{profile}} プロファイルに追加します。サブドメインには *.example.com を使います。example.com だけではそのドメイン自体にのみ一致します。",
+      "valuesLabel": "ホスト名、IP、CIDR",
+      "descPlaceholder": "例: 銀行",
+      "allExist": "すでに登録済みです。"
+    },
+    "routes": {
+      "title": "ルート",
+      "hint": "ホスト名やネットワークを特定のトンネルまたは Mesh ノードから出します。プロファイルに関係なく、すべてのデバイスに適用されます。",
+      "add": "ルートを追加",
+      "empty": "ルートはありません。バイパスされないトラフィックは Cloudflare から出ます。",
+      "exit": "出口",
+      "added": "追加日",
+      "cidrTag": "CIDR",
+      "editComment": "コメントを編集",
+      "addTitle": "ルートを追加",
+      "addDesc": "ホスト名は名前でルーティングされます（Gateway DNS の使用が必要）。IP と CIDR はネットワークとしてルーティングされます。",
+      "exitLabel": "出口",
+      "exitPlaceholder": "トンネルまたはノードを選択",
+      "valuesLabel": "ホスト名、IP、CIDR",
+      "valuesHint": "example.com はすべてのサブドメイン（www.example.com、cdn.example.com）も対象にします。",
+      "parsed": "ホスト名 {{hostnames}} 件、ネットワーク {{networks}} 件",
+      "commentPlaceholder": "例: US 出口",
+      "created": "追加したルート: {{count}}",
+      "partial": "{{created}} 件追加。失敗: {{failed}}",
+      "nodeHostnameTitle": "ホスト名が Mesh ノードにルーティングされています",
+      "nodeHostnameBody": "{{hosts}} は Mesh ノードから出ます。ノードはこれらの名前を Gateway で解決しますが、Gateway は自分宛てにルーティングされた名前を拒否するため、ノードの hosts ファイルにない限り、すべてのデバイスで名前解決できなくなります。インターネットのサイトはトンネルに送ってください。",
+      "nodeHostnameWarn": "Mesh ノードは、Gateway を使わずに解決できるホスト名（hosts ファイルなど）しか出口にできません。そうでないと、すべてのデバイスでこれらの名前が解決できなくなります。インターネットのサイトにはトンネルを使ってください。"
+    },
+    "issues": {
+      "mesh_not_routed": {
+        "title": "Mesh IP がルーティングされていません",
+        "body": "このプロファイルは 100.96.0.0/12 を含まない Include モードのため、.mesh ホスト名に到達できません。"
+      },
+      "mesh_bypassed": {
+        "title": "Mesh IP が WARP をバイパスしています",
+        "body": "{{subject}} が除外されており、Mesh 範囲 100.96.0.0/12 を含んでいます。"
+      },
+      "resolved_ip_bypassed": {
+        "title": "ホスト名ルートがバイパスされています",
+        "body": "{{subject}} が除外されており、Gateway がルーティング対象ホスト名に使う 172.64.128.0/20 を含んでいます。"
+      },
+      "resolved_ip_not_included": {
+        "title": "ホスト名ルートはここでは効きません",
+        "body": "172.64.128.0/20 を含まない Include モードのため、これらのデバイスではルーティング対象ホスト名が出口に届きません。"
+      },
+      "route_bypassed": {
+        "title": "バイパスによりルートが無効",
+        "body": "{{subject}} にはルートがありますが、このプロファイルがバイパスしているため直接接続になります。"
+      }
+    },
+    "tunnel": {
+      "routesTitle": "このトンネルへのルート",
+      "routesHint": "ここにあるホスト名とネットワークは、すべてのデバイスでこのトンネルから出ます。すべてのルートはルーティングページで管理します。",
+      "noRoutes": "ここを指すルートはまだありません。"
+    },
+    "profiles": {
+      "title": "デバイスプロファイル",
+      "openDash": "Cloudflare で開く",
+      "new": "プロファイルを追加",
+      "offTag": "オフ",
+      "editTitle": "プロファイルを編集",
+      "deleteTitle": "プロファイルを削除",
+      "deleteConfirmTitle": "{{name}} を削除しますか？",
+      "deleteConfirmBody": "該当するデバイスには、次に条件を満たすプロファイルが適用されます。",
+      "saved": "プロファイルを保存しました。",
+      "created": "プロファイルを作成しました。",
+      "deleted": "プロファイルを削除しました。",
+      "newTitle": "デバイスプロファイルを追加",
+      "nameLabel": "名前",
+      "emailsLabel": "メールアドレス",
+      "invalidEmail": "無効なメールアドレス: {{value}}",
+      "emailsHint": "アドレスをスペース、カンマ、または改行で区切ります。",
+      "useRule": "マッチルールを使用",
+      "ruleLabel": "マッチルール",
+      "ruleHint": "Cloudflare のデバイスプロファイルの式を入力します。",
+      "useEmails": "メールアドレスを使用",
+      "enabledLabel": "有効",
+      "copiesDefault": "新規プロファイルには既定のプロファイルのスプリットトンネルルールがコピーされます。",
+      "moreInDash": "その他の設定は Cloudflare で変更できます。",
+      "create": "プロファイルを作成"
+    }
   }
 }

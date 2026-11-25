@@ -1,4 +1,5 @@
 import type { CloudflareTunnel, MeshEntry, MeshRoute, TunnelConfig, Settings } from "../types";
+import { auditProfile, type RoutingRoute } from "../cf/routing";
 
 function hoursAgo(h: number, now = Date.now()): string {
   return new Date(now - h * 3_600_000).toISOString();
@@ -290,3 +291,56 @@ export function buildDemoTunnelConfig(tunnelId: string): TunnelConfig {
 
 export const DEMO_READ_ONLY =
   "Demo is read-only. Deploy your own meshflare instance to manage mesh entries and routes.";
+
+/** Routing snapshot: two profiles, a US exit tunnel and a few LAN routes. */
+export function buildDemoRouting(now = Date.now()) {
+  const routes: RoutingRoute[] = [
+    { id: "demo-hr-reddit", type: "hostname", value: "reddit.com", comment: "US exit", connectorId: "demo-tunnel-egress-us", createdAt: daysAgo(3, now) },
+    { id: "demo-hr-redd-it", type: "hostname", value: "redd.it", comment: "Reddit media", connectorId: "demo-tunnel-egress-us", createdAt: daysAgo(3, now) },
+    { id: "demo-hr-wiki", type: "hostname", value: "wiki.internal.local", comment: "Private wiki", connectorId: "demo-node-edge-1", createdAt: daysAgo(10, now) },
+    { id: "demo-route-office", type: "cidr", value: "10.10.0.0/24", comment: "Office LAN", connectorId: "demo-node-edge-1", createdAt: daysAgo(20, now) },
+    { id: "demo-route-lab", type: "cidr", value: "192.168.50.0/24", comment: "Lab subnet", connectorId: "demo-node-lab", createdAt: daysAgo(8, now) },
+  ];
+  const profiles = [
+    {
+      id: "demo-profile-default",
+      name: "Default",
+      isDefault: true,
+      enabled: true,
+      match: null,
+      precedence: null,
+      mode: "exclude" as const,
+      include: [],
+      exclude: [
+        { address: "192.168.0.0/16", description: "Home LAN" },
+        { host: "*.klikbca.com", description: "Bank" },
+        { host: "klikbca.com", description: "Bank" },
+        { host: "*.bankmandiri.co.id", description: "Bank" },
+        { host: "region1.v2.argotunnel.com", description: "Cloudflare Tunnel region 1" },
+      ],
+    },
+    {
+      id: "demo-profile-connectors",
+      name: "Mesh connectors",
+      isDefault: false,
+      enabled: true,
+      match: 'identity.email == "warp_connector@demo.cloudflareaccess.com"',
+      precedence: 100,
+      mode: "include" as const,
+      include: [{ address: "100.96.0.0/12", description: "Mesh IP range" }],
+      exclude: [],
+    },
+  ];
+  const connectors = [
+    { id: "demo-node-edge-1", name: "edge-1", kind: "node" as const, status: "healthy" },
+    { id: "demo-node-lab", name: "lab-gw", kind: "node" as const, status: "healthy" },
+    { id: "demo-node-spare", name: "spare-node", kind: "node" as const, status: "inactive" },
+    ...buildDemoTunnels(now).map((t) => ({ id: t.id, name: t.name, kind: "tunnel" as const, status: t.status })),
+    { id: "demo-tunnel-egress-us", name: "egress-us", kind: "tunnel" as const, status: "healthy" },
+  ];
+  return {
+    profiles: profiles.map((p) => ({ ...p, issues: auditProfile(p, routes) })),
+    routes,
+    connectors,
+  };
+}

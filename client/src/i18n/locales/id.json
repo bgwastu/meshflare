@@ -8,6 +8,7 @@
     "actions": "Aksi",
     "cancel": "Batal",
     "clearFilters": "Hapus filter",
+    "clearSearch": "Hapus pencarian",
     "save": "Simpan",
     "saving": "Menyimpan…",
     "create": "Buat",
@@ -39,7 +40,8 @@
     "settings": "Pengaturan",
     "primary": "Utama",
     "account": "Akun",
-    "logout": "Keluar"
+    "logout": "Keluar",
+    "routing": "Routing"
   },
   "mesh": {
     "title": "Mesh Inventory",
@@ -214,7 +216,8 @@
         "overview": "Ringkasan",
         "connections": "Koneksi",
         "ingress": "Aturan Ingress",
-        "setup": "Setup"
+        "setup": "Setup",
+        "routes": "Routes"
       },
       "properties": {
         "id": "ID Tunnel",
@@ -336,7 +339,9 @@
       "addressHostLabel": "CIDR atau Hostname",
       "addressHostPlaceholder": "100.64.0.0/10 atau *.internal.corp",
       "descriptionLabel": "Keterangan",
-      "descriptionPlaceholder": "cth., Jaringan overlay internal Meshflare"
+      "descriptionPlaceholder": "cth., Jaringan overlay internal Meshflare",
+      "movedHint": "Split tunnel dan route sekarang ada di halaman Routing.",
+      "movedLink": "Buka Routing"
     },
     "dnsFilter": {
       "title": "Penyaringan DNS",
@@ -450,5 +455,131 @@
     "justNow": "baru saja",
     "hoursAgo": "{{count}} jam lalu",
     "daysAgo": "{{count}} hari lalu"
+  },
+  "routing": {
+    "title": "Routing",
+    "loadFailed": "Gagal memuat routing.",
+    "noProfiles": "Tidak ada device profile.",
+    "profilesLabel": "Device profile",
+    "issuesCount": "Masalah: {{count}}",
+    "destination": "Tujuan",
+    "add": "Tambah",
+    "addCount": "Tambah ({{count}})",
+    "bulkCount": "Entri: {{count}}. Pisahkan dengan baris baru, spasi, atau koma.",
+    "saved": "Routing tersimpan.",
+    "removed": "Dihapus.",
+    "fixed": "Profile diperbarui.",
+    "fix": "Perbaiki",
+    "confirmDelete": "Hapus?",
+    "unknownExit": "Konektor tidak dikenal",
+    "switchWarning": "Mengganti {{profile}} ke mode {{mode}} akan mengganti daftarnya, karena Cloudflare hanya menyimpan satu daftar per mode. Perangkat di profile ini menerima perubahan dalam satu menit.",
+    "kind": {
+      "tunnel": "Tunnel",
+      "node": "Mesh node"
+    },
+    "check": {
+      "label": "Cek tujuan",
+      "placeholder": "reddit.com, https://example.com/path, 10.10.0.5",
+      "idle": "Ketik hostname, URL, atau IP untuk melihat ke mana profile ini mengirimnya.",
+      "bypass": "Langsung, tidak lewat Cloudflare",
+      "matchedEntry": "cocok dengan {{entry}}",
+      "notIncluded": "tidak ada di daftar Include profile ini",
+      "mesh": "Lewat WARP ke Mesh",
+      "warp": "Lewat Cloudflare WARP",
+      "route": "Keluar lewat {{exit}}",
+      "matchedRoute": "route {{route}}",
+      "blocked": "Diarahkan ke {{exit}}, tapi tidak pernah sampai",
+      "blockedDetail": "Profile ini tidak mengirim 172.64.128.0/20 lewat WARP, padahal hostname route butuh range itu.",
+      "against": "Dicek sebagai perangkat dengan profil {{profile}}."
+    },
+    "split": {
+      "titleExclude": "Bypass Cloudflare",
+      "titleInclude": "Lewat Cloudflare",
+      "hintExclude": "Daftar ini langsung lewat jaringan lokal. Sisanya lewat WARP.",
+      "hintInclude": "Hanya daftar ini yang lewat WARP. Sisanya langsung lewat jaringan lokal.",
+      "empty": "Belum ada isi.",
+      "addTitleExclude": "Bypass Cloudflare",
+      "addTitleInclude": "Kirim lewat Cloudflare",
+      "addDesc": "Ditambahkan ke profile {{profile}}. Pakai *.example.com untuk subdomain; example.com saja hanya cocok dengan domain itu sendiri.",
+      "valuesLabel": "Hostname, IP, atau CIDR",
+      "descPlaceholder": "mis. Bank",
+      "allExist": "Sudah ada di daftar."
+    },
+    "routes": {
+      "title": "Routes",
+      "hint": "Kirim hostname atau jaringan keluar lewat tunnel atau Mesh node tertentu. Berlaku untuk semua perangkat, apa pun profilnya.",
+      "add": "Tambah route",
+      "empty": "Belum ada route. Trafik yang tidak di-bypass keluar lewat Cloudflare.",
+      "exit": "Exit",
+      "added": "Ditambahkan",
+      "cidrTag": "CIDR",
+      "editComment": "Ubah komentar",
+      "addTitle": "Tambah route",
+      "addDesc": "Hostname diarahkan berdasarkan nama (DNS harus lewat Gateway). IP dan CIDR diarahkan sebagai network.",
+      "exitLabel": "Exit",
+      "exitPlaceholder": "Pilih tunnel atau node",
+      "valuesLabel": "Hostname, IP, atau CIDR",
+      "valuesHint": "example.com juga mencakup semua subdomain (www.example.com, cdn.example.com).",
+      "parsed": "{{hostnames}} hostname, {{networks}} network",
+      "commentPlaceholder": "mis. Exit US",
+      "created": "Route ditambahkan: {{count}}",
+      "partial": "{{created}} ditambahkan. Gagal: {{failed}}",
+      "nodeHostnameTitle": "Hostname diarahkan ke Mesh node",
+      "nodeHostnameBody": "{{hosts}} keluar lewat Mesh node. Node mencari nama ini lewat Gateway, yang menolak nama yang diarahkan ke dirinya, jadi nama ini gagal di semua perangkat kecuali ada di file hosts node. Arahkan situs internet ke tunnel.",
+      "nodeHostnameWarn": "Mesh node hanya bisa mengeluarkan hostname yang bisa ia cari tanpa Gateway (misalnya dari file hosts). Kalau tidak, nama ini gagal di semua perangkat. Pakai tunnel untuk situs internet."
+    },
+    "issues": {
+      "mesh_not_routed": {
+        "title": "IP Mesh tidak di-route",
+        "body": "Profile ini memakai mode Include tanpa 100.96.0.0/12, jadi hostname .mesh tidak bisa diakses."
+      },
+      "mesh_bypassed": {
+        "title": "IP Mesh melewati WARP",
+        "body": "{{subject}} di-exclude dan mencakup range Mesh 100.96.0.0/12."
+      },
+      "resolved_ip_bypassed": {
+        "title": "Hostname route di-bypass",
+        "body": "{{subject}} di-exclude dan mencakup 172.64.128.0/20, range yang dipakai Gateway untuk hostname route."
+      },
+      "resolved_ip_not_included": {
+        "title": "Hostname route tidak berlaku di sini",
+        "body": "Mode Include tanpa 172.64.128.0/20, jadi hostname route tidak pernah sampai ke exit-nya di perangkat ini."
+      },
+      "route_bypassed": {
+        "title": "Route tertimpa bypass",
+        "body": "{{subject}} punya route, tapi profile ini mem-bypass-nya, jadi tetap langsung."
+      }
+    },
+    "tunnel": {
+      "routesTitle": "Route ke tunnel ini",
+      "routesHint": "Hostname dan network di sini keluar lewat tunnel ini untuk semua perangkat. Kelola semua route di halaman Routing.",
+      "noRoutes": "Belum ada route ke sini."
+    },
+    "profiles": {
+      "title": "Profil perangkat",
+      "openDash": "Buka di Cloudflare",
+      "new": "Tambah profil",
+      "offTag": "Nonaktif",
+      "editTitle": "Edit profil",
+      "deleteTitle": "Hapus profil",
+      "deleteConfirmTitle": "Hapus {{name}}?",
+      "deleteConfirmBody": "Perangkat yang cocok akan memakai profil berikutnya yang berlaku.",
+      "saved": "Profil disimpan.",
+      "created": "Profil dibuat.",
+      "deleted": "Profil dihapus.",
+      "newTitle": "Tambah profil perangkat",
+      "nameLabel": "Nama",
+      "emailsLabel": "Alamat email",
+      "invalidEmail": "Alamat email tidak valid: {{value}}",
+      "emailsHint": "Pisahkan alamat dengan spasi, koma, atau baris baru.",
+      "useRule": "Gunakan aturan pencocokan",
+      "ruleLabel": "Aturan pencocokan",
+      "ruleHint": "Masukkan ekspresi profil perangkat Cloudflare.",
+      "useEmails": "Gunakan alamat email",
+      "enabledLabel": "Aktif",
+      "copiesDefault": "Profil baru menyalin aturan split tunnel dari profil Default.",
+      "moreInDash": "Untuk pengaturan lainnya,",
+      "create": "Buat profil"
+    }
   }
 }

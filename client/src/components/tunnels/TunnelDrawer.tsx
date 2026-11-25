@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { X, Trash2, Copy, Check, Info, Activity, Network, Terminal, Pencil } from "lucide-react";
+import { X, Trash2, Copy, Check, Info, Activity, Network, Terminal, Pencil, Route } from "lucide-react";
 import { Drawer } from "../ui/Drawer";
 import { CopyValue } from "../ui/CopyValue";
 import { StatusDot } from "../ui/Badge";
 import { Spinner } from "../ui/Spinner";
 import { IngressRulesTable } from "./IngressRulesTable";
+import { ConnectorRoutes } from "../routing/ConnectorRoutes";
 import { useLanguage } from "../../hooks/useLanguage";
 import { tunnelStatusLabel } from "../../i18n/status";
 import { copyText } from "../../lib/warp";
@@ -30,7 +31,7 @@ type TunnelDrawerProps = {
   onOpenRename: (tunnel: TunnelEntry) => void;
   onOpenDelete: (tunnel: TunnelEntry) => void;
   locked: boolean;
-  onToast: (msg: string) => void;
+  onToast: (msg: string, tone?: "success" | "error" | "warn") => void;
 };
 
 export function TunnelDrawer({
@@ -52,7 +53,7 @@ export function TunnelDrawer({
   onToast,
 }: TunnelDrawerProps) {
   const { t, formatSeen, formatDateTime } = useLanguage();
-  const [activeTab, setActiveTab] = useState<"overview" | "connections" | "ingress" | "setup">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "connections" | "ingress" | "routes" | "setup">("overview");
   const [copiedCmd, setCopiedCmd] = useState(false);
 
   if (!tunnel) return null;
@@ -133,6 +134,16 @@ export function TunnelDrawer({
           <Network size={13} strokeWidth={2.25} aria-hidden />
           <span>{t("tunnels.drawer.tabs.ingress")}</span>
           {ingressRules.length > 0 && <span className="tab-badge">{ingressRules.length}</span>}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "routes"}
+          className={`tab ${activeTab === "routes" ? "active" : ""}`}
+          onClick={() => setActiveTab("routes")}
+        >
+          <Route size={13} strokeWidth={2.25} aria-hidden />
+          <span>{t("tunnels.drawer.tabs.routes")}</span>
         </button>
         <button
           type="button"
@@ -250,6 +261,16 @@ export function TunnelDrawer({
           onOpenEdit={onOpenEditIngress}
           onDelete={onDeleteIngress}
           locked={locked}
+        />
+      )}
+
+      {activeTab === "routes" && (
+        <ConnectorRoutes
+          key={tunnel.id}
+          connectorId={tunnel.id}
+          connectorName={tunnel.name}
+          locked={locked}
+          onToast={onToast}
         />
       )}
 

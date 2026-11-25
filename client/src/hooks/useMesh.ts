@@ -88,6 +88,7 @@ export function useMesh(options?: { enabled?: boolean; selectedNodeId?: string |
     }) => api.createNodeRoute(nodeId, type, value, comment),
     onSuccess: (_, vars) => {
       void queryClient.invalidateQueries({ queryKey: ["node-routes", vars.nodeId] });
+      void queryClient.invalidateQueries({ queryKey: ["routing"] });
     },
   });
 
@@ -96,6 +97,7 @@ export function useMesh(options?: { enabled?: boolean; selectedNodeId?: string |
       api.removeNodeRoute(nodeId, routeId),
     onSuccess: (_, vars) => {
       void queryClient.invalidateQueries({ queryKey: ["node-routes", vars.nodeId] });
+      void queryClient.invalidateQueries({ queryKey: ["routing"] });
     },
   });
 

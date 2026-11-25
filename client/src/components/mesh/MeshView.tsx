@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Search, RefreshCw, X, Loader2 } from "lucide-react";
+import { RefreshCw, X, Loader2 } from "lucide-react";
+import { SearchField } from "../ui/SearchField";
 import { FacetChip } from "../ui/FilterChips";
 import { MeshTable, type SortKey } from "./MeshTable";
 import { MeshDrawer } from "./MeshDrawer";
@@ -245,16 +246,12 @@ export function MeshView({ locked, onToast }: MeshViewProps) {
       </div>
 
       <div className="mesh-toolbar">
-        <div className="search-wrap">
-          <Search size={15} strokeWidth={2.25} className="search-icon" aria-hidden />
-          <input
-            type="search"
-            placeholder={t("mesh.searchPlaceholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label={t("mesh.searchPlaceholder")}
-          />
-        </div>
+        <SearchField
+          placeholder={t("mesh.searchPlaceholder")}
+          aria-label={t("mesh.searchPlaceholder")}
+          value={search}
+          onChange={setSearch}
+        />
         <button
           type="button"
           className="btn btn-primary"

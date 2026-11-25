@@ -8,6 +8,7 @@
     "actions": "إجراءات",
     "cancel": "إلغاء",
     "clearFilters": "مسح عوامل التصفية",
+    "clearSearch": "مسح البحث",
     "save": "حفظ",
     "saving": "جارٍ الحفظ…",
     "create": "إنشاء",
@@ -39,7 +40,8 @@
     "settings": "الإعدادات",
     "primary": "الرئيسية",
     "account": "الحساب",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "routing": "التوجيه"
   },
   "mesh": {
     "title": "قائمة أجهزة Mesh",
@@ -222,7 +224,8 @@
         "overview": "نظرة عامة",
         "connections": "الاتصالات",
         "ingress": "قواعد الدخول",
-        "setup": "الإعداد"
+        "setup": "الإعداد",
+        "routes": "المسارات"
       },
       "properties": {
         "id": "معرّف النفق",
@@ -344,7 +347,9 @@
       "addressHostLabel": "نطاق CIDR أو اسم المضيف",
       "addressHostPlaceholder": "100.64.0.0/10 أو *.internal.corp",
       "descriptionLabel": "الوصف",
-      "descriptionPlaceholder": "مثال: شبكة Meshflare المتراكبة الداخلية"
+      "descriptionPlaceholder": "مثال: شبكة Meshflare المتراكبة الداخلية",
+      "movedHint": "انتقلت split tunnels والمسارات إلى صفحة التوجيه.",
+      "movedLink": "فتح التوجيه"
     },
     "dnsFilter": {
       "title": "تصفية DNS",
@@ -458,5 +463,131 @@
     "justNow": "الآن",
     "hoursAgo": "منذ {{count}} س",
     "daysAgo": "منذ {{count}} ي"
+  },
+  "routing": {
+    "title": "التوجيه",
+    "loadFailed": "تعذّر تحميل التوجيه.",
+    "noProfiles": "لم يتم العثور على ملفات تعريف للأجهزة.",
+    "profilesLabel": "ملفات تعريف الأجهزة",
+    "issuesCount": "المشكلات: {{count}}",
+    "destination": "الوجهة",
+    "add": "إضافة",
+    "addCount": "إضافة ({{count}})",
+    "bulkCount": "الإدخالات: {{count}}. افصل بسطر جديد أو مسافة أو فاصلة.",
+    "saved": "تم حفظ التوجيه.",
+    "removed": "تمت الإزالة.",
+    "fixed": "تم تحديث ملف التعريف.",
+    "fix": "إصلاح",
+    "confirmDelete": "حذف؟",
+    "unknownExit": "موصّل غير معروف",
+    "switchWarning": "تحويل {{profile}} إلى وضع {{mode}} يستبدل القائمة الحالية، لأن Cloudflare تحتفظ بقائمة واحدة لكل وضع. تستلم أجهزة هذا الملف التغيير خلال دقيقة.",
+    "kind": {
+      "tunnel": "نفق",
+      "node": "عقدة Mesh"
+    },
+    "check": {
+      "label": "فحص وجهة",
+      "placeholder": "reddit.com, https://example.com/path, 10.10.0.5",
+      "idle": "اكتب اسم مضيف أو URL أو IP لترى أين يرسله ملف التعريف هذا.",
+      "bypass": "مباشر، دون المرور بـ Cloudflare",
+      "matchedEntry": "يطابق {{entry}}",
+      "notIncluded": "غير موجود في قائمة Include لهذا الملف",
+      "mesh": "عبر WARP إلى Mesh",
+      "warp": "عبر Cloudflare WARP",
+      "route": "يخرج عبر {{exit}}",
+      "matchedRoute": "المسار {{route}}",
+      "blocked": "موجّه إلى {{exit}} لكنه لا يصل أبدًا",
+      "blockedDetail": "هذا الملف لا يرسل 172.64.128.0/20 عبر WARP، ومسارات أسماء المضيفين تحتاج هذا النطاق.",
+      "against": "فُحص كجهاز يستخدم {{profile}}."
+    },
+    "split": {
+      "titleExclude": "تجاوز Cloudflare",
+      "titleInclude": "عبر Cloudflare",
+      "hintExclude": "هذه تخرج مباشرة عبر الشبكة المحلية. كل ما عداها يمر عبر WARP.",
+      "hintInclude": "هذه فقط تمر عبر WARP. كل ما عداها يخرج مباشرة عبر الشبكة المحلية.",
+      "empty": "لا يوجد شيء.",
+      "addTitleExclude": "تجاوز Cloudflare",
+      "addTitleInclude": "إرسال عبر Cloudflare",
+      "addDesc": "يُضاف إلى ملف التعريف {{profile}}. استخدم ‎*.example.com للنطاقات الفرعية؛ example.com وحده يطابق نفسه فقط.",
+      "valuesLabel": "أسماء مضيفين أو IP أو CIDR",
+      "descPlaceholder": "مثال: بنك",
+      "allExist": "موجود بالفعل."
+    },
+    "routes": {
+      "title": "المسارات",
+      "hint": "أرسل اسم مضيف أو شبكة عبر نفق أو عقدة Mesh محددة. ينطبق على كل الأجهزة أيًا كان ملف تعريفها.",
+      "add": "إضافة مسارات",
+      "empty": "لا توجد مسارات. الحركة غير المتجاوزة تخرج عبر Cloudflare.",
+      "exit": "المخرج",
+      "added": "أُضيف",
+      "cidrTag": "CIDR",
+      "editComment": "تعديل التعليق",
+      "addTitle": "إضافة مسارات",
+      "addDesc": "تُوجَّه أسماء المضيفين بالاسم (يجب استخدام Gateway DNS). تُوجَّه عناوين IP وCIDR كشبكات.",
+      "exitLabel": "المخرج",
+      "exitPlaceholder": "اختر نفقًا أو عقدة",
+      "valuesLabel": "أسماء مضيفين أو IP أو CIDR",
+      "valuesHint": "‎example.com يشمل أيضًا كل النطاقات الفرعية (www.example.com وcdn.example.com).",
+      "parsed": "أسماء المضيفين: {{hostnames}}، الشبكات: {{networks}}",
+      "commentPlaceholder": "مثال: مخرج أمريكي",
+      "created": "المسارات المضافة: {{count}}",
+      "partial": "أُضيف {{created}}. فشل: {{failed}}",
+      "nodeHostnameTitle": "أسماء مضيفين موجّهة إلى عقدة Mesh",
+      "nodeHostnameBody": "{{hosts}} تخرج عبر عقدة Mesh. تحلّ العقدة هذه الأسماء عبر Gateway، الذي يرفض الأسماء الموجّهة إليها، لذا يتوقف حلّها على كل الأجهزة ما لم تكن في ملف hosts للعقدة. أرسل مواقع الإنترنت إلى نفق بدلًا من ذلك.",
+      "nodeHostnameWarn": "لا يمكن لعقدة Mesh أن تكون مخرجًا إلا لأسماء تحلّها دون Gateway (مثلًا من ملف hosts). وإلا يتوقف حلّ هذه الأسماء على كل الأجهزة. استخدم نفقًا لمواقع الإنترنت."
+    },
+    "issues": {
+      "mesh_not_routed": {
+        "title": "عناوين Mesh غير موجّهة",
+        "body": "هذا الملف في وضع Include دون 100.96.0.0/12، لذا لا يمكن الوصول إلى أسماء ‎.mesh."
+      },
+      "mesh_bypassed": {
+        "title": "عناوين Mesh تتجاوز WARP",
+        "body": "{{subject}} مستثنى ويغطي نطاق Mesh ‏100.96.0.0/12."
+      },
+      "resolved_ip_bypassed": {
+        "title": "مسارات أسماء المضيفين متجاوزة",
+        "body": "{{subject}} مستثنى ويغطي 172.64.128.0/20، وهو النطاق الذي يستخدمه Gateway لأسماء المضيفين الموجّهة."
+      },
+      "resolved_ip_not_included": {
+        "title": "مسارات أسماء المضيفين لا تنطبق هنا",
+        "body": "وضع Include دون 172.64.128.0/20، لذا لا تصل أسماء المضيفين الموجّهة إلى مخرجها على هذه الأجهزة."
+      },
+      "route_bypassed": {
+        "title": "المسار ملغى بسبب التجاوز",
+        "body": "لدى {{subject}} مسار، لكن هذا الملف يتجاوزه، لذا يذهب مباشرة."
+      }
+    },
+    "tunnel": {
+      "routesTitle": "المسارات إلى هذا النفق",
+      "routesHint": "أسماء المضيفين والشبكات هنا تخرج عبر هذا النفق لكل الأجهزة. أدر كل المسارات من صفحة التوجيه.",
+      "noRoutes": "لا توجد مسارات تشير إلى هنا بعد."
+    },
+    "profiles": {
+      "title": "ملفات تعريف الأجهزة",
+      "openDash": "فتح في Cloudflare",
+      "new": "إضافة ملف تعريف",
+      "offTag": "معطّل",
+      "editTitle": "تعديل ملف التعريف",
+      "deleteTitle": "حذف ملف التعريف",
+      "deleteConfirmTitle": "حذف {{name}}؟",
+      "deleteConfirmBody": "ستستخدم الأجهزة المطابقة ملف التعريف التالي الذي ينطبق عليها.",
+      "saved": "تم حفظ ملف التعريف.",
+      "created": "تم إنشاء ملف التعريف.",
+      "deleted": "تم حذف ملف التعريف.",
+      "newTitle": "إضافة ملف تعريف للجهاز",
+      "nameLabel": "الاسم",
+      "emailsLabel": "عناوين البريد الإلكتروني",
+      "invalidEmail": "عنوان بريد إلكتروني غير صالح: {{value}}",
+      "emailsHint": "افصل العناوين بمسافات أو فواصل أو أسطر جديدة.",
+      "useRule": "استخدام قاعدة مطابقة",
+      "ruleLabel": "قاعدة المطابقة",
+      "ruleHint": "أدخل تعبير ملف تعريف جهاز Cloudflare.",
+      "useEmails": "استخدام عناوين البريد الإلكتروني",
+      "enabledLabel": "مفعّل",
+      "copiesDefault": "تنسخ ملفات التعريف الجديدة قواعد تقسيم الأنفاق من ملف التعريف الافتراضي.",
+      "moreInDash": "لمزيد من الإعدادات،",
+      "create": "إنشاء ملف تعريف"
+    }
   }
 }

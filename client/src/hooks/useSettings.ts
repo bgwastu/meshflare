@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type Settings, type SettingsPatch, type SplitTunnelItem } from "../lib/api";
+import { api, type Settings, type SettingsPatch } from "../lib/api";
 
 /** DNS filter states where the server is still working in the background. */
 export const DNS_FILTER_BUSY_STATUSES = [
@@ -30,11 +30,6 @@ export function useSettings() {
   const queryClient = useQueryClient();
   const settingsQuery = useSettingsQuery();
 
-  const splitTunnelsQuery = useQuery({
-    queryKey: ["split-tunnels"],
-    queryFn: api.splitTunnels,
-  });
-
   const maintenanceHealthQuery = useQuery({
     queryKey: ["maintenance-health"],
     queryFn: api.maintenanceHealth,
@@ -51,17 +46,6 @@ export function useSettings() {
       }
       void queryClient.invalidateQueries({ queryKey: ["maintenance-health"] });
     },
-  });
-
-  const saveSplitTunnelsMutation = useMutation({
-    mutationFn: ({ mode, items }: { mode: "include" | "exclude"; items: SplitTunnelItem[] }) =>
-      api.saveSplitTunnels(mode, items),
-    onSuccess: (config) => queryClient.setQueryData(["split-tunnels"], config),
-  });
-
-  const ensureMeshRoutingMutation = useMutation({
-    mutationFn: api.ensureMeshRouting,
-    onSuccess: (config) => queryClient.setQueryData(["split-tunnels"], config),
   });
 
   const repairMaintenanceMutation = useMutation({
@@ -93,17 +77,9 @@ export function useSettings() {
     settingsQuery,
     settings: settingsQuery.data ?? null,
 
-    splitTunnels: splitTunnelsQuery.data ?? null,
-    // First load only; background refetches keep the current list on screen.
-    splitTunnelsLoading: splitTunnelsQuery.isPending,
-    splitTunnelsError: splitTunnelsQuery.error?.message ?? null,
-    refetchSplitTunnels: splitTunnelsQuery.refetch,
-
     maintenanceHealth: maintenanceHealthQuery.data ?? null,
 
     patchSettings: patchSettingsMutation.mutateAsync,
-    saveSplitTunnels: saveSplitTunnelsMutation.mutateAsync,
-    ensureMeshRouting: ensureMeshRoutingMutation.mutateAsync,
     repairMaintenance: repairMaintenanceMutation.mutateAsync,
     isRepairingMaintenance: repairMaintenanceMutation.isPending,
     syncDns: syncDnsMutation.mutateAsync,

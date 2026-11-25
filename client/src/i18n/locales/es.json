@@ -8,6 +8,7 @@
     "actions": "Acciones",
     "cancel": "Cancelar",
     "clearFilters": "Borrar filtros",
+    "clearSearch": "Borrar búsqueda",
     "save": "Guardar",
     "saving": "Guardando…",
     "create": "Crear",
@@ -39,7 +40,8 @@
     "settings": "Configuración",
     "primary": "Principal",
     "account": "Cuenta",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "routing": "Enrutamiento"
   },
   "mesh": {
     "title": "Inventario de Mesh",
@@ -214,7 +216,8 @@
         "overview": "Resumen",
         "connections": "Conexiones",
         "ingress": "Reglas Ingress",
-        "setup": "Instalación"
+        "setup": "Instalación",
+        "routes": "Rutas"
       },
       "properties": {
         "id": "ID del Túnel",
@@ -336,7 +339,9 @@
       "addressHostLabel": "CIDR o Hostname",
       "addressHostPlaceholder": "100.64.0.0/10 o *.internal.corp",
       "descriptionLabel": "Descripción",
-      "descriptionPlaceholder": "ej., Red superpuesta interna de Meshflare"
+      "descriptionPlaceholder": "ej., Red superpuesta interna de Meshflare",
+      "movedHint": "Los split tunnels y las rutas se movieron a la página Enrutamiento.",
+      "movedLink": "Abrir Enrutamiento"
     },
     "dnsFilter": {
       "title": "Filtrado DNS",
@@ -450,5 +455,131 @@
     "justNow": "hace un momento",
     "hoursAgo": "hace {{count}}h",
     "daysAgo": "hace {{count}}d"
+  },
+  "routing": {
+    "title": "Enrutamiento",
+    "loadFailed": "No se pudo cargar el enrutamiento.",
+    "noProfiles": "No se encontraron perfiles de dispositivo.",
+    "profilesLabel": "Perfiles de dispositivo",
+    "issuesCount": "Problemas: {{count}}",
+    "destination": "Destino",
+    "add": "Añadir",
+    "addCount": "Añadir ({{count}})",
+    "bulkCount": "Entradas: {{count}}. Separa con saltos de línea, espacios o comas.",
+    "saved": "Enrutamiento guardado.",
+    "removed": "Eliminado.",
+    "fixed": "Perfil actualizado.",
+    "fix": "Corregir",
+    "confirmDelete": "¿Eliminar?",
+    "unknownExit": "Conector desconocido",
+    "switchWarning": "Cambiar {{profile}} al modo {{mode}} reemplaza su lista actual, porque Cloudflare guarda una lista por modo. Los dispositivos de este perfil aplican el cambio en menos de un minuto.",
+    "kind": {
+      "tunnel": "Túnel",
+      "node": "Nodo Mesh"
+    },
+    "check": {
+      "label": "Comprobar un destino",
+      "placeholder": "reddit.com, https://example.com/path, 10.10.0.5",
+      "idle": "Escribe un hostname, URL o IP para ver a dónde lo envía este perfil.",
+      "bypass": "Directo, sin pasar por Cloudflare",
+      "matchedEntry": "coincide con {{entry}}",
+      "notIncluded": "no está en la lista Include de este perfil",
+      "mesh": "Por WARP hacia el Mesh",
+      "warp": "Por Cloudflare WARP",
+      "route": "Sale por {{exit}}",
+      "matchedRoute": "ruta {{route}}",
+      "blocked": "Enrutado a {{exit}}, pero nunca llega",
+      "blockedDetail": "Este perfil no envía 172.64.128.0/20 por WARP, y las rutas por hostname necesitan ese rango.",
+      "against": "Comprobado como un dispositivo con {{profile}}."
+    },
+    "split": {
+      "titleExclude": "Evitar Cloudflare",
+      "titleInclude": "A través de Cloudflare",
+      "hintExclude": "Estos salen directo por la red local. Todo lo demás pasa por WARP.",
+      "hintInclude": "Solo estos pasan por WARP. Todo lo demás sale directo por la red local.",
+      "empty": "Lista vacía.",
+      "addTitleExclude": "Evitar Cloudflare",
+      "addTitleInclude": "Enviar por Cloudflare",
+      "addDesc": "Se añade al perfil {{profile}}. Usa *.example.com para subdominios; example.com solo coincide consigo mismo.",
+      "valuesLabel": "Hostnames, IPs o CIDRs",
+      "descPlaceholder": "p. ej. Banca",
+      "allExist": "Ya está en la lista."
+    },
+    "routes": {
+      "title": "Rutas",
+      "hint": "Saca un hostname o una red por un túnel o nodo Mesh concreto. Se aplica a todos los dispositivos, sea cual sea su perfil.",
+      "add": "Añadir rutas",
+      "empty": "Sin rutas. El tráfico que no se evita sale por Cloudflare.",
+      "exit": "Salida",
+      "added": "Añadida",
+      "cidrTag": "CIDR",
+      "editComment": "Editar comentario",
+      "addTitle": "Añadir rutas",
+      "addDesc": "Los hostnames se enrutan por nombre (el DNS de Gateway debe estar en uso). Las IPs y CIDRs se enrutan como redes.",
+      "exitLabel": "Salida",
+      "exitPlaceholder": "Elige un túnel o nodo",
+      "valuesLabel": "Hostnames, IPs o CIDRs",
+      "valuesHint": "example.com también cubre todos sus subdominios (www.example.com, cdn.example.com).",
+      "parsed": "{{hostnames}} hostname(s), {{networks}} red(es)",
+      "commentPlaceholder": "p. ej. Salida US",
+      "created": "Rutas añadidas: {{count}}",
+      "partial": "{{created}} añadidas. Fallidas: {{failed}}",
+      "nodeHostnameTitle": "Hostnames enrutados a un nodo Mesh",
+      "nodeHostnameBody": "{{hosts}} salen por un nodo Mesh. El nodo resuelve estos nombres con Gateway, que rechaza los nombres enrutados a él, así que dejan de resolverse en todos los dispositivos salvo que estén en el archivo hosts del nodo. Envía los sitios de internet a un túnel.",
+      "nodeHostnameWarn": "Un nodo Mesh solo puede sacar hostnames que pueda resolver sin Gateway (por ejemplo, desde su archivo hosts). Si no, esos nombres dejan de resolverse en todos los dispositivos. Usa un túnel para sitios de internet."
+    },
+    "issues": {
+      "mesh_not_routed": {
+        "title": "Las IPs del Mesh no se enrutan",
+        "body": "Este perfil está en modo Include sin 100.96.0.0/12, así que los hostnames .mesh son inaccesibles."
+      },
+      "mesh_bypassed": {
+        "title": "Las IPs del Mesh evitan WARP",
+        "body": "{{subject}} está excluido y cubre el rango Mesh 100.96.0.0/12."
+      },
+      "resolved_ip_bypassed": {
+        "title": "Las rutas por hostname se evitan",
+        "body": "{{subject}} está excluido y cubre 172.64.128.0/20, el rango que Gateway usa para hostnames enrutados."
+      },
+      "resolved_ip_not_included": {
+        "title": "Las rutas por hostname no aplican aquí",
+        "body": "Modo Include sin 172.64.128.0/20, así que los hostnames enrutados nunca llegan a su salida en estos dispositivos."
+      },
+      "route_bypassed": {
+        "title": "Ruta anulada por una exclusión",
+        "body": "{{subject}} tiene una ruta, pero este perfil la evita, así que va directo."
+      }
+    },
+    "tunnel": {
+      "routesTitle": "Rutas hacia este túnel",
+      "routesHint": "Los hostnames y redes de aquí salen por este túnel para todos los dispositivos. Gestiona todas las rutas en la página Enrutamiento.",
+      "noRoutes": "Aún no hay rutas hacia aquí."
+    },
+    "profiles": {
+      "title": "Perfiles de dispositivo",
+      "openDash": "Abrir en Cloudflare",
+      "new": "Añadir perfil",
+      "offTag": "Inactivo",
+      "editTitle": "Editar perfil",
+      "deleteTitle": "Eliminar perfil",
+      "deleteConfirmTitle": "¿Eliminar {{name}}?",
+      "deleteConfirmBody": "Los dispositivos coincidentes usarán el siguiente perfil aplicable.",
+      "saved": "Perfil guardado.",
+      "created": "Perfil creado.",
+      "deleted": "Perfil eliminado.",
+      "newTitle": "Añadir perfil de dispositivo",
+      "nameLabel": "Nombre",
+      "emailsLabel": "Direcciones de correo",
+      "invalidEmail": "Dirección de correo no válida: {{value}}",
+      "emailsHint": "Separa las direcciones con espacios, comas o saltos de línea.",
+      "useRule": "Usar una regla de coincidencia",
+      "ruleLabel": "Regla de coincidencia",
+      "ruleHint": "Introduce una expresión de perfil de dispositivo de Cloudflare.",
+      "useEmails": "Usar direcciones de correo",
+      "enabledLabel": "Activado",
+      "copiesDefault": "Los perfiles nuevos copian las reglas de túnel dividido del perfil predeterminado.",
+      "moreInDash": "Para ver más ajustes,",
+      "create": "Crear perfil"
+    }
   }
 }

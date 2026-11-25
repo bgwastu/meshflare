@@ -1,25 +1,18 @@
 import { Link, NavLink } from "react-router";
-import { Server, Globe, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { Server, Globe, Split, Settings as SettingsIcon, LogOut } from "lucide-react";
 import { LanguageSwitcher } from "../ui/LanguageSwitcher";
-import { SkeletonBlock } from "../ui/Skeleton";
 import { useLanguage } from "../../hooks/useLanguage";
-import type { Settings } from "../../lib/api";
 
 type HeaderProps = {
-  settings: Settings | null;
   authRequired: boolean;
   onLogout?: () => void;
 };
 
 export function Header({
-  settings,
   authRequired,
   onLogout,
 }: HeaderProps) {
   const { t } = useLanguage();
-
-  const accountName = settings?.accountName;
-  const accountEmail = settings?.accountEmail;
 
   return (
     <header className="top">
@@ -36,21 +29,6 @@ export function Header({
             mesh<span>flare</span>
           </h1>
         </Link>
-        <div className="account-line" aria-busy={!settings}>
-          {settings ? (
-            <>
-              <span className="account-name">{accountName || t("settings.account.notConfigured")}</span>
-              {accountEmail ? (
-                <span className="account-email mono">{accountEmail}</span>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <SkeletonBlock className="skeleton-account-name" />
-              <SkeletonBlock className="skeleton-account-email" />
-            </>
-          )}
-        </div>
       </div>
 
       <div className="header-actions">
@@ -68,6 +46,13 @@ export function Header({
           >
             <Globe size={14} strokeWidth={2.25} aria-hidden />
             <span>{t("nav.tunnels")}</span>
+          </NavLink>
+          <NavLink
+            to="/routing"
+            className={({ isActive }) => `tab ${isActive ? "active" : ""}`}
+          >
+            <Split size={14} strokeWidth={2.25} aria-hidden />
+            <span>{t("nav.routing")}</span>
           </NavLink>
           <NavLink
             to="/settings"

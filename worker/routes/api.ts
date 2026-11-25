@@ -29,6 +29,23 @@ import {
 } from "../cf/mesh";
 import { createNodeWithUniqueName } from "../cf/rename";
 import {
+  auditProfile,
+  classifyRouteValue,
+  createProfile,
+  createRoute,
+  deleteProfile,
+  deleteRoute,
+  getProfile,
+  listConnectors,
+  listProfiles,
+  listRoutes,
+  profilesDashUrl,
+  remediate,
+  setProfileSplitTunnels,
+  updateProfile,
+  updateRouteComment,
+} from "../cf/routing";
+import {
   auditMeshRouting,
   ensureMeshRouting,
   getDefaultSplitTunnels,
@@ -42,7 +59,12 @@ import {
   meshEntryParamSchema,
   meshEntrySchema,
   nameSchema,
+  createRoutesSchema,
+  profileFixSchema,
+  profileSchema,
+  routeCommentSchema,
   routeSchema,
+  routeTypeParamSchema,
   settingsSchema,
   splitTunnelsSchema,
   tunnelConfigSchema,
@@ -137,6 +159,104 @@ api.post("/settings/split-tunnels/ensure-mesh", async (c) => {
   const remediated = ensureMeshRouting(await getDefaultSplitTunnels(c.var.cf));
   await setDefaultSplitTunnels(c.var.cf, remediated.mode, remediated[remediated.mode]);
   return c.json(await splitTunnelsResponse(c.var.cf));
+});
+
+// ── Routing: device profiles + routes on any connector ──────────────────
+
+async function routingSnapshot(cf: CloudflareClient) {
+  const [profiles, routes, connectors] = await Promise.all([
+    listProfiles(cf),
+    listRoutes(cf),
+    listConnectors(cf),
+  ]);
+  return {
+    profiles: profiles.map((p) => ({ ...p, issues: auditProfile(p, routes) })),
+    routes,
+    connectors,
+    profilesDashUrl: profilesDashUrl(cf.accountId),
+  };
+}
+
+async function requireProfile(cf: CloudflareClient, id: string) {
+  const profile = await getProfile(cf, id);
+  if (!profile) throw new HTTPException(404, { message: "Device profile not found" });
+  return profile;
+}
+
+api.get("/routing", async (c) => c.json(await routingSnapshot(c.var.cf)));
+
+api.post("/profiles", validate("json", profileSchema), async (c) => {
+  const id = await createProfile(c.var.cf, c.req.valid("json"));
+  return c.json({ id }, 201);
+});
+
+api.patch("/profiles/:id", validate("json", profileSchema), async (c) => {
+  const profile = await requireProfile(c.var.cf, c.req.param("id"));
+  if (profile.isDefault) throw new HTTPException(400, { message: "The Default profile has no name or match rule to edit" });
+  await updateProfile(c.var.cf, profile.id, c.req.valid("json"));
+  return c.body(null, 204);
+});
+
+api.delete("/profiles/:id", async (c) => {
+  const profile = await requireProfile(c.var.cf, c.req.param("id"));
+  if (profile.isDefault) throw new HTTPException(400, { message: "The Default profile cannot be deleted" });
+  await deleteProfile(c.var.cf, profile.id);
+  return c.body(null, 204);
+});
+
+api.put("/profiles/:id/split-tunnels", validate("json", splitTunnelsSchema), async (c) => {
+  const profile = await requireProfile(c.var.cf, c.req.param("id"));
+  const { mode, items } = c.req.valid("json");
+  await setProfileSplitTunnels(c.var.cf, profile, mode, items);
+  return c.body(null, 204);
+});
+
+api.post("/profiles/:id/fix", validate("json", profileFixSchema), async (c) => {
+  const profile = await requireProfile(c.var.cf, c.req.param("id"));
+  const { mode, items } = remediate(profile, c.req.valid("json").fix);
+  if (mode === "include" && items.length === 0) {
+    throw new HTTPException(400, { message: "Include mode needs at least one destination" });
+  }
+  await setProfileSplitTunnels(c.var.cf, profile, mode, items);
+  return c.body(null, 204);
+});
+
+/** Bulk add: one connector, many hostnames/networks. Partial success is reported per value. */
+api.post("/routes", validate("json", createRoutesSchema), async (c) => {
+  const { connectorId, values, comment } = c.req.valid("json");
+  const unique = [...new Set(values.map((v) => v.trim()).filter(Boolean))];
+  const results = await Promise.allSettled(
+    unique.map((raw) => {
+      const { type, value } = classifyRouteValue(raw);
+      return createRoute(c.var.cf, connectorId, type, value, comment || undefined);
+    }),
+  );
+  const failed = results.flatMap((r, i) =>
+    r.status === "rejected"
+      ? [{ value: unique[i], error: r.reason instanceof Error ? r.reason.message : String(r.reason) }]
+      : [],
+  );
+  if (failed.length === unique.length) {
+    return c.json({ error: failed[0].error, failed }, 400);
+  }
+  return c.json({ created: unique.length - failed.length, failed }, 201);
+});
+
+api.patch(
+  "/routes/:type/:id",
+  validate("param", routeTypeParamSchema),
+  validate("json", routeCommentSchema),
+  async (c) => {
+    const { type, id } = c.req.valid("param");
+    await updateRouteComment(c.var.cf, type, id, c.req.valid("json").comment);
+    return c.json({ ok: true });
+  },
+);
+
+api.delete("/routes/:type/:id", validate("param", routeTypeParamSchema), async (c) => {
+  const { type, id } = c.req.valid("param");
+  await deleteRoute(c.var.cf, type, id);
+  return c.json({ ok: true });
 });
 
 // ── Mesh ─────────────────────────────────────────────────────────────────
@@ -247,6 +367,10 @@ api.delete("/tunnels/:id", async (c) => {
   await deleteTunnel(c.var.cf, c.req.param("id"));
   return c.json({ ok: true });
 });
+
+api.get("/tunnels/:id/routes", async (c) =>
+  c.json({ routes: await listRoutes(c.var.cf, c.req.param("id")) }),
+);
 
 api.get("/tunnels/:id/token", async (c) =>
   c.json({ token: await getTunnelToken(c.var.cf, c.req.param("id")) }),

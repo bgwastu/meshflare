@@ -3,6 +3,7 @@ import { Layout } from "./components/layout/Layout";
 import { MeshView } from "./components/mesh/MeshView";
 import { TunnelsView } from "./components/tunnels/TunnelsView";
 import { SettingsView } from "./components/settings/SettingsView";
+import { RoutingView } from "./components/routing/RoutingView";
 import { LoginForm } from "./components/auth/LoginForm";
 import { useAuth } from "./hooks/useAuth";
 import { useSettingsQuery } from "./hooks/useSettings";
@@ -39,7 +40,9 @@ export function App() {
     ? "settings"
     : location.pathname.startsWith("/tunnels")
       ? "tunnels"
-      : "mesh";
+      : location.pathname.startsWith("/routing")
+        ? "routing"
+        : "mesh";
 
   const locked = Boolean(settings?.demo);
 
@@ -55,6 +58,8 @@ export function App() {
     >
       {tab === "settings" ? (
         <SettingsView locked={locked} onToast={handleToast} />
+      ) : tab === "routing" ? (
+        <RoutingView locked={locked} onToast={handleToast} />
       ) : tab === "tunnels" ? (
         <TunnelsView locked={locked} onToast={handleToast} />
       ) : (

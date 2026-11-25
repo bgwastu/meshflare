@@ -204,25 +204,26 @@ a {
   font-size: 0.85rem;
 }
 
-.account-line {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--text);
-  min-height: 2.1rem;
-  justify-content: center;
+.account-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: var(--space-3) 0 0;
+  font-size: 0.85rem;
 }
 
-.account-name {
-  font-weight: 600;
-}
-
-.account-email {
-  font-size: 0.72rem;
+.account-details dt {
   color: var(--muted);
+}
+
+.account-details dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.account-details dd.mono {
+  font-weight: 400;
 }
 
 .tabs {
@@ -393,6 +394,14 @@ a {
 .search-wrap .search-icon {
   flex-shrink: 0;
   color: var(--muted);
+}
+
+.search-wrap input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-wrap .search-clear:not(:hover):not(:focus-visible) {
+  border-color: transparent;
 }
 
 .copy-chip {
@@ -1213,7 +1222,7 @@ a {
   margin-bottom: var(--space-4);
 }
 
-.field label,
+.field label:not(.switch),
 .field-label {
   display: block;
   font-size: 0.74rem;
@@ -1221,6 +1230,10 @@ a {
   color: var(--muted);
   margin-bottom: 0;
   letter-spacing: 0.02em;
+}
+
+.field > .switch {
+  align-self: flex-start;
 }
 
 .input,
@@ -1499,20 +1512,6 @@ th.sorted {
 .skeleton-cell {
   height: 0.8rem;
   width: 72%;
-}
-
-.skeleton-account-name {
-  display: inline-block;
-  height: 0.9rem;
-  width: 7rem;
-  vertical-align: middle;
-}
-
-.skeleton-account-email {
-  display: inline-block;
-  height: 0.7rem;
-  width: 9.5rem;
-  vertical-align: middle;
 }
 
 .skeleton-row-tr td {
@@ -2392,4 +2391,357 @@ th.sorted {
 .cell-muted {
   color: var(--muted);
   white-space: nowrap;
+}
+
+/* ── Routing ──────────────────────────────────────────────────────────
+   One page, one background layer. Sections are separated by space and a
+   hairline-bordered table, never by nested cards. */
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+select.input,
+.select {
+  appearance: none;
+  padding-right: var(--space-6);
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+textarea.input,
+.textarea {
+  height: auto;
+  min-height: 6.5rem;
+  padding: var(--space-2) var(--space-3);
+  line-height: 1.55;
+  resize: vertical;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+
+.textarea:focus,
+select.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+  background-color: var(--bg1);
+}
+
+.routing-profiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+  margin: 0 0 var(--space-2);
+}
+
+.profile-tab {
+  appearance: none;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.profile-tab:hover {
+  color: var(--text);
+}
+
+.profile-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.profile-tab:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.profile-tab-name {
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The profile tabs only switch what sits inside this box. */
+.profile-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-4) var(--space-4) 0;
+}
+
+.profile-panel-head {
+  flex-wrap: wrap;
+}
+
+.profile-panel-head .routing-section-actions {
+  flex-wrap: wrap;
+}
+
+.profile-tabs-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.profile-tabs-row .routing-profiles {
+  flex: 1 1 auto;
+  margin: 0;
+  border-bottom: 0;
+}
+
+.profile-tools {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.profile-match-toggle {
+  align-self: flex-start;
+}
+
+.profile-panel-body {
+  padding-bottom: var(--space-4);
+}
+
+.route-check {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-5);
+  max-width: 44rem;
+}
+
+.route-check .search-wrap {
+  flex: none;
+}
+
+.kbd {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0 0.3rem;
+  line-height: 1.3;
+}
+
+.search-wrap:focus-within .kbd {
+  visibility: hidden;
+}
+
+.verdict,
+.verdict-idle {
+  margin: var(--space-1) 0 0;
+  min-height: 1.3rem;
+}
+
+.verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.84rem;
+}
+
+.verdict strong {
+  font-weight: 600;
+}
+
+.verdict[data-tone="danger"] strong {
+  color: var(--danger);
+}
+
+.status-dot[data-tone="accent"] {
+  background: var(--accent);
+}
+
+.health-alert.is-warn {
+  border-color: color-mix(in srgb, var(--warn) 40%, var(--line));
+  background: color-mix(in srgb, var(--warn) 7%, var(--bg1));
+}
+
+.health-alert.is-warn .health-alert-copy strong {
+  color: color-mix(in srgb, var(--warn) 80%, var(--text));
+}
+
+.routing-section {
+  margin: 0 0 var(--space-6);
+}
+
+.routing-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+}
+
+.routing-section-head h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.routing-section-head .hint {
+  margin: var(--space-1) 0 0;
+  max-width: 40rem;
+}
+
+.routing-section-head .count {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.routing-section-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.routing-empty {
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.exit-filters {
+  margin: 0 0 var(--space-3);
+}
+
+.facet-count {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Dense data tables: 34px rows, 13px text. */
+.table-dense {
+  font-size: 0.82rem;
+}
+
+.table-dense th,
+.table-dense td {
+  padding: 0 var(--space-3);
+  height: 34px;
+}
+
+.table-dense th {
+  height: 30px;
+  font-size: 0.68rem;
+}
+
+.table-dense td.mono {
+  font-size: 0.78rem;
+}
+
+.table-dense .col-grow {
+  width: 100%;
+  white-space: normal;
+}
+
+.table-dense .col-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-dense .col-actions {
+  width: 1%;
+  padding-right: var(--space-2);
+}
+
+.table-dense tr[data-highlight] td {
+  background: var(--accent-soft);
+}
+
+.table-dense tr[data-highlight] td:first-child {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.row-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  min-width: 3.9rem;
+}
+
+.row-tools .icon-btn {
+  border-color: transparent;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+
+tr:hover .row-tools .icon-btn,
+tr:focus-within .row-tools .icon-btn {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .row-tools .icon-btn {
+    opacity: 1;
+  }
+}
+
+.row-tools .btn-confirm {
+  height: 1.6rem;
+}
+
+.type-tag {
+  margin-left: var(--space-2);
+  font-family: var(--font);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.exit-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.exit-cell .cell-muted {
+  font-size: 0.74rem;
+}
+
+.drawer-hint {
+  margin: 0 0 var(--space-3);
+}
+
+@media (max-width: 640px) {
+  .table-dense .col-num {
+    display: none;
+  }
+
+  .routing-section-head {
+    align-items: flex-start;
+  }
 }

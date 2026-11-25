@@ -8,6 +8,7 @@
     "actions": "Действия",
     "cancel": "Отмена",
     "clearFilters": "Сбросить фильтры",
+    "clearSearch": "Очистить поиск",
     "save": "Сохранить",
     "saving": "Сохранение…",
     "create": "Создать",
@@ -39,7 +40,8 @@
     "settings": "Настройки",
     "primary": "Основная",
     "account": "Аккаунт",
-    "logout": "Выйти"
+    "logout": "Выйти",
+    "routing": "Маршрутизация"
   },
   "mesh": {
     "title": "Устройства Mesh",
@@ -218,7 +220,8 @@
         "overview": "Обзор",
         "connections": "Подключения",
         "ingress": "Правила Ingress",
-        "setup": "Настройка"
+        "setup": "Настройка",
+        "routes": "Маршруты"
       },
       "properties": {
         "id": "ID туннеля",
@@ -340,7 +343,9 @@
       "addressHostLabel": "CIDR или имя хоста",
       "addressHostPlaceholder": "100.64.0.0/10 или *.internal.corp",
       "descriptionLabel": "Описание",
-      "descriptionPlaceholder": "напр., Внутренняя оверлейная сеть Meshflare"
+      "descriptionPlaceholder": "напр., Внутренняя оверлейная сеть Meshflare",
+      "movedHint": "Split tunnels и маршруты перенесены на страницу Маршрутизация.",
+      "movedLink": "Открыть Маршрутизацию"
     },
     "dnsFilter": {
       "title": "Фильтрация DNS",
@@ -454,5 +459,131 @@
     "justNow": "только что",
     "hoursAgo": "{{count}} ч. назад",
     "daysAgo": "{{count}} дн. назад"
+  },
+  "routing": {
+    "title": "Маршрутизация",
+    "loadFailed": "Не удалось загрузить маршрутизацию.",
+    "noProfiles": "Профили устройств не найдены.",
+    "profilesLabel": "Профили устройств",
+    "issuesCount": "Проблем: {{count}}",
+    "destination": "Адрес",
+    "add": "Добавить",
+    "addCount": "Добавить ({{count}})",
+    "bulkCount": "Записей: {{count}}. Разделяйте переносом строки, пробелом или запятой.",
+    "saved": "Маршрутизация сохранена.",
+    "removed": "Удалено.",
+    "fixed": "Профиль обновлён.",
+    "fix": "Исправить",
+    "confirmDelete": "Удалить?",
+    "unknownExit": "Неизвестный коннектор",
+    "switchWarning": "Переключение {{profile}} в режим {{mode}} заменит текущий список: Cloudflare хранит по одному списку на режим. Устройства этого профиля получат изменение в течение минуты.",
+    "kind": {
+      "tunnel": "Туннель",
+      "node": "Узел Mesh"
+    },
+    "check": {
+      "label": "Проверить адрес",
+      "placeholder": "reddit.com, https://example.com/path, 10.10.0.5",
+      "idle": "Введите hostname, URL или IP, чтобы увидеть, куда его отправит этот профиль.",
+      "bypass": "Напрямую, в обход Cloudflare",
+      "matchedEntry": "совпадает с {{entry}}",
+      "notIncluded": "нет в списке Include этого профиля",
+      "mesh": "Через WARP в Mesh",
+      "warp": "Через Cloudflare WARP",
+      "route": "Выходит через {{exit}}",
+      "matchedRoute": "маршрут {{route}}",
+      "blocked": "Направлен в {{exit}}, но туда не доходит",
+      "blockedDetail": "Этот профиль не отправляет 172.64.128.0/20 через WARP, а маршрутам по hostname нужен этот диапазон.",
+      "against": "Проверено для устройства с профилем {{profile}}."
+    },
+    "split": {
+      "titleExclude": "В обход Cloudflare",
+      "titleInclude": "Через Cloudflare",
+      "hintExclude": "Эти адреса идут напрямую через локальную сеть. Всё остальное — через WARP.",
+      "hintInclude": "Только эти адреса идут через WARP. Всё остальное — напрямую через локальную сеть.",
+      "empty": "Список пуст.",
+      "addTitleExclude": "В обход Cloudflare",
+      "addTitleInclude": "Отправлять через Cloudflare",
+      "addDesc": "Добавится в профиль {{profile}}. Для поддоменов используйте *.example.com; example.com совпадает только сам с собой.",
+      "valuesLabel": "Hostname, IP или CIDR",
+      "descPlaceholder": "напр. Банк",
+      "allExist": "Уже в списке."
+    },
+    "routes": {
+      "title": "Маршруты",
+      "hint": "Выпускает hostname или сеть через конкретный туннель или узел Mesh. Действует для всех устройств, независимо от профиля.",
+      "add": "Добавить маршруты",
+      "empty": "Маршрутов нет. Трафик не в обход идёт через Cloudflare.",
+      "exit": "Выход",
+      "added": "Добавлен",
+      "cidrTag": "CIDR",
+      "editComment": "Изменить комментарий",
+      "addTitle": "Добавить маршруты",
+      "addDesc": "Hostname маршрутизируются по имени (нужен DNS Gateway). IP и CIDR маршрутизируются как сети.",
+      "exitLabel": "Выход",
+      "exitPlaceholder": "Выберите туннель или узел",
+      "valuesLabel": "Hostname, IP или CIDR",
+      "valuesHint": "example.com охватывает и все поддомены (www.example.com, cdn.example.com).",
+      "parsed": "hostname: {{hostnames}}, сетей: {{networks}}",
+      "commentPlaceholder": "напр. Выход США",
+      "created": "Добавлено маршрутов: {{count}}",
+      "partial": "Добавлено: {{created}}. Ошибки: {{failed}}",
+      "nodeHostnameTitle": "Hostname направлены в узел Mesh",
+      "nodeHostnameBody": "{{hosts}} выходят через узел Mesh. Узел разрешает эти имена через Gateway, а тот отклоняет имена, направленные в этот узел, поэтому они перестают разрешаться на всех устройствах, если их нет в файле hosts узла. Сайты из интернета направляйте в туннель.",
+      "nodeHostnameWarn": "Узел Mesh может выпускать только те hostname, которые разрешает без Gateway (например, через файл hosts). Иначе эти имена перестанут разрешаться на всех устройствах. Для сайтов из интернета используйте туннель."
+    },
+    "issues": {
+      "mesh_not_routed": {
+        "title": "IP Mesh не маршрутизируются",
+        "body": "Профиль в режиме Include без 100.96.0.0/12, поэтому hostname .mesh недоступны."
+      },
+      "mesh_bypassed": {
+        "title": "IP Mesh идут в обход WARP",
+        "body": "{{subject}} исключён и покрывает диапазон Mesh 100.96.0.0/12."
+      },
+      "resolved_ip_bypassed": {
+        "title": "Маршруты по hostname обходятся",
+        "body": "{{subject}} исключён и покрывает 172.64.128.0/20 — диапазон, который Gateway использует для маршрутизируемых hostname."
+      },
+      "resolved_ip_not_included": {
+        "title": "Маршруты по hostname здесь не работают",
+        "body": "Режим Include без 172.64.128.0/20, поэтому маршрутизируемые hostname на этих устройствах не доходят до выхода."
+      },
+      "route_bypassed": {
+        "title": "Маршрут перекрыт обходом",
+        "body": "У {{subject}} есть маршрут, но этот профиль пускает его в обход, поэтому трафик идёт напрямую."
+      }
+    },
+    "tunnel": {
+      "routesTitle": "Маршруты в этот туннель",
+      "routesHint": "Перечисленные здесь hostname и сети выходят через этот туннель для всех устройств. Все маршруты — на странице Маршрутизация.",
+      "noRoutes": "Сюда пока нет маршрутов."
+    },
+    "profiles": {
+      "title": "Профили устройств",
+      "openDash": "Открыть в Cloudflare",
+      "new": "Добавить профиль",
+      "offTag": "Выкл.",
+      "editTitle": "Изменить профиль",
+      "deleteTitle": "Удалить профиль",
+      "deleteConfirmTitle": "Удалить {{name}}?",
+      "deleteConfirmBody": "Подходящие устройства будут использовать следующий применимый профиль.",
+      "saved": "Профиль сохранён.",
+      "created": "Профиль создан.",
+      "deleted": "Профиль удалён.",
+      "newTitle": "Добавить профиль устройства",
+      "nameLabel": "Имя",
+      "emailsLabel": "Адреса электронной почты",
+      "invalidEmail": "Недействительный адрес электронной почты: {{value}}",
+      "emailsHint": "Разделяйте адреса пробелами, запятыми или переносами строк.",
+      "useRule": "Использовать правило соответствия",
+      "ruleLabel": "Правило соответствия",
+      "ruleHint": "Введите выражение профиля устройства Cloudflare.",
+      "useEmails": "Использовать адреса электронной почты",
+      "enabledLabel": "Включено",
+      "copiesDefault": "Новые профили копируют правила раздельного туннелирования из профиля по умолчанию.",
+      "moreInDash": "Дополнительные настройки доступны в Cloudflare.",
+      "create": "Создать профиль"
+    }
   }
 }

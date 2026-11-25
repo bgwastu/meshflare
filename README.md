@@ -113,6 +113,9 @@ docker run --rm -p 3000:3000 \
 | `PORT` | UI port in `bun run dev` (default `5173`); server port for `bun run start` (default `3000`) |
 | `API_PORT` | API port during `bun run dev` only (default `8787`); Vite proxies `/api` here |
 | `DEMO_MODE` | Enables read-only demo fixtures |
+| `MAINTENANCE_ENABLED` | Set to `false` on a secondary self-hosted instance to skip scheduled maintenance |
+
+Use `/healthz` for self-hosted HTTP health checks. It does not require a dashboard session.
 
 Mesh suffix, offline cleanup days, and DNS filter settings are managed from the
 Settings page and stored in the app database. They do not need environment

@@ -8,6 +8,7 @@
     "actions": "Actions",
     "cancel": "Cancel",
     "clearFilters": "Clear filters",
+    "clearSearch": "Clear search",
     "save": "Save",
     "saving": "Saving…",
     "create": "Create",
@@ -39,7 +40,8 @@
     "settings": "Settings",
     "primary": "Primary",
     "account": "Account",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "routing": "Routing"
   },
   "mesh": {
     "title": "Mesh Inventory",
@@ -214,7 +216,8 @@
         "overview": "Overview",
         "connections": "Connections",
         "ingress": "Ingress Rules",
-        "setup": "Setup"
+        "setup": "Setup",
+        "routes": "Routes"
       },
       "properties": {
         "id": "Tunnel ID",
@@ -336,7 +339,9 @@
       "addressHostLabel": "CIDR or Hostname",
       "addressHostPlaceholder": "100.64.0.0/10 or *.internal.corp",
       "descriptionLabel": "Description",
-      "descriptionPlaceholder": "e.g., Meshflare internal overlay network"
+      "descriptionPlaceholder": "e.g., Meshflare internal overlay network",
+      "movedHint": "Split tunnels and routes moved to the Routing page.",
+      "movedLink": "Open Routing"
     },
     "dnsFilter": {
       "title": "DNS Filtering",
@@ -450,5 +455,131 @@
     "justNow": "just now",
     "hoursAgo": "{{count}}h ago",
     "daysAgo": "{{count}}d ago"
+  },
+  "routing": {
+    "title": "Routing",
+    "loadFailed": "Could not load routing.",
+    "noProfiles": "No device profiles found.",
+    "profilesLabel": "Device profiles",
+    "issuesCount": "Issues: {{count}}",
+    "destination": "Destination",
+    "add": "Add",
+    "addCount": "Add ({{count}})",
+    "bulkCount": "Entries: {{count}}. Separate with new lines, spaces or commas.",
+    "saved": "Routing saved.",
+    "removed": "Removed.",
+    "fixed": "Profile updated.",
+    "fix": "Fix",
+    "confirmDelete": "Delete?",
+    "unknownExit": "Unknown connector",
+    "switchWarning": "Switching {{profile}} to {{mode}} mode replaces its current list, because Cloudflare keeps one list per mode. Devices in this profile pick up the change within a minute.",
+    "kind": {
+      "tunnel": "Tunnel",
+      "node": "Mesh node"
+    },
+    "check": {
+      "label": "Check a destination",
+      "placeholder": "reddit.com, https://example.com/path, 10.10.0.5",
+      "idle": "Type a hostname, URL or IP to see where this profile sends it.",
+      "bypass": "Direct, bypasses Cloudflare",
+      "matchedEntry": "matches {{entry}}",
+      "notIncluded": "not in this profile's Include list",
+      "mesh": "Through WARP to the Mesh",
+      "warp": "Through Cloudflare WARP",
+      "route": "Exits via {{exit}}",
+      "matchedRoute": "route {{route}}",
+      "blocked": "Routed to {{exit}}, but never gets there",
+      "blockedDetail": "This profile does not send 172.64.128.0/20 through WARP, and hostname routes need that range.",
+      "against": "Checked as a device using {{profile}}."
+    },
+    "split": {
+      "titleExclude": "Bypass Cloudflare",
+      "titleInclude": "Through Cloudflare",
+      "hintExclude": "These go straight out the local network. Everything else goes through WARP.",
+      "hintInclude": "Only these go through WARP. Everything else goes straight out the local network.",
+      "empty": "Nothing listed.",
+      "addTitleExclude": "Bypass Cloudflare",
+      "addTitleInclude": "Send through Cloudflare",
+      "addDesc": "Adds to the {{profile}} profile. Use *.example.com for subdomains; example.com alone matches only itself.",
+      "valuesLabel": "Hostnames, IPs or CIDRs",
+      "descPlaceholder": "e.g. Banking",
+      "allExist": "Already listed."
+    },
+    "routes": {
+      "title": "Routes",
+      "hint": "Send a hostname or network out through a specific tunnel or Mesh node. Applies to every device, whatever its profile.",
+      "add": "Add routes",
+      "empty": "No routes. Traffic not bypassed goes out through Cloudflare.",
+      "exit": "Exit",
+      "added": "Added",
+      "cidrTag": "CIDR",
+      "editComment": "Edit comment",
+      "addTitle": "Add routes",
+      "addDesc": "Hostnames are routed by name (Gateway DNS must be in use). IPs and CIDRs are routed as networks.",
+      "exitLabel": "Exit",
+      "exitPlaceholder": "Choose a tunnel or node",
+      "valuesLabel": "Hostnames, IPs or CIDRs",
+      "valuesHint": "example.com also covers every subdomain (www.example.com, cdn.example.com).",
+      "parsed": "{{hostnames}} hostname(s), {{networks}} network(s)",
+      "commentPlaceholder": "e.g. US exit",
+      "created": "Routes added: {{count}}",
+      "partial": "{{created}} added. Failed: {{failed}}",
+      "nodeHostnameTitle": "Hostnames routed to a Mesh node",
+      "nodeHostnameBody": "{{hosts}} exit through a Mesh node. The node looks these names up through Gateway, which refuses names routed to it, so they stop resolving on every device unless the node has them in its hosts file. Send internet sites to a tunnel instead.",
+      "nodeHostnameWarn": "A Mesh node can only exit hostnames it can look up without Gateway (for example, from its hosts file). Otherwise these names stop resolving for every device. Use a tunnel for internet sites."
+    },
+    "issues": {
+      "mesh_not_routed": {
+        "title": "Mesh IPs are not routed",
+        "body": "This profile is in Include mode without 100.96.0.0/12, so .mesh hostnames are unreachable."
+      },
+      "mesh_bypassed": {
+        "title": "Mesh IPs bypass WARP",
+        "body": "{{subject}} is excluded, which covers the Mesh range 100.96.0.0/12."
+      },
+      "resolved_ip_bypassed": {
+        "title": "Hostname routes are bypassed",
+        "body": "{{subject}} is excluded and covers 172.64.128.0/20, the range Gateway uses for routed hostnames."
+      },
+      "resolved_ip_not_included": {
+        "title": "Hostname routes do not apply here",
+        "body": "Include mode without 172.64.128.0/20, so routed hostnames never reach their exit on these devices."
+      },
+      "route_bypassed": {
+        "title": "Route overridden by bypass",
+        "body": "{{subject}} has a route, but this profile bypasses it, so it goes direct."
+      }
+    },
+    "tunnel": {
+      "routesTitle": "Routes to this tunnel",
+      "routesHint": "Hostnames and networks listed here leave through this tunnel for every device. Manage all routes on the Routing page.",
+      "noRoutes": "No routes point here yet."
+    },
+    "profiles": {
+      "title": "Device profiles",
+      "openDash": "Open in Cloudflare",
+      "new": "Add profile",
+      "offTag": "Off",
+      "editTitle": "Edit profile",
+      "deleteTitle": "Delete profile",
+      "deleteConfirmTitle": "Delete {{name}}?",
+      "deleteConfirmBody": "Matching devices will use the next applicable profile.",
+      "saved": "Profile saved.",
+      "created": "Profile created.",
+      "deleted": "Profile deleted.",
+      "newTitle": "Add device profile",
+      "nameLabel": "Name",
+      "emailsLabel": "Email addresses",
+      "invalidEmail": "Invalid email address: {{value}}",
+      "emailsHint": "Separate addresses with spaces, commas or new lines.",
+      "useRule": "Use a match rule",
+      "ruleLabel": "Match rule",
+      "ruleHint": "Enter a Cloudflare device profile expression.",
+      "useEmails": "Use email addresses",
+      "enabledLabel": "Enabled",
+      "copiesDefault": "New profiles copy the Default split tunnel rules.",
+      "moreInDash": "For more settings,",
+      "create": "Create profile"
+    }
   }
 }

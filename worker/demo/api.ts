@@ -4,6 +4,7 @@ import {
   DEMO_READ_ONLY,
   buildDemoEntries,
   buildDemoRoutes,
+  buildDemoRouting,
   buildDemoSettings,
   buildDemoTunnelConfig,
   buildDemoTunnels,
@@ -102,6 +103,12 @@ demoApi.get("/settings/split-tunnels", (c) =>
     ],
     audit: { meshIpsRouted: true },
   }),
+);
+
+demoApi.get("/routing", (c) => c.json({ ...buildDemoRouting(), profilesDashUrl: null }));
+
+demoApi.get("/tunnels/:id/routes", (c) =>
+  c.json({ routes: buildDemoRouting().routes.filter((r) => r.connectorId === c.req.param("id")) }),
 );
 
 demoApi.get("/tunnels", (c) => c.json({ tunnels: buildDemoTunnels() }));

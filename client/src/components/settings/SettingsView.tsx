@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
-import { Modal } from "../ui/Modal";
 import { Spinner } from "../ui/Spinner";
 import { Switch } from "../ui/Switch";
 import { CopyValue } from "../ui/CopyValue";
@@ -8,21 +6,14 @@ import { SkeletonBlock } from "../ui/Skeleton";
 import { isDnsFilterBusy, useSettings } from "../../hooks/useSettings";
 import { useLanguage } from "../../hooks/useLanguage";
 import { dnsFilterStatusMeta } from "../../lib/warp";
-import type { SplitTunnelItem } from "../../lib/api";
-
-type SplitTunnelMode = "include" | "exclude";
-
-const MESH_INCLUDE_ITEM: SplitTunnelItem = {
-  address: "100.96.0.0/12",
-  description: "Cloudflare Mesh (WARP Connector)",
-};
+import { Link } from "react-router";
 
 type SettingsViewProps = {
   locked: boolean;
   onToast: (msg: string, tone?: "success" | "error" | "warn") => void;
 };
 
-type BusyKey = "domain" | "offline-days" | "filter-url" | "dns-filter" | "sync" | "cleanup" | "split";
+type BusyKey = "domain" | "offline-days" | "filter-url" | "dns-filter" | "sync" | "cleanup";
 
 /** Suffixes in WARP's default Local Domain Fallback list; Gateway never sees them. */
 const FALLBACK_SUFFIXES = new Set(["local", "internal", "lan", "home.arpa", "corp", "private", "test", "arpa"]);
@@ -36,12 +27,6 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
     settingsQuery,
     settings,
     patchSettings,
-    splitTunnels,
-    splitTunnelsLoading,
-    splitTunnelsError,
-    refetchSplitTunnels,
-    saveSplitTunnels,
-    ensureMeshRouting,
     maintenanceHealth,
     repairMaintenance,
     isRepairingMaintenance,
@@ -55,12 +40,6 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
   const [offlineDaysDraft, setOfflineDaysDraft] = useState<string | null>(null);
   const [filterUrlDraft, setFilterUrlDraft] = useState<string | null>(null);
   const [busy, setBusy] = useState<BusyKey | null>(null);
-  const [splitEditor, setSplitEditor] = useState<{
-    index: number | null;
-    value: string;
-    description: string;
-  } | null>(null);
-  const [pendingSplitMode, setPendingSplitMode] = useState<SplitTunnelMode | null>(null);
 
   /** Run one action at a time and report the outcome as a toast. */
   const run = async (
@@ -123,7 +102,6 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
   const filterMeta = dnsFilterStatusMeta(settings.dnsFilterStatus, settings.dnsFilterEnabled);
   const filterOperationPending = isDnsFilterBusy(settings);
   const dnsLocation = settings.dnsLocation;
-  const splitBusy = busy === "split";
 
   const handleSaveDomain = async () => {
     if (!suffix || suffix === settings.meshSuffix) return;
@@ -165,55 +143,6 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
     }
   };
 
-  const saveSplitItems = (mode: "include" | "exclude", items: SplitTunnelItem[]) =>
-    run("split", () => saveSplitTunnels({ mode, items }));
-
-  const switchSplitMode = (mode: SplitTunnelMode) => {
-    if (!splitTunnels) return;
-    const items = splitTunnels[mode];
-    // An empty Include list would leave Cloudflare in Exclude mode, so start from the Mesh range.
-    return saveSplitItems(mode, mode === "include" && items.length === 0 ? [MESH_INCLUDE_ITEM] : items);
-  };
-
-  // Cloudflare keeps one list per mode and clears the other on a switch, so always confirm first.
-  const handleSwitchSplitMode = (mode: SplitTunnelMode) => setPendingSplitMode(mode);
-
-  const handleConfirmSplitMode = async () => {
-    if (!pendingSplitMode) return;
-    const mode = pendingSplitMode;
-    setPendingSplitMode(null);
-    await switchSplitMode(mode);
-  };
-
-  const handleSaveSplitItem = async () => {
-    if (!splitEditor || !splitTunnels) return;
-    const value = splitEditor.value.trim();
-    if (!value) return;
-
-    const description = splitEditor.description.trim() || undefined;
-    const item: SplitTunnelItem = value.includes("/")
-      ? { address: value, description }
-      : { host: value, description };
-
-    const activeItems = splitTunnels[splitTunnels.mode];
-    const items = splitEditor.index === null
-      ? [...activeItems, item]
-      : activeItems.map((cur, idx) => (idx === splitEditor.index ? item : cur));
-
-    if (await saveSplitItems(splitTunnels.mode, items)) setSplitEditor(null);
-  };
-
-  const handleDeleteSplitItem = (index: number) => {
-    if (!splitTunnels) return;
-    void saveSplitItems(
-      splitTunnels.mode,
-      splitTunnels[splitTunnels.mode].filter((_, i) => i !== index),
-    );
-  };
-
-  const handleEnsureMeshRouting = () =>
-    void run("split", ensureMeshRouting, t("settings.splitTunnels.meshRoutingFixed"));
-
   return (
     <section className="settings-panel">
       <header className="settings-intro">
@@ -222,6 +151,20 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
       </header>
 
       <div className="settings-grid">
+        <div className="settings-block">
+          <h3>{t("settings.account.title")}</h3>
+          <dl className="account-details">
+            <dt>{t("settings.account.nameLabel")}</dt>
+            <dd>{settings.accountName || t("settings.account.notConfigured")}</dd>
+            {settings.accountEmail && (
+              <>
+                <dt>{t("settings.account.emailLabel")}</dt>
+                <dd className="mono">{settings.accountEmail}</dd>
+              </>
+            )}
+          </dl>
+        </div>
+
         <div className="settings-block">
           <h3>{t("settings.meshDns.title")}</h3>
           <p className="hint">{t("settings.meshDns.description")}</p>
@@ -475,216 +418,14 @@ export function SettingsView({ locked, onToast }: SettingsViewProps) {
           )}
         </div>
 
-        <div
-          className="settings-block settings-block-wide split-tunnels-block"
-          aria-busy={splitTunnelsLoading || splitBusy}
-        >
-          <div className="split-head">
-            <div>
-              <h3>{t("settings.splitTunnels.title")}</h3>
-              <p className="hint">{t("settings.splitTunnels.description")}</p>
-            </div>
-            {splitTunnels && (
-              <Switch
-                checked={splitTunnels.mode === "include"}
-                label={t("settings.splitTunnels.modeSwitchLabel")}
-                startLabel={t("settings.splitTunnels.modeExclude")}
-                endLabel={t("settings.splitTunnels.modeInclude")}
-                disabled={locked || splitBusy}
-                onChange={(on) => handleSwitchSplitMode(on ? "include" : "exclude")}
-              />
-            )}
-          </div>
-          <p className="hint split-mode-copy">
-            {splitTunnels?.mode === "include"
-              ? t("settings.splitTunnels.modeIncludeHint")
-              : t("settings.splitTunnels.modeExcludeHint")}
+        <div className="settings-block settings-block-wide">
+          <h3>{t("settings.splitTunnels.title")}</h3>
+          <p className="hint">
+            {t("settings.splitTunnels.movedHint")} <Link to="/routing">{t("settings.splitTunnels.movedLink")}</Link>
           </p>
-          {splitTunnels?.audit && !splitTunnels.audit.meshIpsRouted && (
-            <div className="health-alert" role="alert">
-              <div className="health-alert-copy">
-                <strong>{t("settings.splitTunnels.meshRoutingWarning")}</strong>
-                <p className="hint">{splitTunnels.audit.warning}</p>
-              </div>
-              <button
-                type="button"
-                className="btn btn-sm btn-primary"
-                disabled={locked || splitBusy}
-                onClick={handleEnsureMeshRouting}
-              >
-                {splitBusy ? (
-                  <Spinner label={t("settings.splitTunnels.fixingRoutingBtn")} />
-                ) : (
-                  t("settings.splitTunnels.fixRoutingBtn")
-                )}
-              </button>
-            </div>
-          )}
-
-          {splitTunnelsLoading ? (
-            <div className="split-list" aria-label={t("settings.splitTunnels.title")}>
-              {Array.from({ length: 3 }, (_, index) => (
-                <div className="route-row" key={index}>
-                  <div className="skeleton-stack">
-                    <SkeletonBlock className="skeleton-route-primary" />
-                    <SkeletonBlock className="skeleton-route-secondary" />
-                  </div>
-                  <SkeletonBlock className="skeleton-route-action" />
-                </div>
-              ))}
-            </div>
-          ) : splitTunnelsError && !splitTunnels ? (
-            <div className="health-alert" role="alert">
-              <div className="health-alert-copy">
-                <strong>{t("settings.splitTunnels.loadFailed")}</strong>
-                <p className="hint">{splitTunnelsError}</p>
-              </div>
-              <button type="button" className="btn" onClick={() => void refetchSplitTunnels()}>
-                {t("common.retry")}
-              </button>
-            </div>
-          ) : splitTunnels ? (
-            <>
-              <div className="split-list">
-                {splitTunnels[splitTunnels.mode].map((item, index) => (
-                  <div className="route-row" key={`${item.address ?? item.host}-${index}`}>
-                    <div>
-                      <span className="mono">{item.address ?? item.host}</span>
-                      {item.description && <span className="hint">{item.description}</span>}
-                    </div>
-                    <div className="row-actions split-item-actions">
-                      <button
-                        type="button"
-                        className="btn btn-icon"
-                        title={t("settings.splitTunnels.editEntry")}
-                        aria-label={`${t("settings.splitTunnels.editEntry")}: ${item.address ?? item.host}`}
-                        disabled={locked || splitBusy}
-                        onClick={() =>
-                          setSplitEditor({
-                            index,
-                            value: item.address ?? item.host ?? "",
-                            description: item.description ?? "",
-                          })
-                        }
-                      >
-                        <Pencil size={14} strokeWidth={2.25} aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-icon btn-danger"
-                        title={t("settings.splitTunnels.deleteEntry")}
-                        aria-label={`${t("settings.splitTunnels.deleteEntry")}: ${item.address ?? item.host}`}
-                        disabled={locked || splitBusy}
-                        onClick={() => handleDeleteSplitItem(index)}
-                      >
-                        <Trash2 size={14} strokeWidth={2.25} aria-hidden />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="btn btn-primary split-add-button"
-                disabled={locked || splitBusy}
-                onClick={() => setSplitEditor({ index: null, value: "", description: "" })}
-              >
-                {t("settings.splitTunnels.addEntryBtn")}
-              </button>
-            </>
-          ) : null}
         </div>
       </div>
 
-      <Modal
-        isOpen={pendingSplitMode !== null}
-        onClose={() => setPendingSplitMode(null)}
-        title={t("settings.splitTunnels.switchTitle")}
-      >
-        <div>
-          <p className="hint">
-            {t("settings.splitTunnels.switchWarning", {
-              mode: t(
-                pendingSplitMode === "include"
-                  ? "settings.splitTunnels.modeInclude"
-                  : "settings.splitTunnels.modeExclude",
-              ),
-            })}
-          </p>
-          <div className="row-actions modal-actions">
-            <button type="button" className="btn" onClick={() => setPendingSplitMode(null)}>
-              {t("common.cancel")}
-            </button>
-            <button type="button" className="btn btn-danger" onClick={() => void handleConfirmSplitMode()}>
-              {t("settings.splitTunnels.switchConfirmBtn")}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {splitEditor && splitTunnels && (
-        <Modal
-          isOpen={Boolean(splitEditor)}
-          onClose={() => setSplitEditor(null)}
-          title={
-            splitEditor.index === null
-              ? t("settings.splitTunnels.modalTitleAdd")
-              : t("settings.splitTunnels.modalTitleEdit")
-          }
-        >
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void handleSaveSplitItem();
-            }}
-          >
-            <div className="field">
-              <label htmlFor="split-value">{t("settings.splitTunnels.addressHostLabel")}</label>
-              <input
-                id="split-value"
-                type="text"
-                value={splitEditor.value}
-                placeholder={t("settings.splitTunnels.addressHostPlaceholder")}
-                disabled={splitBusy}
-                autoFocus
-                onChange={(e) => setSplitEditor({ ...splitEditor, value: e.target.value })}
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="split-description">{t("settings.splitTunnels.descriptionLabel")}</label>
-              <input
-                id="split-description"
-                type="text"
-                value={splitEditor.description}
-                placeholder={t("settings.splitTunnels.descriptionPlaceholder")}
-                disabled={splitBusy}
-                onChange={(e) => setSplitEditor({ ...splitEditor, description: e.target.value })}
-              />
-            </div>
-            <div className="row-actions modal-actions">
-              <button
-                type="button"
-                className="btn"
-                disabled={splitBusy}
-                onClick={() => setSplitEditor(null)}
-              >
-                {t("common.cancel")}
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={splitBusy || !splitEditor.value.trim()}
-              >
-                {splitBusy ? (
-                  <Spinner label={t("settings.splitTunnels.savingBtn")} />
-                ) : (
-                  t("common.save")
-                )}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
     </section>
   );
 }

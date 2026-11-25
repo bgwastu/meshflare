@@ -8,6 +8,7 @@
     "actions": "Actions",
     "cancel": "Annuler",
     "clearFilters": "Effacer les filtres",
+    "clearSearch": "Effacer la recherche",
     "save": "Enregistrer",
     "saving": "Enregistrement…",
     "create": "Créer",
@@ -39,7 +40,8 @@
     "settings": "Paramètres",
     "primary": "Principale",
     "account": "Compte",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "routing": "Routage"
   },
   "mesh": {
     "title": "Inventaire Mesh",
@@ -214,7 +216,8 @@
         "overview": "Aperçu",
         "connections": "Connexions",
         "ingress": "Règles Ingress",
-        "setup": "Configuration"
+        "setup": "Configuration",
+        "routes": "Routes"
       },
       "properties": {
         "id": "ID du Tunnel",
@@ -336,7 +339,9 @@
       "addressHostLabel": "CIDR ou Nom d'hôte",
       "addressHostPlaceholder": "100.64.0.0/10 ou *.internal.corp",
       "descriptionLabel": "Description",
-      "descriptionPlaceholder": "ex. Réseau interne Meshflare"
+      "descriptionPlaceholder": "ex. Réseau interne Meshflare",
+      "movedHint": "Les split tunnels et les routes sont désormais sur la page Routage.",
+      "movedLink": "Ouvrir Routage"
     },
     "dnsFilter": {
       "title": "Filtrage DNS",
@@ -450,5 +455,131 @@
     "justNow": "à l'instant",
     "hoursAgo": "il y a {{count}}h",
     "daysAgo": "il y a {{count}}j"
+  },
+  "routing": {
+    "title": "Routage",
+    "loadFailed": "Impossible de charger le routage.",
+    "noProfiles": "Aucun profil d'appareil trouvé.",
+    "profilesLabel": "Profils d'appareil",
+    "issuesCount": "Problèmes : {{count}}",
+    "destination": "Destination",
+    "add": "Ajouter",
+    "addCount": "Ajouter ({{count}})",
+    "bulkCount": "Entrées : {{count}}. Séparez par retours à la ligne, espaces ou virgules.",
+    "saved": "Routage enregistré.",
+    "removed": "Supprimé.",
+    "fixed": "Profil mis à jour.",
+    "fix": "Corriger",
+    "confirmDelete": "Supprimer ?",
+    "unknownExit": "Connecteur inconnu",
+    "switchWarning": "Passer {{profile}} en mode {{mode}} remplace sa liste actuelle, car Cloudflare conserve une liste par mode. Les appareils de ce profil appliquent le changement en moins d'une minute.",
+    "kind": {
+      "tunnel": "Tunnel",
+      "node": "Nœud Mesh"
+    },
+    "check": {
+      "label": "Vérifier une destination",
+      "placeholder": "reddit.com, https://example.com/path, 10.10.0.5",
+      "idle": "Saisissez un nom d'hôte, une URL ou une IP pour voir où ce profil l'envoie.",
+      "bypass": "Direct, contourne Cloudflare",
+      "matchedEntry": "correspond à {{entry}}",
+      "notIncluded": "absent de la liste Include de ce profil",
+      "mesh": "Via WARP vers le Mesh",
+      "warp": "Via Cloudflare WARP",
+      "route": "Sort par {{exit}}",
+      "matchedRoute": "route {{route}}",
+      "blocked": "Routé vers {{exit}}, mais n'y arrive jamais",
+      "blockedDetail": "Ce profil n'envoie pas 172.64.128.0/20 via WARP, et les routes par nom d'hôte en ont besoin.",
+      "against": "Vérifié pour un appareil utilisant {{profile}}."
+    },
+    "split": {
+      "titleExclude": "Contourner Cloudflare",
+      "titleInclude": "Via Cloudflare",
+      "hintExclude": "Ces destinations sortent directement par le réseau local. Tout le reste passe par WARP.",
+      "hintInclude": "Seules ces destinations passent par WARP. Tout le reste sort directement par le réseau local.",
+      "empty": "Liste vide.",
+      "addTitleExclude": "Contourner Cloudflare",
+      "addTitleInclude": "Envoyer via Cloudflare",
+      "addDesc": "Ajouté au profil {{profile}}. Utilisez *.example.com pour les sous-domaines ; example.com seul ne correspond qu'à lui-même.",
+      "valuesLabel": "Noms d'hôte, IP ou CIDR",
+      "descPlaceholder": "ex. Banque",
+      "allExist": "Déjà dans la liste."
+    },
+    "routes": {
+      "title": "Routes",
+      "hint": "Fait sortir un nom d'hôte ou un réseau par un tunnel ou un nœud Mesh précis. S'applique à chaque appareil, quel que soit son profil.",
+      "add": "Ajouter des routes",
+      "empty": "Aucune route. Le trafic non contourné sort par Cloudflare.",
+      "exit": "Sortie",
+      "added": "Ajouté",
+      "cidrTag": "CIDR",
+      "editComment": "Modifier le commentaire",
+      "addTitle": "Ajouter des routes",
+      "addDesc": "Les noms d'hôte sont routés par nom (le DNS Gateway doit être utilisé). Les IP et CIDR sont routés comme réseaux.",
+      "exitLabel": "Sortie",
+      "exitPlaceholder": "Choisir un tunnel ou un nœud",
+      "valuesLabel": "Noms d'hôte, IP ou CIDR",
+      "valuesHint": "example.com couvre aussi tous ses sous-domaines (www.example.com, cdn.example.com).",
+      "parsed": "{{hostnames}} nom(s) d'hôte, {{networks}} réseau(x)",
+      "commentPlaceholder": "ex. Sortie US",
+      "created": "Routes ajoutées : {{count}}",
+      "partial": "{{created}} ajoutée(s). Échecs : {{failed}}",
+      "nodeHostnameTitle": "Noms d'hôte routés vers un nœud Mesh",
+      "nodeHostnameBody": "{{hosts}} sortent par un nœud Mesh. Le nœud résout ces noms via Gateway, qui refuse les noms routés vers lui : sans entrée dans son fichier hosts, ils ne se résolvent plus sur aucun appareil. Envoyez plutôt les sites internet vers un tunnel.",
+      "nodeHostnameWarn": "Un nœud Mesh ne peut faire sortir que les noms qu'il résout sans Gateway (par exemple via son fichier hosts). Sinon, ces noms ne se résolvent plus sur aucun appareil. Utilisez un tunnel pour les sites internet."
+    },
+    "issues": {
+      "mesh_not_routed": {
+        "title": "Les IP Mesh ne sont pas routées",
+        "body": "Ce profil est en mode Include sans 100.96.0.0/12, les noms .mesh sont donc injoignables."
+      },
+      "mesh_bypassed": {
+        "title": "Les IP Mesh contournent WARP",
+        "body": "{{subject}} est exclu et couvre la plage Mesh 100.96.0.0/12."
+      },
+      "resolved_ip_bypassed": {
+        "title": "Les routes par nom d'hôte sont contournées",
+        "body": "{{subject}} est exclu et couvre 172.64.128.0/20, la plage utilisée par Gateway pour les noms d'hôte routés."
+      },
+      "resolved_ip_not_included": {
+        "title": "Les routes par nom d'hôte ne s'appliquent pas ici",
+        "body": "Mode Include sans 172.64.128.0/20 : les noms d'hôte routés n'atteignent jamais leur sortie sur ces appareils."
+      },
+      "route_bypassed": {
+        "title": "Route annulée par un contournement",
+        "body": "{{subject}} a une route, mais ce profil la contourne, donc le trafic part en direct."
+      }
+    },
+    "tunnel": {
+      "routesTitle": "Routes vers ce tunnel",
+      "routesHint": "Les noms d'hôte et réseaux listés ici sortent par ce tunnel pour tous les appareils. Gérez toutes les routes sur la page Routage.",
+      "noRoutes": "Aucune route ne pointe ici."
+    },
+    "profiles": {
+      "title": "Profils d'appareil",
+      "openDash": "Ouvrir dans Cloudflare",
+      "new": "Ajouter un profil",
+      "offTag": "Inactif",
+      "editTitle": "Modifier le profil",
+      "deleteTitle": "Supprimer le profil",
+      "deleteConfirmTitle": "Supprimer {{name}} ?",
+      "deleteConfirmBody": "Les appareils correspondants utiliseront le prochain profil applicable.",
+      "saved": "Profil enregistré.",
+      "created": "Profil créé.",
+      "deleted": "Profil supprimé.",
+      "newTitle": "Ajouter un profil d’appareil",
+      "nameLabel": "Nom",
+      "emailsLabel": "Adresses e-mail",
+      "invalidEmail": "Adresse e-mail non valide : {{value}}",
+      "emailsHint": "Séparez les adresses par des espaces, des virgules ou des sauts de ligne.",
+      "useRule": "Utiliser une règle de correspondance",
+      "ruleLabel": "Règle de correspondance",
+      "ruleHint": "Saisissez une expression de profil d’appareil Cloudflare.",
+      "useEmails": "Utiliser des adresses e-mail",
+      "enabledLabel": "Activé",
+      "copiesDefault": "Les nouveaux profils reprennent les règles de tunnel fractionné du profil par défaut.",
+      "moreInDash": "Pour accéder aux autres paramètres,",
+      "create": "Créer le profil"
+    }
   }
 }

@@ -39,6 +39,7 @@ export function useTunnels(options?: { enabled?: boolean; selectedTunnelId?: str
     mutationFn: (name: string) => api.createTunnel(name),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tunnels"] });
+      void queryClient.invalidateQueries({ queryKey: ["routing"] });
     },
   });
 
@@ -47,6 +48,7 @@ export function useTunnels(options?: { enabled?: boolean; selectedTunnelId?: str
       api.updateTunnel(id, { name }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tunnels"] });
+      void queryClient.invalidateQueries({ queryKey: ["routing"] });
     },
   });
 
@@ -54,6 +56,7 @@ export function useTunnels(options?: { enabled?: boolean; selectedTunnelId?: str
     mutationFn: (id: string) => api.deleteTunnel(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tunnels"] });
+      void queryClient.invalidateQueries({ queryKey: ["routing"] });
     },
   });
 

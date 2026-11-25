@@ -8,6 +8,7 @@
     "actions": "操作",
     "cancel": "取消",
     "clearFilters": "清除筛选",
+    "clearSearch": "清除搜索",
     "save": "保存",
     "saving": "保存中…",
     "create": "创建",
@@ -39,7 +40,8 @@
     "settings": "设置",
     "primary": "主导航",
     "account": "账户",
-    "logout": "退出登录"
+    "logout": "退出登录",
+    "routing": "路由"
   },
   "mesh": {
     "title": "Mesh 设备清单",
@@ -214,7 +216,8 @@
         "overview": "概览",
         "connections": "边缘连接",
         "ingress": "入站规则",
-        "setup": "配置指南"
+        "setup": "配置指南",
+        "routes": "路由"
       },
       "properties": {
         "id": "隧道 ID",
@@ -336,7 +339,9 @@
       "addressHostLabel": "CIDR 网段或主机名",
       "addressHostPlaceholder": "100.64.0.0/10 或 *.internal.corp",
       "descriptionLabel": "备注说明",
-      "descriptionPlaceholder": "例如: Meshflare 内部覆盖网络"
+      "descriptionPlaceholder": "例如: Meshflare 内部覆盖网络",
+      "movedHint": "Split tunnels 和路由已移至路由页面。",
+      "movedLink": "打开路由"
     },
     "dnsFilter": {
       "title": "DNS 过滤拦截",
@@ -450,5 +455,131 @@
     "justNow": "刚刚",
     "hoursAgo": "{{count}} 小时前",
     "daysAgo": "{{count}} 天前"
+  },
+  "routing": {
+    "title": "路由",
+    "loadFailed": "无法加载路由。",
+    "noProfiles": "未找到设备配置文件。",
+    "profilesLabel": "设备配置文件",
+    "issuesCount": "问题：{{count}}",
+    "destination": "目标",
+    "add": "添加",
+    "addCount": "添加（{{count}}）",
+    "bulkCount": "条目：{{count}}。可用换行、空格或逗号分隔。",
+    "saved": "路由已保存。",
+    "removed": "已删除。",
+    "fixed": "配置文件已更新。",
+    "fix": "修复",
+    "confirmDelete": "删除？",
+    "unknownExit": "未知连接器",
+    "switchWarning": "将 {{profile}} 切换为 {{mode}} 模式会替换当前列表，因为 Cloudflare 每种模式只保留一个列表。该配置文件中的设备会在一分钟内获取变更。",
+    "kind": {
+      "tunnel": "隧道",
+      "node": "Mesh 节点"
+    },
+    "check": {
+      "label": "检查目标",
+      "placeholder": "reddit.com, https://example.com/path, 10.10.0.5",
+      "idle": "输入主机名、URL 或 IP，查看此配置文件把它发往哪里。",
+      "bypass": "直连，绕过 Cloudflare",
+      "matchedEntry": "匹配 {{entry}}",
+      "notIncluded": "不在此配置文件的 Include 列表中",
+      "mesh": "经 WARP 进入 Mesh",
+      "warp": "经 Cloudflare WARP",
+      "route": "从 {{exit}} 出去",
+      "matchedRoute": "路由 {{route}}",
+      "blocked": "已路由到 {{exit}}，但无法到达",
+      "blockedDetail": "此配置文件没有让 172.64.128.0/20 走 WARP，而主机名路由需要该网段。",
+      "against": "按使用 {{profile}} 的设备检查。"
+    },
+    "split": {
+      "titleExclude": "绕过 Cloudflare",
+      "titleInclude": "经过 Cloudflare",
+      "hintExclude": "这些目标直接走本地网络，其余流量走 WARP。",
+      "hintInclude": "只有这些目标走 WARP，其余流量直接走本地网络。",
+      "empty": "暂无条目。",
+      "addTitleExclude": "绕过 Cloudflare",
+      "addTitleInclude": "经 Cloudflare 发送",
+      "addDesc": "添加到 {{profile}} 配置文件。子域名请用 *.example.com；单独的 example.com 只匹配它自己。",
+      "valuesLabel": "主机名、IP 或 CIDR",
+      "descPlaceholder": "例如：银行",
+      "allExist": "已在列表中。"
+    },
+    "routes": {
+      "title": "路由",
+      "hint": "让主机名或网络从指定的隧道或 Mesh 节点出去。适用于所有设备，无论其配置文件。",
+      "add": "添加路由",
+      "empty": "暂无路由。未绕过的流量经 Cloudflare 出去。",
+      "exit": "出口",
+      "added": "添加时间",
+      "cidrTag": "CIDR",
+      "editComment": "编辑备注",
+      "addTitle": "添加路由",
+      "addDesc": "主机名按名称路由（必须使用 Gateway DNS）。IP 和 CIDR 按网络路由。",
+      "exitLabel": "出口",
+      "exitPlaceholder": "选择隧道或节点",
+      "valuesLabel": "主机名、IP 或 CIDR",
+      "valuesHint": "example.com 也覆盖其所有子域名（www.example.com、cdn.example.com）。",
+      "parsed": "{{hostnames}} 个主机名，{{networks}} 个网络",
+      "commentPlaceholder": "例如：美国出口",
+      "created": "已添加路由：{{count}}",
+      "partial": "已添加 {{created}} 条。失败：{{failed}}",
+      "nodeHostnameTitle": "主机名被路由到 Mesh 节点",
+      "nodeHostnameBody": "{{hosts}} 从 Mesh 节点出去。该节点通过 Gateway 解析这些名称，而 Gateway 会拒绝路由到该节点的名称，因此除非节点的 hosts 文件中有这些名称，否则所有设备都无法解析。互联网站点请改用隧道。",
+      "nodeHostnameWarn": "Mesh 节点只能作为它无需 Gateway 即可解析的主机名的出口（例如来自其 hosts 文件）。否则这些名称在所有设备上都将无法解析。互联网站点请使用隧道。"
+    },
+    "issues": {
+      "mesh_not_routed": {
+        "title": "Mesh IP 未被路由",
+        "body": "此配置文件为 Include 模式且未包含 100.96.0.0/12，因此无法访问 .mesh 主机名。"
+      },
+      "mesh_bypassed": {
+        "title": "Mesh IP 绕过了 WARP",
+        "body": "{{subject}} 被排除，且覆盖 Mesh 网段 100.96.0.0/12。"
+      },
+      "resolved_ip_bypassed": {
+        "title": "主机名路由被绕过",
+        "body": "{{subject}} 被排除，且覆盖 172.64.128.0/20，这是 Gateway 用于路由主机名的网段。"
+      },
+      "resolved_ip_not_included": {
+        "title": "主机名路由在此不生效",
+        "body": "Include 模式未包含 172.64.128.0/20，因此这些设备上的路由主机名永远到不了出口。"
+      },
+      "route_bypassed": {
+        "title": "路由被绕过规则覆盖",
+        "body": "{{subject}} 有路由，但此配置文件绕过了它，所以会直连。"
+      }
+    },
+    "tunnel": {
+      "routesTitle": "指向此隧道的路由",
+      "routesHint": "此处列出的主机名和网络对所有设备都从此隧道出去。所有路由请在路由页面管理。",
+      "noRoutes": "暂无指向此处的路由。"
+    },
+    "profiles": {
+      "title": "设备配置文件",
+      "openDash": "在 Cloudflare 中打开",
+      "new": "添加配置文件",
+      "offTag": "已停用",
+      "editTitle": "编辑配置文件",
+      "deleteTitle": "删除配置文件",
+      "deleteConfirmTitle": "删除 {{name}}？",
+      "deleteConfirmBody": "匹配的设备将使用下一个适用的配置文件。",
+      "saved": "配置文件已保存。",
+      "created": "配置文件已创建。",
+      "deleted": "配置文件已删除。",
+      "newTitle": "添加设备配置文件",
+      "nameLabel": "名称",
+      "emailsLabel": "电子邮件地址",
+      "invalidEmail": "无效的电子邮件地址：{{value}}",
+      "emailsHint": "用空格、逗号或换行分隔地址。",
+      "useRule": "使用匹配规则",
+      "ruleLabel": "匹配规则",
+      "ruleHint": "输入 Cloudflare 设备配置文件表达式。",
+      "useEmails": "使用电子邮件地址",
+      "enabledLabel": "已启用",
+      "copiesDefault": "新配置文件会复制默认配置文件的拆分隧道规则。",
+      "moreInDash": "可在 Cloudflare 中调整其他设置。",
+      "create": "创建配置文件"
+    }
   }
 }

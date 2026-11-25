@@ -8,6 +8,7 @@
     "actions": "ক্রিয়াকলাপ",
     "cancel": "বাতিল",
     "clearFilters": "ফিল্টার মুছুন",
+    "clearSearch": "অনুসন্ধান মুছুন",
     "save": "সংরক্ষণ",
     "saving": "সংরক্ষণ হচ্ছে…",
     "create": "তৈরি করুন",
@@ -39,7 +40,8 @@
     "settings": "সেটিংস",
     "primary": "প্রধান",
     "account": "অ্যাকাউন্ট",
-    "logout": "সাইন আউট"
+    "logout": "সাইন আউট",
+    "routing": "রাউটিং"
   },
   "mesh": {
     "title": "মেশ ইনভেন্টরি",
@@ -214,7 +216,8 @@
         "overview": "সংক্ষিপ্ত বিবরণ",
         "connections": "সংযোগসমূহ",
         "ingress": "ইনগ্রেস নিয়ম",
-        "setup": "সেটআপ"
+        "setup": "সেটআপ",
+        "routes": "রুট"
       },
       "properties": {
         "id": "টানেল ID",
@@ -336,7 +339,9 @@
       "addressHostLabel": "CIDR বা হোস্টনাম",
       "addressHostPlaceholder": "100.64.0.0/10 বা *.internal.corp",
       "descriptionLabel": "বিবরণ",
-      "descriptionPlaceholder": "যেমন: Meshflare অভ্যন্তরীণ ওভারলে নেটওয়ার্ক"
+      "descriptionPlaceholder": "যেমন: Meshflare অভ্যন্তরীণ ওভারলে নেটওয়ার্ক",
+      "movedHint": "Split tunnels ও রুট এখন রাউটিং পেজে।",
+      "movedLink": "রাউটিং খুলুন"
     },
     "dnsFilter": {
       "title": "DNS ফিল্টারিং",
@@ -450,5 +455,131 @@
     "justNow": "এইমাত্র",
     "hoursAgo": "{{count}} ঘণ্টা আগে",
     "daysAgo": "{{count}} দিন আগে"
+  },
+  "routing": {
+    "title": "রাউটিং",
+    "loadFailed": "রাউটিং লোড করা যায়নি।",
+    "noProfiles": "কোনো ডিভাইস প্রোফাইল পাওয়া যায়নি।",
+    "profilesLabel": "ডিভাইস প্রোফাইল",
+    "issuesCount": "সমস্যা: {{count}}",
+    "destination": "গন্তব্য",
+    "add": "যোগ করুন",
+    "addCount": "যোগ করুন ({{count}})",
+    "bulkCount": "এন্ট্রি: {{count}}। নতুন লাইন, স্পেস বা কমা দিয়ে আলাদা করুন।",
+    "saved": "রাউটিং সংরক্ষিত।",
+    "removed": "সরানো হয়েছে।",
+    "fixed": "প্রোফাইল আপডেট হয়েছে।",
+    "fix": "ঠিক করুন",
+    "confirmDelete": "মুছবেন?",
+    "unknownExit": "অজানা কানেক্টর",
+    "switchWarning": "{{profile}}-কে {{mode}} মোডে বদলালে বর্তমান তালিকা বদলে যাবে, কারণ Cloudflare প্রতি মোডে একটিই তালিকা রাখে। এই প্রোফাইলের ডিভাইস এক মিনিটের মধ্যে পরিবর্তন পাবে।",
+    "kind": {
+      "tunnel": "টানেল",
+      "node": "Mesh নোড"
+    },
+    "check": {
+      "label": "গন্তব্য যাচাই",
+      "placeholder": "reddit.com, https://example.com/path, 10.10.0.5",
+      "idle": "হোস্টনেম, URL বা IP লিখে দেখুন এই প্রোফাইল এটিকে কোথায় পাঠায়।",
+      "bypass": "সরাসরি, Cloudflare এড়িয়ে",
+      "matchedEntry": "{{entry}} এর সাথে মেলে",
+      "notIncluded": "এই প্রোফাইলের Include তালিকায় নেই",
+      "mesh": "WARP দিয়ে Mesh-এ",
+      "warp": "Cloudflare WARP দিয়ে",
+      "route": "{{exit}} দিয়ে বের হয়",
+      "matchedRoute": "রুট {{route}}",
+      "blocked": "{{exit}}-এ রুট করা, কিন্তু কখনো পৌঁছায় না",
+      "blockedDetail": "এই প্রোফাইল 172.64.128.0/20 WARP দিয়ে পাঠায় না, অথচ হোস্টনেম রুটের এই রেঞ্জ দরকার।",
+      "against": "{{profile}} ব্যবহারকারী ডিভাইস হিসেবে যাচাই করা হয়েছে।"
+    },
+    "split": {
+      "titleExclude": "Cloudflare এড়িয়ে",
+      "titleInclude": "Cloudflare দিয়ে",
+      "hintExclude": "এগুলো সরাসরি লোকাল নেটওয়ার্ক দিয়ে যায়। বাকি সব WARP দিয়ে যায়।",
+      "hintInclude": "শুধু এগুলো WARP দিয়ে যায়। বাকি সব সরাসরি লোকাল নেটওয়ার্ক দিয়ে যায়।",
+      "empty": "কিছু নেই।",
+      "addTitleExclude": "Cloudflare এড়িয়ে",
+      "addTitleInclude": "Cloudflare দিয়ে পাঠান",
+      "addDesc": "{{profile}} প্রোফাইলে যোগ হবে। সাবডোমেনের জন্য *.example.com; শুধু example.com কেবল নিজের সাথেই মেলে।",
+      "valuesLabel": "হোস্টনেম, IP বা CIDR",
+      "descPlaceholder": "যেমন ব্যাংক",
+      "allExist": "ইতিমধ্যে তালিকায় আছে।"
+    },
+    "routes": {
+      "title": "রুট",
+      "hint": "একটি হোস্টনেম বা নেটওয়ার্ক নির্দিষ্ট টানেল বা Mesh নোড দিয়ে বের করুন। প্রোফাইল যাই হোক, সব ডিভাইসে প্রযোজ্য।",
+      "add": "রুট যোগ করুন",
+      "empty": "কোনো রুট নেই। যে ট্রাফিক এড়ানো হয় না তা Cloudflare দিয়ে বের হয়।",
+      "exit": "এক্সিট",
+      "added": "যোগের সময়",
+      "cidrTag": "CIDR",
+      "editComment": "মন্তব্য সম্পাদনা",
+      "addTitle": "রুট যোগ করুন",
+      "addDesc": "হোস্টনেম নাম দিয়ে রুট হয় (Gateway DNS ব্যবহার করতে হবে)। IP ও CIDR নেটওয়ার্ক হিসেবে রুট হয়।",
+      "exitLabel": "এক্সিট",
+      "exitPlaceholder": "টানেল বা নোড বাছুন",
+      "valuesLabel": "হোস্টনেম, IP বা CIDR",
+      "valuesHint": "example.com তার সব সাবডোমেনও (www.example.com, cdn.example.com) কভার করে।",
+      "parsed": "{{hostnames}} হোস্টনেম, {{networks}} নেটওয়ার্ক",
+      "commentPlaceholder": "যেমন US এক্সিট",
+      "created": "যোগ করা রুট: {{count}}",
+      "partial": "{{created}} যোগ হয়েছে। ব্যর্থ: {{failed}}",
+      "nodeHostnameTitle": "হোস্টনেম Mesh নোডে রুট করা হয়েছে",
+      "nodeHostnameBody": "{{hosts}} একটি Mesh নোড দিয়ে বের হয়। নোড এই নামগুলো Gateway দিয়ে খোঁজে, আর Gateway সেই নোডে রুট করা নাম প্রত্যাখ্যান করে, তাই নোডের hosts ফাইলে না থাকলে কোনো ডিভাইসেই এগুলো রিজলভ হবে না। ইন্টারনেট সাইট টানেলে পাঠান।",
+      "nodeHostnameWarn": "Mesh নোড শুধু সেই হোস্টনেমের এক্সিট হতে পারে যা সে Gateway ছাড়া খুঁজতে পারে (যেমন hosts ফাইল থেকে)। নইলে এই নামগুলো সব ডিভাইসে রিজলভ হওয়া বন্ধ হবে। ইন্টারনেট সাইটের জন্য টানেল ব্যবহার করুন।"
+    },
+    "issues": {
+      "mesh_not_routed": {
+        "title": "Mesh IP রুট হচ্ছে না",
+        "body": "এই প্রোফাইল 100.96.0.0/12 ছাড়া Include মোডে, তাই .mesh হোস্টনেমে পৌঁছানো যায় না।"
+      },
+      "mesh_bypassed": {
+        "title": "Mesh IP WARP এড়িয়ে যাচ্ছে",
+        "body": "{{subject}} বাদ দেওয়া এবং Mesh রেঞ্জ 100.96.0.0/12 কভার করে।"
+      },
+      "resolved_ip_bypassed": {
+        "title": "হোস্টনেম রুট এড়ানো হচ্ছে",
+        "body": "{{subject}} বাদ দেওয়া এবং 172.64.128.0/20 কভার করে, যে রেঞ্জ Gateway রুট করা হোস্টনেমের জন্য ব্যবহার করে।"
+      },
+      "resolved_ip_not_included": {
+        "title": "হোস্টনেম রুট এখানে কাজ করে না",
+        "body": "172.64.128.0/20 ছাড়া Include মোড, তাই এই ডিভাইসে রুট করা হোস্টনেম এক্সিটে পৌঁছায় না।"
+      },
+      "route_bypassed": {
+        "title": "এড়ানোর নিয়মে রুট বাতিল",
+        "body": "{{subject}}-এর রুট আছে, কিন্তু এই প্রোফাইল এটি এড়িয়ে যায়, তাই সরাসরি যায়।"
+      }
+    },
+    "tunnel": {
+      "routesTitle": "এই টানেলের রুট",
+      "routesHint": "এখানের হোস্টনেম ও নেটওয়ার্ক সব ডিভাইসের জন্য এই টানেল দিয়ে বের হয়। সব রুট রাউটিং পেজে পরিচালনা করুন।",
+      "noRoutes": "এখনো এখানে কোনো রুট নেই।"
+    },
+    "profiles": {
+      "title": "ডিভাইস প্রোফাইল",
+      "openDash": "Cloudflare-এ খুলুন",
+      "new": "প্রোফাইল যোগ করুন",
+      "offTag": "বন্ধ",
+      "editTitle": "প্রোফাইল সম্পাদনা করুন",
+      "deleteTitle": "প্রোফাইল মুছুন",
+      "deleteConfirmTitle": "{{name}} মুছবেন?",
+      "deleteConfirmBody": "মিলে যাওয়া ডিভাইসগুলো পরবর্তী প্রযোজ্য প্রোফাইল ব্যবহার করবে।",
+      "saved": "প্রোফাইল সংরক্ষিত হয়েছে।",
+      "created": "প্রোফাইল তৈরি হয়েছে।",
+      "deleted": "প্রোফাইল মোছা হয়েছে।",
+      "newTitle": "ডিভাইস প্রোফাইল যোগ করুন",
+      "nameLabel": "নাম",
+      "emailsLabel": "ইমেল ঠিকানা",
+      "invalidEmail": "অবৈধ ইমেল ঠিকানা: {{value}}",
+      "emailsHint": "স্পেস, কমা বা নতুন লাইন দিয়ে ঠিকানাগুলো আলাদা করুন।",
+      "useRule": "মিলের নিয়ম ব্যবহার করুন",
+      "ruleLabel": "মিলের নিয়ম",
+      "ruleHint": "Cloudflare ডিভাইস প্রোফাইলের এক্সপ্রেশন লিখুন।",
+      "useEmails": "ইমেল ঠিকানা ব্যবহার করুন",
+      "enabledLabel": "চালু",
+      "copiesDefault": "নতুন প্রোফাইল ডিফল্ট প্রোফাইলের স্প্লিট টানেল নিয়ম কপি করে।",
+      "moreInDash": "আরও সেটিংসের জন্য,",
+      "create": "প্রোফাইল তৈরি করুন"
+    }
   }
 }

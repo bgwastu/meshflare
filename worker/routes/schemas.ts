@@ -95,3 +95,31 @@ export const tunnelConfigSchema = z.object({
     })),
   }),
 });
+
+export const routeTypeParamSchema = z.object({
+  type: z.enum(["cidr", "hostname"], { message: "type must be cidr or hostname" }),
+  id: z.string().min(1),
+});
+
+export const createRoutesSchema = z.object({
+  connectorId: z.string().trim().min(1, "connectorId is required"),
+  values: z
+    .array(z.string().trim().min(1).max(253))
+    .min(1, "Add at least one hostname or network")
+    .max(200, "Add at most 200 entries at once"),
+  comment: z.string().trim().max(100, "comment must be 100 characters or fewer").optional(),
+});
+
+export const routeCommentSchema = z.object({
+  comment: z.string().trim().max(100, "comment must be 100 characters or fewer"),
+});
+
+export const profileFixSchema = z.object({
+  fix: z.enum(["ensure_mesh", "ensure_resolved_ip"]),
+});
+
+export const profileSchema = z.object({
+  name: z.string().trim().min(1, "name is required").max(100, "name must be 100 characters or fewer"),
+  match: z.string().trim().min(1, "match rule is required").max(10000, "match rule is too long"),
+  enabled: z.boolean().default(true),
+});

@@ -8,6 +8,7 @@
     "actions": "कार्रवाइयाँ",
     "cancel": "रद्द करें",
     "clearFilters": "फ़िल्टर हटाएँ",
+    "clearSearch": "खोज मिटाएँ",
     "save": "सहेजें",
     "saving": "सहेजा जा रहा है…",
     "create": "बनाएं",
@@ -39,7 +40,8 @@
     "settings": "सेटिंग्स",
     "primary": "मुख्य",
     "account": "खाता",
-    "logout": "साइन आउट"
+    "logout": "साइन आउट",
+    "routing": "रूटिंग"
   },
   "mesh": {
     "title": "मेश सूची",
@@ -214,7 +216,8 @@
         "overview": "अवलोकन",
         "connections": "कनेक्शन",
         "ingress": "इनग्रेस नियम",
-        "setup": "सेटअप"
+        "setup": "सेटअप",
+        "routes": "रूट"
       },
       "properties": {
         "id": "टनल ID",
@@ -336,7 +339,9 @@
       "addressHostLabel": "CIDR या होस्टनाम",
       "addressHostPlaceholder": "100.64.0.0/10 या *.internal.corp",
       "descriptionLabel": "विवरण",
-      "descriptionPlaceholder": "उदा., Meshflare आंतरिक ओवरले नेटवर्क"
+      "descriptionPlaceholder": "उदा., Meshflare आंतरिक ओवरले नेटवर्क",
+      "movedHint": "Split tunnels और रूट अब रूटिंग पेज पर हैं।",
+      "movedLink": "रूटिंग खोलें"
     },
     "dnsFilter": {
       "title": "DNS फ़िल्टरिंग",
@@ -450,5 +455,131 @@
     "justNow": "अभी-अभी",
     "hoursAgo": "{{count}} घंटे पहले",
     "daysAgo": "{{count}} दिन पहले"
+  },
+  "routing": {
+    "title": "रूटिंग",
+    "loadFailed": "रूटिंग लोड नहीं हो सकी।",
+    "noProfiles": "कोई डिवाइस प्रोफ़ाइल नहीं मिली।",
+    "profilesLabel": "डिवाइस प्रोफ़ाइल",
+    "issuesCount": "समस्याएँ: {{count}}",
+    "destination": "गंतव्य",
+    "add": "जोड़ें",
+    "addCount": "जोड़ें ({{count}})",
+    "bulkCount": "प्रविष्टियाँ: {{count}}। नई लाइन, स्पेस या कॉमा से अलग करें।",
+    "saved": "रूटिंग सहेजी गई।",
+    "removed": "हटाया गया।",
+    "fixed": "प्रोफ़ाइल अपडेट हुई।",
+    "fix": "ठीक करें",
+    "confirmDelete": "हटाएँ?",
+    "unknownExit": "अज्ञात कनेक्टर",
+    "switchWarning": "{{profile}} को {{mode}} मोड में बदलने से उसकी मौजूदा सूची बदल जाएगी, क्योंकि Cloudflare हर मोड की एक ही सूची रखता है। इस प्रोफ़ाइल के डिवाइस एक मिनट में बदलाव ले लेंगे।",
+    "kind": {
+      "tunnel": "टनल",
+      "node": "Mesh नोड"
+    },
+    "check": {
+      "label": "गंतव्य जाँचें",
+      "placeholder": "reddit.com, https://example.com/path, 10.10.0.5",
+      "idle": "होस्टनेम, URL या IP लिखें और देखें कि यह प्रोफ़ाइल उसे कहाँ भेजती है।",
+      "bypass": "सीधे, Cloudflare को बायपास करके",
+      "matchedEntry": "{{entry}} से मेल खाता है",
+      "notIncluded": "इस प्रोफ़ाइल की Include सूची में नहीं",
+      "mesh": "WARP से Mesh तक",
+      "warp": "Cloudflare WARP से",
+      "route": "{{exit}} से बाहर जाता है",
+      "matchedRoute": "रूट {{route}}",
+      "blocked": "{{exit}} पर रूट है, पर वहाँ कभी नहीं पहुँचता",
+      "blockedDetail": "यह प्रोफ़ाइल 172.64.128.0/20 को WARP से नहीं भेजती, और होस्टनेम रूट को यह रेंज चाहिए।",
+      "against": "{{profile}} वाले डिवाइस के रूप में जाँचा गया।"
+    },
+    "split": {
+      "titleExclude": "Cloudflare बायपास",
+      "titleInclude": "Cloudflare के ज़रिए",
+      "hintExclude": "ये सीधे लोकल नेटवर्क से जाते हैं। बाकी सब WARP से जाता है।",
+      "hintInclude": "सिर्फ़ ये WARP से जाते हैं। बाकी सब सीधे लोकल नेटवर्क से जाता है।",
+      "empty": "कुछ नहीं जोड़ा गया।",
+      "addTitleExclude": "Cloudflare बायपास",
+      "addTitleInclude": "Cloudflare से भेजें",
+      "addDesc": "{{profile}} प्रोफ़ाइल में जोड़ा जाएगा। सबडोमेन के लिए *.example.com लिखें; सिर्फ़ example.com केवल खुद से मेल खाता है।",
+      "valuesLabel": "होस्टनेम, IP या CIDR",
+      "descPlaceholder": "जैसे बैंकिंग",
+      "allExist": "पहले से सूची में है।"
+    },
+    "routes": {
+      "title": "रूट",
+      "hint": "किसी होस्टनेम या नेटवर्क को किसी खास टनल या Mesh नोड से बाहर भेजें। हर डिवाइस पर लागू, प्रोफ़ाइल चाहे जो हो।",
+      "add": "रूट जोड़ें",
+      "empty": "कोई रूट नहीं। जो ट्रैफ़िक बायपास नहीं होता वह Cloudflare से जाता है।",
+      "exit": "एग्ज़िट",
+      "added": "जोड़ा गया",
+      "cidrTag": "CIDR",
+      "editComment": "टिप्पणी बदलें",
+      "addTitle": "रूट जोड़ें",
+      "addDesc": "होस्टनेम नाम से रूट होते हैं (Gateway DNS इस्तेमाल होना चाहिए)। IP और CIDR नेटवर्क के रूप में रूट होते हैं।",
+      "exitLabel": "एग्ज़िट",
+      "exitPlaceholder": "टनल या नोड चुनें",
+      "valuesLabel": "होस्टनेम, IP या CIDR",
+      "valuesHint": "example.com उसके सभी सबडोमेन (www.example.com, cdn.example.com) को भी कवर करता है।",
+      "parsed": "{{hostnames}} होस्टनेम, {{networks}} नेटवर्क",
+      "commentPlaceholder": "जैसे US एग्ज़िट",
+      "created": "जोड़े गए रूट: {{count}}",
+      "partial": "{{created}} जोड़े गए। विफल: {{failed}}",
+      "nodeHostnameTitle": "होस्टनेम Mesh नोड पर रूट किए गए हैं",
+      "nodeHostnameBody": "{{hosts}} एक Mesh नोड से बाहर जाते हैं। नोड इन नामों को Gateway से खोजता है, जो उस नोड पर रूट किए गए नामों को मना कर देता है, इसलिए जब तक ये नोड की hosts फ़ाइल में न हों, ये किसी भी डिवाइस पर रिज़ॉल्व नहीं होंगे। इंटरनेट साइटों को टनल पर भेजें।",
+      "nodeHostnameWarn": "Mesh नोड सिर्फ़ उन्हीं होस्टनेम का एग्ज़िट बन सकता है जिन्हें वह Gateway के बिना खोज सके (जैसे hosts फ़ाइल से)। वरना ये नाम हर डिवाइस पर रिज़ॉल्व होना बंद हो जाएँगे। इंटरनेट साइटों के लिए टनल इस्तेमाल करें।"
+    },
+    "issues": {
+      "mesh_not_routed": {
+        "title": "Mesh IP रूट नहीं हैं",
+        "body": "यह प्रोफ़ाइल 100.96.0.0/12 के बिना Include मोड में है, इसलिए .mesh होस्टनेम तक नहीं पहुँचा जा सकता।"
+      },
+      "mesh_bypassed": {
+        "title": "Mesh IP WARP को बायपास करते हैं",
+        "body": "{{subject}} बाहर रखा गया है और Mesh रेंज 100.96.0.0/12 को कवर करता है।"
+      },
+      "resolved_ip_bypassed": {
+        "title": "होस्टनेम रूट बायपास हो रहे हैं",
+        "body": "{{subject}} बाहर रखा गया है और 172.64.128.0/20 को कवर करता है, जिसे Gateway रूट किए गए होस्टनेम के लिए इस्तेमाल करता है।"
+      },
+      "resolved_ip_not_included": {
+        "title": "होस्टनेम रूट यहाँ लागू नहीं",
+        "body": "172.64.128.0/20 के बिना Include मोड, इसलिए इन डिवाइस पर रूट किए गए होस्टनेम अपने एग्ज़िट तक नहीं पहुँचते।"
+      },
+      "route_bypassed": {
+        "title": "बायपास ने रूट को ओवरराइड किया",
+        "body": "{{subject}} का रूट है, पर यह प्रोफ़ाइल उसे बायपास करती है, इसलिए यह सीधे जाता है।"
+      }
+    },
+    "tunnel": {
+      "routesTitle": "इस टनल के रूट",
+      "routesHint": "यहाँ के होस्टनेम और नेटवर्क सभी डिवाइस के लिए इसी टनल से बाहर जाते हैं। सभी रूट रूटिंग पेज पर मैनेज करें।",
+      "noRoutes": "अभी यहाँ कोई रूट नहीं।"
+    },
+    "profiles": {
+      "title": "डिवाइस प्रोफ़ाइल",
+      "openDash": "Cloudflare में खोलें",
+      "new": "प्रोफ़ाइल जोड़ें",
+      "offTag": "बंद",
+      "editTitle": "प्रोफ़ाइल संपादित करें",
+      "deleteTitle": "प्रोफ़ाइल हटाएँ",
+      "deleteConfirmTitle": "{{name}} हटाएँ?",
+      "deleteConfirmBody": "मेल खाने वाले डिवाइस अगली लागू प्रोफ़ाइल का इस्तेमाल करेंगे।",
+      "saved": "प्रोफ़ाइल सहेजी गई।",
+      "created": "प्रोफ़ाइल बनाई गई।",
+      "deleted": "प्रोफ़ाइल हटाई गई।",
+      "newTitle": "डिवाइस प्रोफ़ाइल जोड़ें",
+      "nameLabel": "नाम",
+      "emailsLabel": "ईमेल पते",
+      "invalidEmail": "अमान्य ईमेल पता: {{value}}",
+      "emailsHint": "पतों को स्पेस, कॉमा या नई पंक्ति से अलग करें।",
+      "useRule": "मैच नियम का इस्तेमाल करें",
+      "ruleLabel": "मैच नियम",
+      "ruleHint": "Cloudflare डिवाइस प्रोफ़ाइल का एक्सप्रेशन डालें।",
+      "useEmails": "ईमेल पतों का इस्तेमाल करें",
+      "enabledLabel": "चालू",
+      "copiesDefault": "नई प्रोफ़ाइल में डिफ़ॉल्ट प्रोफ़ाइल के स्प्लिट टनल नियम कॉपी होते हैं।",
+      "moreInDash": "अन्य सेटिंग के लिए,",
+      "create": "प्रोफ़ाइल बनाएँ"
+    }
   }
 }
