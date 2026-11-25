@@ -30,4 +30,5 @@ COPY drizzle ./drizzle
 
 EXPOSE 3000
 VOLUME ["/data"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD ["bun", "server/healthcheck.ts"]
 CMD ["bun", "run", "server/selfhost.ts"]
